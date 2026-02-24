@@ -1,6 +1,7 @@
 package com.spc.nutricoach.data
 
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
+import com.spc.nutricoach.model.LoginApiResponse
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
@@ -14,15 +15,9 @@ data class LoginRequest(
     val password: String
 )
 
-@Serializable
-data class LoginResponse(
-    val token: String,
-    val role: String
-)
-
 interface NutricionApiService {
     @POST("login")
-    suspend fun login(@Body request: LoginRequest): LoginResponse
+    suspend fun login(@Body request: LoginRequest): LoginApiResponse
 }
 
 object NutriCoachApiClient {
