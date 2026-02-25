@@ -28,14 +28,11 @@ class DietaViewModel(application: Application) : AndroidViewModel(application) {
     var error by mutableStateOf<String?>(null)
         private set
 
-    init {
-        cargarDietas()
-    }
-
     fun cargarDietas() {
         viewModelScope.launch(Dispatchers.IO) {
             isLoading = true
             error = null
+            dietas = emptyList()
             loadDietas()
         }
     }

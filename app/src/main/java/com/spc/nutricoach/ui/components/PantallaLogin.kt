@@ -59,7 +59,6 @@ fun LoginView(navController: NavController, loginViewModel: LoginViewModel = vie
     var inputEmail by remember { mutableStateOf("") }
     var inputPassw by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
-    var isLoading by remember { mutableStateOf(false) }
 
 
     LaunchedEffect(loginViewModel.loginSuccess) {
@@ -154,10 +153,10 @@ fun LoginView(navController: NavController, loginViewModel: LoginViewModel = vie
                 onClick = {
                     loginViewModel.doLogin(inputEmail,inputPassw)
                 },
-                enabled = !isLoading,
+                enabled = !loginViewModel.isLoading,
                 colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
             ) {
-                if (isLoading) {
+                if (loginViewModel.isLoading) {
                     CircularProgressIndicator(
                         color = Color.White,
                         strokeWidth = 2.dp,

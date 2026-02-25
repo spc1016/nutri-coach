@@ -51,8 +51,8 @@ import com.spc.nutricoach.model.Comida
 import com.spc.nutricoach.ui.theme.AppBrushes
 import com.spc.nutricoach.ui.theme.MainBackground
 import com.spc.nutricoach.ui.theme.PrimaryGreen
+import androidx.compose.runtime.LaunchedEffect
 import com.spc.nutricoach.ui.viewmodel.DietaViewModel
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -60,6 +60,11 @@ fun MainView(
     navController: NavController,
     dietaViewModel: DietaViewModel = viewModel()
 ) {
+    LaunchedEffect(Unit) {
+        if (dietaViewModel.dietas.isEmpty()) {
+            dietaViewModel.cargarDietas()
+        }
+    }
     val context = LocalContext.current
     val sessionManager = remember { SessionManager(context) }
     val email by sessionManager.userEmailFlow.collectAsState(initial = "")
