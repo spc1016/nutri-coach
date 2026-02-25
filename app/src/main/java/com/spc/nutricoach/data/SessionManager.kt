@@ -18,12 +18,16 @@ class SessionManager(private val context: Context) {
     companion object {
         private val KEY_TOKEN = stringPreferencesKey("auth_token")
         private val KEY_ROLE  = stringPreferencesKey("user_role")
+        private val KEY_CLIENT_ID = stringPreferencesKey("client_id")
+        private val KEY_EMAIL = stringPreferencesKey("user_email")
     }
 
-    suspend fun saveSession(token: String, role: String) {
+    suspend fun saveSession(token: String, role: String, clienteId: String, email: String) {
         context.dataStore.edit { prefs ->
             prefs[KEY_TOKEN] = token
             prefs[KEY_ROLE]  = role
+            prefs[KEY_CLIENT_ID] = clienteId
+            prefs[KEY_EMAIL] = email
         }
     }
 
@@ -31,6 +35,8 @@ class SessionManager(private val context: Context) {
         context.dataStore.edit { prefs ->
             prefs.remove(KEY_TOKEN)
             prefs.remove(KEY_ROLE)
+            prefs.remove(KEY_CLIENT_ID)
+            prefs.remove(KEY_EMAIL)
         }
     }
 
@@ -41,4 +47,12 @@ class SessionManager(private val context: Context) {
     suspend fun getToken(): String? = context.dataStore.data.first()[KEY_TOKEN]
 
     suspend fun getRole(): String? = context.dataStore.data.first()[KEY_ROLE]
+
+    suspend fun getClienteId(): String? = context.dataStore.data.first()[KEY_CLIENT_ID]
+
+    suspend fun getEmail(): String? = context.dataStore.data.first()[KEY_EMAIL]
+    
+    val userEmailFlow: Flow<String?> = context.dataStore.data.map { prefs ->
+        prefs[KEY_EMAIL]
+    }
 }

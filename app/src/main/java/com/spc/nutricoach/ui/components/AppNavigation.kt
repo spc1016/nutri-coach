@@ -36,12 +36,21 @@ import com.spc.nutricoach.ui.theme.SecondaryBackground
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.Serializable
 import java.security.MessageDigest
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.toRoute
+import com.spc.nutricoach.ui.viewmodel.DietaViewModel
 
 @Serializable
 object PantallaInicio
 
 @Serializable
 object PantallaLogin
+
+@Serializable
+object PantallaPerfil
+
+@Serializable
+data class PantallaDetalleDieta(val dietaId: String)
 
 @Composable
 fun AppNavigation() {
@@ -74,6 +83,8 @@ fun AppNavigation() {
     val navController = rememberNavController()
     val navBarStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBarStackEntry?.destination
+
+    val dietaViewModel: DietaViewModel = viewModel()
 
     val showNavBar = navBarRoutes.any { navRoute ->
         currentDestination?.hasRoute(navRoute.routeObject::class) == true
@@ -111,10 +122,21 @@ fun AppNavigation() {
             startDestination = if (isLoggedIn == true) PantallaInicio else PantallaLogin
         ) {
             composable<PantallaInicio> {
-                MainView(navController)
+                MainView(navController = navController, dietaViewModel = dietaViewModel)
             }
             composable<PantallaLogin> {
                 LoginView(navController)
+            }
+            composable<PantallaDetalleDieta> { backStackEntry ->
+                val detalle = backStackEntry.toRoute<PantallaDetalleDieta>()
+                DetalleDietaView(
+                    navController = navController,
+                    dietaId = detalle.dietaId,
+                    dietaViewModel = dietaViewModel
+                )
+            }
+            composable<PantallaPerfil> {
+                PerfilUsuarioView(navController)
             }
         }
     }

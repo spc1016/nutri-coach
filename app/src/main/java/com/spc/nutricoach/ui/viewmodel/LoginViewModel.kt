@@ -1,6 +1,7 @@
 package com.spc.nutricoach.ui.viewmodel
 
 import android.app.Application
+import android.util.Base64
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -12,6 +13,7 @@ import com.spc.nutricoach.data.NutriCoachApiClient
 import com.spc.nutricoach.data.SessionManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import org.json.JSONObject
 import retrofit2.HttpException
 import java.io.IOException
 
@@ -40,11 +42,20 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    private fun extraerIdDeToken(token: String): String {
+        val partes = token.split(".")
+        val payload = String(Base64.decode(partes[1], Base64.URL_SAFE or Base64.NO_PADDING))
+        val json = JSONObject(payload)
+        return json.getString("sub")
+    }
+
     private suspend fun login(email: String, password: String) {
         try {
             val response = NutriCoachApiClient.service.login(LoginRequest(email, password))
             Log.d("LOGIN", "Login OK - token: ${response.token}, role: ${response.role}")
-            sessionManager.saveSession(response.token, response.role)
+            val clienteId = extraerIdDeToken(response.token)
+            Log.d("LOGIN", "Cliente ID extraído del JWT: $clienteId")
+            sessionManager.saveSession(response.token, response.role, clienteId, email)
             statusMessage = "¡Login exitoso! Redirigiendo..."
             loginSuccess = true
         } catch (e: HttpException) {
@@ -71,3 +82,4 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 }
+
