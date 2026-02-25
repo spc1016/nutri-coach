@@ -1,8 +1,10 @@
 package com.spc.nutricoach.ui.components
 
+import android.R
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -21,6 +23,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.compose.NavHost
@@ -28,8 +31,11 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.spc.nutricoach.data.SessionManager
+import com.spc.nutricoach.ui.theme.PrimaryGreen
+import com.spc.nutricoach.ui.theme.SecondaryBackground
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.Serializable
+import java.security.MessageDigest
 
 @Serializable
 object PantallaInicio
@@ -48,10 +54,11 @@ fun AppNavigation() {
         isLoggedIn = sessionManager.isLoggedIn.first()
     }
 
-    // Mostrar spinner mientras se comprueba la sesión
     if (isLoggedIn == null) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
+            CircularProgressIndicator(
+                color = PrimaryGreen
+            )
         }
         return
     }
@@ -80,7 +87,11 @@ fun AppNavigation() {
                 enter = slideInVertically { it },
                 exit = slideOutVertically { it }
             ) {
-                NavigationBar {
+                NavigationBar (
+                    containerColor = SecondaryBackground,
+                    contentColor = PrimaryGreen
+                ){
+
                     navBarRoutes.forEach { navRoute ->
                         NavigationBarItem(
                             selected = currentDestination?.hasRoute(navRoute.routeObject::class) == true,

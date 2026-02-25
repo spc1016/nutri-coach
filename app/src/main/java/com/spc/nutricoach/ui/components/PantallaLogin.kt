@@ -61,10 +61,7 @@ fun LoginView(navController: NavController, loginViewModel: LoginViewModel = vie
     var passwordVisible by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
 
-    // Paso 6: Scope de corrutina para llamar a la función suspend del ViewModel
-    val scope = rememberCoroutineScope()
 
-    // Navegar automáticamente cuando el ViewModel indique éxito
     LaunchedEffect(loginViewModel.loginSuccess) {
         if (loginViewModel.loginSuccess) {
             navController.navigate(PantallaInicio) {
@@ -147,7 +144,7 @@ fun LoginView(navController: NavController, loginViewModel: LoginViewModel = vie
             )
             Spacer(modifier = Modifier.padding(15.dp))
 
-            // Botón de Login — Paso 6: scope.launch para llamar a la función suspend
+
             Button(
                 modifier = Modifier
                     .fillMaxWidth()

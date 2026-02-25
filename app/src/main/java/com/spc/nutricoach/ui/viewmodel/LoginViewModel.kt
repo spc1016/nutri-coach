@@ -12,6 +12,8 @@ import com.spc.nutricoach.data.NutriCoachApiClient
 import com.spc.nutricoach.data.SessionManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import retrofit2.HttpException
+import java.io.IOException
 
 class LoginViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -41,14 +43,23 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
     private suspend fun login(email: String, password: String) {
         try {
             val response = NutriCoachApiClient.service.login(LoginRequest(email, password))
-            Log.e("SESSION_SAVE", "Login OK - token: ${response.token}, role: ${response.role}")
+            Log.d("LOGIN", "Login OK - token: ${response.token}, role: ${response.role}")
             sessionManager.saveSession(response.token, response.role)
             statusMessage = "¡Login exitoso! Redirigiendo..."
             loginSuccess = true
+        } catch (e: HttpException) {
+            Log.e("LOGIN_ERROR", "HTTP ${e.code()}: ${e.message()}")
+            statusMessage = if (e.code() == 401) {
+                "Credenciales incorrectas"
+            } else {
+                "Error del servidor (${e.code()})"
+            }
+        } catch (e: IOException) {
+            Log.e("LOGIN_ERROR", "Error de red: ${e.message}", e)
+            statusMessage = "Error de conexión. Comprueba tu red e inténtalo de nuevo."
         } catch (e: Exception) {
-            statusMessage = "Credenciales incorrectas"
-            Log.e("RETROFIT_ERROR", e.message ?: "Unknown Error")
-            e.printStackTrace()
+            Log.e("LOGIN_ERROR", "Error inesperado: ${e.message}", e)
+            statusMessage = "Error inesperado: ${e.message}"
         }
     }
 

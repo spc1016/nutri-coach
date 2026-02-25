@@ -15,3 +15,5 @@ val Pink40 = Color(0xFF7D5260)
 val PrimaryGreen = Color(red = 46, green = 204, blue = 113)
 
 val MainBackground = Color(red = 245, green = 247, blue = 250)
+
+val SecondaryBackground = Color(red = 209, green = 209, blue = 209)
