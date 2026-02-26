@@ -24,6 +24,9 @@ interface NutricionApiService {
 
     @GET("clientes/{id}/dietas")
     suspend fun obtenerDietasCliente(@Path("id") clienteId: String): List<Dieta>
+
+    @GET("clientes/{id}/rutinas")
+    suspend fun obtenerRutinasCliente(@Path("id") clienteId: String): List<com.spc.nutricoach.model.Rutina>
 }
 
 object NutriCoachApiClient {

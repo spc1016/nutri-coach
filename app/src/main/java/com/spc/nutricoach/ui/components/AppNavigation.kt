@@ -9,7 +9,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -46,6 +48,9 @@ import com.spc.nutricoach.ui.viewmodel.DietaViewModel
 object PantallaInicio
 
 @Serializable
+object PantallaRutinas
+
+@Serializable
 object PantallaLogin
 
 @Serializable
@@ -53,6 +58,9 @@ object PantallaPerfil
 
 @Serializable
 data class PantallaDetalleDieta(val dietaId: String)
+
+@Serializable
+data class PantallaDetalleRutina(val rutinaId: String)
 
 @Composable
 fun AppNavigation() {
@@ -77,8 +85,13 @@ fun AppNavigation() {
     val navBarRoutes = listOf(
         NavRoute(
             label = "Inicio",
-            icon = Icons.Default.Home,
+            icon = Icons.Default.Restaurant,
             routeObject = PantallaInicio
+        ),
+        NavRoute(
+            label = "Rutinas",
+            icon = Icons.Default.FitnessCenter,
+            routeObject = PantallaRutinas
         )
     )
 
@@ -87,6 +100,7 @@ fun AppNavigation() {
     val currentDestination = navBarStackEntry?.destination
 
     val dietaViewModel: DietaViewModel = viewModel()
+    val rutinaViewModel: com.spc.nutricoach.ui.viewmodel.RutinaViewModel = viewModel()
 
     val showNavBar = navBarRoutes.any { navRoute ->
         currentDestination?.hasRoute(navRoute.routeObject::class) == true
@@ -132,6 +146,9 @@ fun AppNavigation() {
             composable<PantallaInicio> {
                 MainView(navController = navController, dietaViewModel = dietaViewModel)
             }
+            composable<PantallaRutinas> {
+                RutinasView(navController = navController, rutinaViewModel = rutinaViewModel)
+            }
             composable<PantallaLogin> {
                 LoginView(navController)
             }
@@ -141,6 +158,14 @@ fun AppNavigation() {
                     navController = navController,
                     dietaId = detalle.dietaId,
                     dietaViewModel = dietaViewModel
+                )
+            }
+            composable<PantallaDetalleRutina> { backStackEntry ->
+                val detalle = backStackEntry.toRoute<PantallaDetalleRutina>()
+                DetalleRutinaView(
+                    navController = navController,
+                    rutinaId = detalle.rutinaId,
+                    rutinaViewModel = rutinaViewModel
                 )
             }
             composable<PantallaPerfil> {
