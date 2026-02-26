@@ -14,6 +14,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -38,6 +39,7 @@ import kotlinx.serialization.Serializable
 import java.security.MessageDigest
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.toRoute
+import com.spc.nutricoach.ui.theme.MainBackground
 import com.spc.nutricoach.ui.viewmodel.DietaViewModel
 
 @Serializable
@@ -99,7 +101,7 @@ fun AppNavigation() {
                 exit = slideOutVertically { it }
             ) {
                 NavigationBar (
-                    containerColor = SecondaryBackground,
+                    containerColor = MainBackground,
                     contentColor = PrimaryGreen
                 ){
 
@@ -109,7 +111,13 @@ fun AppNavigation() {
                             onClick = { navController.navigate(navRoute.routeObject) },
                             icon = {
                                 Icon(imageVector = navRoute.icon, contentDescription = "Icono de ${navRoute.label}")
-                            }
+                            },
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = Color.White,      // Color del icono cuando está seleccionado
+                                unselectedIconColor = Color.Gray,    // Color del icono cuando NO está seleccionado
+                                selectedTextColor = Color.White,      // Color del texto (si usas label)
+                                indicatorColor = PrimaryGreen         // Color de la "píldora" o fondo circular de selección
+                            )
                         )
                     }
                 }
