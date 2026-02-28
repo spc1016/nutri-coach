@@ -7,8 +7,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import com.spc.nutricoach.model.Dia
-import com.spc.nutricoach.model.Ejercicio
-import com.spc.nutricoach.model.Rutina
 
 class EntrenamientoViewModel : ViewModel() {
 

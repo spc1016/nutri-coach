@@ -1,7 +1,5 @@
 package com.spc.nutricoach.ui.theme
 
-import androidx.compose.runtime.remember
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 
 val Purple80 = Color(0xFFD0BCFF)
