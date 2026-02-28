@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Restaurant
@@ -194,50 +195,64 @@ fun DietaCard(dieta: Dieta, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() },
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            // Nombre de la dieta
-            Text(
-                text = dieta.nombre,
-                style = TextStyle(
-                    brush = AppBrushes.Main,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 20.sp
-                )
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Kcal objetivo
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Filled.LocalFireDepartment,
-                    contentDescription = null,
-                    tint = Color(0xFFFF6B35),
-                    modifier = Modifier.size(20.dp)
-                )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                // Nombre de la dieta
                 Text(
-                    text = " ${dieta.kcalObjetivo} kcal/día",
+                    text = dieta.nombre,
                     style = TextStyle(
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color.DarkGray
+                        brush = AppBrushes.Main,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 22.sp
                     )
                 )
-            }
 
-            // Notas generales
-            if (!dieta.notasGenerales.isNullOrBlank()) {
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = dieta.notasGenerales,
-                    style = TextStyle(fontSize = 13.sp, color = Color.Gray)
-                )
-            }
+                Spacer(modifier = Modifier.height(12.dp))
 
+                // Kcal objetivo
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Filled.LocalFireDepartment,
+                        contentDescription = null,
+                        tint = Color(0xFFFF6B35),
+                        modifier = Modifier.size(22.dp)
+                    )
+                    Text(
+                        text = " ${dieta.kcalObjetivo} kcal/día",
+                        style = TextStyle(
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.DarkGray
+                        )
+                    )
+                }
+
+                // Notas generales
+                if (!dieta.notasGenerales.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = dieta.notasGenerales,
+                        style = TextStyle(fontSize = 14.sp, color = Color.Gray)
+                    )
+                }
+            }
+            // Chevron to indicate clickability
+            Icon(
+                imageVector = Icons.Filled.ChevronRight,
+                contentDescription = "Ver detalle",
+                tint = PrimaryGreen,
+                modifier = Modifier.size(32.dp)
+            )
         }
     }
 }

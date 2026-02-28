@@ -1,5 +1,6 @@
 package com.spc.nutricoach.model
 
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.KSerializer
@@ -25,6 +26,7 @@ object FlexibleStringSerializer : KSerializer<String> {
 
 object FlexibleNullableStringSerializer : KSerializer<String?> {
     override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("FlexibleNullableString", PrimitiveKind.STRING)
+    @OptIn(ExperimentalSerializationApi::class)
     override fun serialize(encoder: Encoder, value: String?) {
         if (value != null) encoder.encodeString(value) else encoder.encodeNull()
     }

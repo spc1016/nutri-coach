@@ -1,25 +1,36 @@
 package com.spc.nutricoach.ui.components
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Restaurant
-import androidx.compose.material3.*
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -27,6 +38,7 @@ import com.spc.nutricoach.model.Comida
 import com.spc.nutricoach.ui.theme.AppBrushes
 import com.spc.nutricoach.ui.theme.MainBackground
 import com.spc.nutricoach.ui.theme.PrimaryGreen
+import com.spc.nutricoach.ui.theme.SecondaryBackground
 import com.spc.nutricoach.ui.viewmodel.DietaViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -140,11 +152,11 @@ fun DetalleDietaView(
                     val comida = comidasOrdenadas[index]
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(24.dp),
                         colors = CardDefaults.cardColors(containerColor = Color.White),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
                     ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
+                        Column(modifier = Modifier.padding(20.dp)) {
                             ComidaItemDetail(comida = comida)
                         }
                     }
@@ -182,9 +194,9 @@ fun ComidaItemDetail(comida: Comida) {
             Text(
                 text = comida.nombre,
                 style = TextStyle(
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp,
-                    color = Color.Black
+                    brush = AppBrushes.Main,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 22.sp
                 )
             )
             if (!comida.horaSugerida.isNullOrBlank()) {
@@ -199,22 +211,38 @@ fun ComidaItemDetail(comida: Comida) {
 
         // Alimentos de la comida
         comida.alimentos.forEach { alimento ->
-            Text(
-                text = buildAnnotatedString {
-                    withStyle(style = SpanStyle(color = PrimaryGreen, fontWeight = FontWeight.Bold)) {
-                        append("• ")
-                    }
-                    withStyle(style = SpanStyle(fontSize = 15.sp, color = Color.DarkGray)) {
-                        append("${alimento.nombreSnapshot} — ")
-                    }
-                    withStyle(style = SpanStyle(fontSize = 15.sp, color = Color.Black, fontWeight = FontWeight.SemiBold)) {
-                        val c = alimento.cantidad
-                        val formatCantidad = if (c % 1.0 == 0.0) c.toInt().toString() else c.toString()
-                        append("$formatCantidad ${alimento.unidad}")
-                    }
-                },
-                modifier = Modifier.padding(start = 26.dp, top = 4.dp)
-            )
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = SecondaryBackground.copy(alpha = 0.3f)),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+            ) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    val c = alimento.cantidad
+                    val formatCantidad = if (c % 1.0 == 0.0) c.toInt().toString() else c.toString()
+                    
+                    Text(
+                        text = "• ${alimento.nombreSnapshot}",
+                        style = TextStyle(
+                            color = PrimaryGreen,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp
+                        )
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "$formatCantidad ${alimento.unidad}",
+                        style = TextStyle(
+                            fontSize = 14.sp,
+                            color = Color.DarkGray,
+                            fontWeight = FontWeight.Medium
+                        ),
+                        modifier = Modifier.padding(start = 12.dp)
+                    )
+                }
+            }
         }
     }
 }

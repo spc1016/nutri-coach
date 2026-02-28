@@ -62,6 +62,9 @@ data class PantallaDetalleDieta(val dietaId: String)
 @Serializable
 data class PantallaDetalleRutina(val rutinaId: String)
 
+@Serializable
+data class PantallaEntrenamientoDia(val rutinaId: String, val diaNombre: String)
+
 @Composable
 fun AppNavigation() {
     val context = LocalContext.current
@@ -101,6 +104,7 @@ fun AppNavigation() {
 
     val dietaViewModel: DietaViewModel = viewModel()
     val rutinaViewModel: com.spc.nutricoach.ui.viewmodel.RutinaViewModel = viewModel()
+    val entrenamientoViewModel: com.spc.nutricoach.ui.viewmodel.EntrenamientoViewModel = viewModel()
 
     val showNavBar = navBarRoutes.any { navRoute ->
         currentDestination?.hasRoute(navRoute.routeObject::class) == true
@@ -166,6 +170,16 @@ fun AppNavigation() {
                     navController = navController,
                     rutinaId = detalle.rutinaId,
                     rutinaViewModel = rutinaViewModel
+                )
+            }
+            composable<PantallaEntrenamientoDia> { backStackEntry ->
+                val args = backStackEntry.toRoute<PantallaEntrenamientoDia>()
+                EntrenamientoDiaView(
+                    navController = navController,
+                    rutinaId = args.rutinaId,
+                    diaNombre = args.diaNombre,
+                    rutinaViewModel = rutinaViewModel,
+                    entrenamientoViewModel = entrenamientoViewModel
                 )
             }
             composable<PantallaPerfil> {

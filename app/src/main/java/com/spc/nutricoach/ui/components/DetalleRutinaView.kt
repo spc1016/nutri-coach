@@ -22,6 +22,7 @@ import androidx.navigation.NavController
 import com.spc.nutricoach.model.Dia
 import com.spc.nutricoach.ui.theme.AppBrushes
 import com.spc.nutricoach.ui.theme.MainBackground
+import com.spc.nutricoach.ui.theme.SecondaryBackground
 import com.spc.nutricoach.ui.theme.PrimaryGreen
 import com.spc.nutricoach.ui.viewmodel.RutinaViewModel
 
@@ -136,12 +137,31 @@ fun DetalleRutinaView(
                     val dia = diasOrdenados[index]
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(24.dp),
                         colors = CardDefaults.cardColors(containerColor = Color.White),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
                     ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
+                        Column(modifier = Modifier.padding(20.dp)) {
                             DiaItemDetail(dia = dia)
+                            Spacer(modifier = Modifier.height(20.dp))
+                            Button(
+                                onClick = {
+                                    navController.navigate(PantallaEntrenamientoDia(rutina.id, dia.nombre))
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(50.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.FitnessCenter,
+                                    contentDescription = "Empezar",
+                                    tint = Color.White
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Comenzar Entrenamiento", fontWeight = FontWeight.Bold, color = Color.White)
+                            }
                         }
                     }
                 }
@@ -178,9 +198,9 @@ fun DiaItemDetail(dia: Dia) {
             Text(
                 text = dia.nombre,
                 style = TextStyle(
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp,
-                    color = Color.Black
+                    brush = AppBrushes.Main,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 22.sp,
                 )
             )
             if (!dia.enfoque.isNullOrBlank()) {
@@ -195,40 +215,42 @@ fun DiaItemDetail(dia: Dia) {
 
         // Ejercicios del día
         dia.ejercicios.forEach { ejercicio ->
-            Column(modifier = Modifier.padding(start = 26.dp, top = 4.dp, bottom = 4.dp)) {
-                Text(
-                    text = buildAnnotatedString {
-                        withStyle(style = SpanStyle(color = PrimaryGreen, fontWeight = FontWeight.Bold)) {
-                            append("• ")
-                        }
-                        withStyle(style = SpanStyle(fontSize = 16.sp, color = Color.DarkGray, fontWeight = FontWeight.SemiBold)) {
-                            append("${ejercicio.nombreSnapshot} ")
-                        }
-                    }
-                )
-
-                Text(
-                    text = buildAnnotatedString {
-                        withStyle(style = SpanStyle(fontSize = 14.sp, color = Color.Black)) {
-                            append("${ejercicio.series} series × ${ejercicio.repeticiones} reps")
-                            
-                            if (!ejercicio.descanso.isNullOrBlank()) {
-                                append(" | ⏱ ${ejercicio.descanso}s")
-                            }
-                            if (!ejercicio.rir.isNullOrBlank()) {
-                                append(" | RIR: ${ejercicio.rir}")
-                            }
-                        }
-                    },
-                    modifier = Modifier.padding(start = 12.dp, top = 2.dp)
-                )
-
-                if (!ejercicio.notas.isNullOrBlank()) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = SecondaryBackground.copy(alpha = 0.3f)),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+            ) {
+                Column(modifier = Modifier.padding(12.dp)) {
                     Text(
-                        text = "💡 ${ejercicio.notas}",
-                        style = TextStyle(fontSize = 13.sp, color = Color.Gray),
-                        modifier = Modifier.padding(start = 12.dp, top = 2.dp)
+                        text = "• ${ejercicio.nombreSnapshot}",
+                        style = TextStyle(
+                            color = PrimaryGreen,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp
+                        )
                     )
+
+                    Spacer(modifier = Modifier.height(4.dp))
+                    
+                    Text(
+                        text = "${ejercicio.series} series × ${ejercicio.repeticiones} reps" +
+                            (if (!ejercicio.descanso.isNullOrBlank()) " | ⏱ ${ejercicio.descanso}s" else "") +
+                            (if (!ejercicio.rir.isNullOrBlank()) " | RIR: ${ejercicio.rir}" else ""),
+                        style = TextStyle(fontSize = 14.sp, color = Color.DarkGray, fontWeight = FontWeight.Medium),
+                        modifier = Modifier.padding(start = 12.dp)
+                    )
+
+                    if (!ejercicio.notas.isNullOrBlank()) {
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "💡 ${ejercicio.notas}",
+                            style = TextStyle(fontSize = 13.sp, color = Color.Gray),
+                            modifier = Modifier.padding(start = 12.dp)
+                        )
+                    }
                 }
             }
         }

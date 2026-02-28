@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,6 +17,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Card
@@ -188,46 +190,60 @@ fun RutinaCard(rutina: Rutina, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() },
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = rutina.nombre,
-                style = TextStyle(
-                    brush = AppBrushes.Main,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 20.sp
-                )
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Filled.FitnessCenter,
-                    contentDescription = null,
-                    tint = PrimaryGreen,
-                    modifier = Modifier.size(20.dp)
-                )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = " ${rutina.dias.size} días de entrenamiento",
+                    text = rutina.nombre,
                     style = TextStyle(
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color.DarkGray
+                        brush = AppBrushes.Main,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 22.sp
                     )
                 )
-            }
 
-            if (!rutina.notasGenerales.isNullOrBlank()) {
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = rutina.notasGenerales,
-                    style = TextStyle(fontSize = 13.sp, color = Color.Gray)
-                )
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Filled.FitnessCenter,
+                        contentDescription = null,
+                        tint = PrimaryGreen,
+                        modifier = Modifier.size(22.dp)
+                    )
+                    Text(
+                        text = " ${rutina.dias.size} días de entrenamiento",
+                        style = TextStyle(
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.DarkGray
+                        )
+                    )
+                }
+
+                if (!rutina.notasGenerales.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = rutina.notasGenerales,
+                        style = TextStyle(fontSize = 14.sp, color = Color.Gray)
+                    )
+                }
             }
+            Icon(
+                imageVector = Icons.Filled.ChevronRight,
+                contentDescription = "Ver detalle",
+                tint = PrimaryGreen,
+                modifier = Modifier.size(32.dp)
+            )
         }
     }
 }
