@@ -22,10 +22,10 @@ interface NutricionApiService {
     @POST("login")
     suspend fun login(@Body request: LoginRequest): LoginApiResponse
 
-    @GET("clientes/{id}/dietas")
+    @GET("clientes/{id}/dietas-activas")
     suspend fun obtenerDietasCliente(@Path("id") clienteId: String): List<Dieta>
 
-    @GET("clientes/{id}/rutinas")
+    @GET("clientes/{id}/rutinas-activas")
     suspend fun obtenerRutinasCliente(@Path("id") clienteId: String): List<com.spc.nutricoach.model.Rutina>
 }
 
