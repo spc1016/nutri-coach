@@ -10,8 +10,8 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface NotasDao {
-    @Query("SELECT * FROM notas ORDER BY fechaCreacion DESC")
-    fun obtenerTodasLasNotas(): Flow<List<NotasEntity>>
+    @Query("SELECT * FROM notas WHERE clienteId = :clienteId ORDER BY fechaCreacion DESC")
+    fun obtenerNotasPorCliente(clienteId: String): Flow<List<NotasEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertarNota(nota: NotasEntity)

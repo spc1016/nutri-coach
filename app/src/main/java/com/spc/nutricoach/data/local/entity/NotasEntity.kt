@@ -7,6 +7,7 @@ import androidx.room.PrimaryKey
 data class NotasEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
+    val clienteId: String,
     val titulo: String,
     val contenido: String,
     val fechaCreacion: Long = System.currentTimeMillis()

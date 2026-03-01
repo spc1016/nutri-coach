@@ -11,12 +11,9 @@ import kotlinx.coroutines.Dispatchers
 
 class NotasRepository(private val notasDao: NotasDao) {
 
-    val todasLasNotas: StateFlow<List<NotasEntity>> = notasDao.obtenerTodasLasNotas()
-        .stateIn(
-            scope = CoroutineScope(Dispatchers.IO),
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
-        )
+    fun obtenerNotasPorCliente(clienteId: String): Flow<List<NotasEntity>> {
+        return notasDao.obtenerNotasPorCliente(clienteId)
+    }
 
     suspend fun insertarNota(nota: NotasEntity) {
         notasDao.insertarNota(nota)

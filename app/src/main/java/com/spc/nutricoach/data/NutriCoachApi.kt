@@ -18,9 +18,28 @@ data class LoginRequest(
     val password: String
 )
 
+@Serializable
+data class RegistroClienteRequest(
+    val nombre: String,
+    val email: String,
+    val password_hash: String,
+    val telefono: String? = null,
+    val edad: Int? = null,
+    val peso: Double? = null,
+    val altura: Double? = null
+)
+
+@Serializable
+data class RegistroApiResponse(
+    val id: String
+)
+
 interface NutricionApiService {
     @POST("login")
     suspend fun login(@Body request: LoginRequest): LoginApiResponse
+
+    @POST("clientes")
+    suspend fun crearCliente(@Body request: RegistroClienteRequest): RegistroApiResponse
 
     @GET("clientes/{id}/dietas-activas")
     suspend fun obtenerDietasCliente(@Path("id") clienteId: String): List<Dieta>

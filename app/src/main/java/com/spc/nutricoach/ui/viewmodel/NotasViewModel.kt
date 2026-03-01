@@ -11,25 +11,47 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
+import com.spc.nutricoach.data.SessionManager
 
 class NotasViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository: NotasRepository
+    private val sessionManager = SessionManager(application)
+    
     private val _notas = MutableStateFlow<List<NotasEntity>>(emptyList())
     val notas: StateFlow<List<NotasEntity>> = _notas.asStateFlow()
+
+    private var currentClienteId: String? = null
+    private var notesJob: Job? = null
 
     init {
         val notasDao = AppDatabase.getDatabase(application).notasDao()
         repository = NotasRepository(notasDao)
+        cargarNotas()
+    }
+    
+    fun cargarNotas(force: Boolean = false) {
         viewModelScope.launch(Dispatchers.IO) {
-            repository.todasLasNotas.collect { listaNotas ->
-                _notas.value = listaNotas
+            val clienteId = sessionManager.getClienteId()
+            if (clienteId.isNullOrBlank()) return@launch
+            
+            if (!force && currentClienteId == clienteId) return@launch
+            
+            currentClienteId = clienteId
+            
+            notesJob?.cancel()
+            notesJob = launch {
+                repository.obtenerNotasPorCliente(clienteId).collect { listaNotas ->
+                    _notas.value = listaNotas
+                }
             }
         }
     }
 
     fun agregarNota(titulo: String, contenido: String) {
-        val nuevaNota = NotasEntity(titulo = titulo, contenido = contenido)
+        val clienteId = currentClienteId ?: return
+        val nuevaNota = NotasEntity(clienteId = clienteId, titulo = titulo, contenido = contenido)
         viewModelScope.launch(Dispatchers.IO) {
             repository.insertarNota(nuevaNota)
         }
@@ -42,7 +64,7 @@ class NotasViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun obtenerNotaPorId(id: Int): NotasEntity? {
-        return repository.todasLasNotas.value.find { it.id == id } 
+        return _notas.value.find { it.id == id } 
     }
 
     fun eliminarNota(nota: NotasEntity) {

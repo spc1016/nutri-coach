@@ -28,17 +28,25 @@ class DietaViewModel(application: Application) : AndroidViewModel(application) {
     var error by mutableStateOf<String?>(null)
         private set
 
-    fun cargarDietas() {
+    var lastLoadedClientId by mutableStateOf<String?>(null)
+        private set
+
+    fun cargarDietas(force: Boolean = false) {
         viewModelScope.launch(Dispatchers.IO) {
+            val clienteId = sessionManager.getClienteId()
+            if (!force && dietas.isNotEmpty() && lastLoadedClientId == clienteId && !clienteId.isNullOrBlank()) {
+                return@launch
+            }
             isLoading = true
             error = null
-            dietas = emptyList()
-            loadDietas()
+            if (lastLoadedClientId != clienteId) {
+                dietas = emptyList()
+            }
+            loadDietas(clienteId)
         }
     }
-    suspend fun loadDietas(){
+    private suspend fun loadDietas(clienteId: String?){
         try {
-            val clienteId = sessionManager.getClienteId()
             if (clienteId.isNullOrBlank()) {
                 error = "No se encontró el ID del cliente"
                 isLoading = false
@@ -47,6 +55,7 @@ class DietaViewModel(application: Application) : AndroidViewModel(application) {
             val resultado = NutriCoachApiClient.service.obtenerDietasCliente(clienteId)
             Log.d("DIETAS", "Dietas obtenidas: ${resultado.size}")
             dietas = resultado
+            lastLoadedClientId = clienteId
         } catch (e: HttpException) {
             Log.e("DIETAS_ERROR", "HTTP ${e.code()}: ${e.message()}")
             error = "Error del servidor (${e.code()})"

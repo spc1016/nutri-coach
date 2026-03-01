@@ -60,9 +60,7 @@ fun MainView(
     dietaViewModel: DietaViewModel = viewModel()
 ) {
     LaunchedEffect(Unit) {
-        if (dietaViewModel.dietas.isEmpty()) {
-            dietaViewModel.cargarDietas()
-        }
+        dietaViewModel.cargarDietas()
     }
     val context = LocalContext.current
     val sessionManager = remember { SessionManager(context) }
@@ -85,7 +83,7 @@ fun MainView(
                     )
                 },
                 actions = {
-                    IconButton(onClick = { dietaViewModel.cargarDietas() }) {
+                    IconButton(onClick = { dietaViewModel.cargarDietas(force = true) }) {
                         Icon(
                             imageVector = Icons.Default.Refresh,
                             contentDescription = "Actualizar dietas",

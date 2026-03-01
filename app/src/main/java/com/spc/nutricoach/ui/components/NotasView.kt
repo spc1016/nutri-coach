@@ -64,6 +64,10 @@ fun NotasView(
     val notas by notasViewModel.notas.collectAsState()
     var mostrarDialogo by remember { mutableStateOf(false) }
 
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        notasViewModel.cargarNotas()
+    }
+
     Scaffold(
         containerColor = MainBackground,
         topBar = {

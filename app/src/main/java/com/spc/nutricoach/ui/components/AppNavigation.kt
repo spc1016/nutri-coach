@@ -50,6 +50,9 @@ object PantallaRutinas
 object PantallaLogin
 
 @Serializable
+object PantallaRegistro
+
+@Serializable
 object PantallaPerfil
 
 @Serializable
@@ -163,6 +166,9 @@ fun AppNavigation() {
             }
             composable<PantallaLogin> {
                 LoginView(navController)
+            }
+            composable<PantallaRegistro> {
+                RegistroView(navController)
             }
             composable<PantallaDetalleDieta> { backStackEntry ->
                 val detalle = backStackEntry.toRoute<PantallaDetalleDieta>()

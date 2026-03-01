@@ -2,6 +2,7 @@ package com.spc.nutricoach.ui.components
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -182,7 +183,8 @@ fun LoginView(navController: NavController, loginViewModel: LoginViewModel = vie
 
             Text(
                 text = "¿No tienes cuenta? Regístrate Aquí",
-                style = TextStyle(fontSize = 13.sp, color = PrimaryGreen)
+                style = TextStyle(fontSize = 13.sp, color = PrimaryGreen),
+                modifier = Modifier.clickable { navController.navigate(PantallaRegistro) }.padding(8.dp)
             )
         }
     }

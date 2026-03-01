@@ -28,18 +28,26 @@ class RutinaViewModel(application: Application) : AndroidViewModel(application) 
     var error by mutableStateOf<String?>(null)
         private set
 
-    fun cargarRutinas() {
+    var lastLoadedClientId by mutableStateOf<String?>(null)
+        private set
+
+    fun cargarRutinas(force: Boolean = false) {
         viewModelScope.launch(Dispatchers.IO) {
+            val clienteId = sessionManager.getClienteId()
+            if (!force && rutinas.isNotEmpty() && lastLoadedClientId == clienteId && !clienteId.isNullOrBlank()) {
+                return@launch
+            }
             isLoading = true
             error = null
-            rutinas = emptyList()
-            loadRutinas()
+            if (lastLoadedClientId != clienteId) {
+                rutinas = emptyList()
+            }
+            loadRutinas(clienteId)
         }
     }
     
-    private suspend fun loadRutinas(){
+    private suspend fun loadRutinas(clienteId: String?){
         try {
-            val clienteId = sessionManager.getClienteId()
             if (clienteId.isNullOrBlank()) {
                 error = "No se encontró el ID del cliente"
                 isLoading = false
@@ -48,6 +56,7 @@ class RutinaViewModel(application: Application) : AndroidViewModel(application) 
             val resultado = NutriCoachApiClient.service.obtenerRutinasCliente(clienteId)
             Log.d("RUTINAS", "Rutinas obtenidas: ${resultado.size}")
             rutinas = resultado
+            lastLoadedClientId = clienteId
         } catch (e: HttpException) {
             Log.e("RUTINAS_ERROR", "HTTP ${e.code()}: ${e.message()}")
             error = "Error del servidor (${e.code()})"

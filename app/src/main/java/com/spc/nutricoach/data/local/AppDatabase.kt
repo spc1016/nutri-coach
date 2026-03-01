@@ -7,7 +7,7 @@ import androidx.room.RoomDatabase
 import com.spc.nutricoach.data.local.dao.NotasDao
 import com.spc.nutricoach.data.local.entity.NotasEntity
 
-@Database(entities = [NotasEntity::class], version = 1, exportSchema = false)
+@Database(entities = [NotasEntity::class], version = 2, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun notasDao(): NotasDao
@@ -22,7 +22,9 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "notas_app_bd"
-                ).build()
+                )
+                .fallbackToDestructiveMigration()
+                .build()
                 INSTANCE = instance
                 instance
             }

@@ -60,9 +60,7 @@ fun RutinasView(
     rutinaViewModel: RutinaViewModel = viewModel()
 ) {
     LaunchedEffect(Unit) {
-        if (rutinaViewModel.rutinas.isEmpty()) {
-            rutinaViewModel.cargarRutinas()
-        }
+        rutinaViewModel.cargarRutinas()
     }
     
     val context = LocalContext.current
@@ -86,7 +84,7 @@ fun RutinasView(
                     )
                 },
                 actions = {
-                    IconButton(onClick = { rutinaViewModel.cargarRutinas() }) {
+                    IconButton(onClick = { rutinaViewModel.cargarRutinas(force = true) }) {
                         Icon(
                             imageVector = Icons.Default.Refresh,
                             contentDescription = "Actualizar rutinas",
