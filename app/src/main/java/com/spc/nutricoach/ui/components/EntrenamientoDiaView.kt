@@ -36,6 +36,9 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -119,14 +122,19 @@ fun EntrenamientoDiaView(
             if (isFinished) {
                 WorkoutFinishedScreen(navController, entrenamientoViewModel)
             } else {
-                ActiveWorkoutScreen(entrenamientoViewModel)
+                ActiveWorkoutScreen(entrenamientoViewModel, rutinaViewModel, rutinaId, diaActual.nombre)
             }
         }
     }
 }
 
 @Composable
-fun ActiveWorkoutScreen(viewModel: EntrenamientoViewModel) {
+fun ActiveWorkoutScreen(
+    viewModel: EntrenamientoViewModel,
+    rutinaViewModel: RutinaViewModel,
+    rutinaId: String,
+    diaNombre: String
+) {
     val dia = viewModel.diaActual ?: return
     val exerciseIndex = viewModel.currentExerciseIndex
     if (exerciseIndex >= dia.ejercicios.size) return
@@ -136,6 +144,12 @@ fun ActiveWorkoutScreen(viewModel: EntrenamientoViewModel) {
     val totalSets = currentExercise.series
     
     val totalExercises = dia.ejercicios.size
+    
+    val uniqueKey = "${diaNombre}_${exerciseIndex}_${currentExercise.nombreSnapshot}"
+    val weightFlow = remember(rutinaId, uniqueKey) {
+        rutinaViewModel.getExerciseWeightFlow(rutinaId, uniqueKey)
+    }
+    val savedWeight by weightFlow.collectAsState(initial = "")
 
     Column(
         modifier = Modifier.fillMaxSize(),
@@ -208,6 +222,9 @@ fun ActiveWorkoutScreen(viewModel: EntrenamientoViewModel) {
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
                         InfoBox("Reps", currentExercise.repeticiones.ifBlank { "-" })
+                        if (!savedWeight.isNullOrBlank()) {
+                            InfoBox("Peso", "$savedWeight kg")
+                        }
                     }
                     
                     if (!currentExercise.notas.isNullOrBlank()) {

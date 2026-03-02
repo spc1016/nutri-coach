@@ -31,7 +31,7 @@ Para asegurar robustez y asincronía ágil sin sobrecarga de hilos, el ecosistem
   - `OkHttp3` manejador secundario debajo de Retrofit.
   - `Kotlinx.serialization` (JSON nativo de kotlin) usado a favor de dependencias antiguas como GSON, para ofrecer mayor fiabilidad entre los mapeos JSON complejos traídos desde colecciones de MongoDB.
 - **Persistencia Local:**
-  - `DataStore Preferences`: Administrador moderno para almacenar sesión e identificador de usuario, así como para rastrear de manera local y en tiempo real las comidas completadas de las dietas (`diet_tracker`) y los pesos levantados por ejercicio de las rutinas (`routine_tracker`) individualmente de cada plan nutricional con asincronía y latencia cero.
+  - `DataStore Preferences`: Administrador moderno para almacenar sesión e identificador de usuario, así como para rastrear de manera local y en tiempo real las comidas completadas de las dietas (`diet_tracker`) y los pesos levantados por ejercicio de las rutinas (`routine_tracker`) individualmente de cada plan nutricional. Con latencia nula, estos pesos se inyectan en tiempo real dentro del propio inicio del entrenamiento del cliente garantizando una progresión observable gracias a sus `Flows`.
   - `Room Database`: Base de Datos SQLite relacional configurada para el caché y consultas persistentes sin internet de la sección del bloc de Notas.
 
 ---
