@@ -26,12 +26,27 @@ data class RegistroClienteRequest(
     val telefono: String? = null,
     val edad: Int? = null,
     val peso: Double? = null,
-    val altura: Double? = null
+    val altura: Double? = null,
+    val genero: String? = null,
+    val objetivo: String? = null
 )
 
 @Serializable
 data class RegistroApiResponse(
     val id: String
+)
+
+@Serializable
+data class ModificarClienteRequest(
+    val nombre: String? = null,
+    val email: String? = null,
+    val password_hash: String? = null,
+    val telefono: String? = null,
+    val edad: Int? = null,
+    val peso: Double? = null,
+    val altura: Double? = null,
+    val objetivo: String? = null,
+    val genero: String? = null
 )
 
 interface NutricionApiService {
@@ -40,6 +55,17 @@ interface NutricionApiService {
 
     @POST("clientes")
     suspend fun crearCliente(@Body request: RegistroClienteRequest): RegistroApiResponse
+
+    @GET("clientes/{id}")
+    suspend fun obtenerCliente(
+        @Path("id") clienteId: String
+    ): com.spc.nutricoach.model.Cliente
+
+    @retrofit2.http.PUT("clientes/{id}")
+    suspend fun modificarCliente(
+        @Path("id") clienteId: String,
+        @Body request: ModificarClienteRequest
+    )
 
     @GET("clientes/{id}/dietas-activas")
     suspend fun obtenerDietasCliente(@Path("id") clienteId: String): List<Dieta>

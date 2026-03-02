@@ -24,6 +24,8 @@ import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.filled.Cake
 import androidx.compose.material.icons.filled.Scale
 import androidx.compose.material.icons.filled.Height
+import androidx.compose.material.icons.filled.Wc
+import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -162,6 +164,13 @@ fun RegistroView(navController: NavController, registroViewModel: RegistroViewMo
                     keyboardType = KeyboardType.Number,
                     modifier = Modifier.weight(1f)
                 )
+                RegistroTextField(
+                    value = registroViewModel.genero,
+                    onValueChange = { registroViewModel.genero = it },
+                    label = "Género (M/F)",
+                    icon = Icons.Filled.Wc,
+                    modifier = Modifier.weight(1f)
+                )
             }
             
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -182,6 +191,13 @@ fun RegistroView(navController: NavController, registroViewModel: RegistroViewMo
                     modifier = Modifier.weight(1f)
                 )
             }
+            
+            RegistroTextField(
+                value = registroViewModel.objetivo,
+                onValueChange = { registroViewModel.objetivo = it },
+                label = "Objetivo (Opcional)",
+                icon = Icons.Filled.Flag
+            )
 
             Spacer(modifier = Modifier.height(10.dp))
 

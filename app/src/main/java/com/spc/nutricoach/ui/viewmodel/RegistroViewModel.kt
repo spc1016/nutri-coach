@@ -23,6 +23,8 @@ class RegistroViewModel(application: Application) : AndroidViewModel(application
     var edad by mutableStateOf("")
     var peso by mutableStateOf("")
     var altura by mutableStateOf("")
+    var genero by mutableStateOf("")
+    var objetivo by mutableStateOf("")
 
     var statusMessage by mutableStateOf("")
         private set
@@ -50,7 +52,9 @@ class RegistroViewModel(application: Application) : AndroidViewModel(application
                     telefono = telefono.ifBlank { null },
                     edad = edad.toIntOrNull(),
                     peso = peso.toDoubleOrNull(),
-                    altura = altura.toDoubleOrNull()
+                    altura = altura.toDoubleOrNull(),
+                    genero = genero.ifBlank { null },
+                    objetivo = objetivo.ifBlank { null }
                 )
                 
                 val response = NutriCoachApiClient.service.crearCliente(request)
