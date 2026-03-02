@@ -58,3 +58,11 @@ El encapsulamiento se subdivide en áreas vitales correspondientes a las depende
     * El bloque verifica explícitamente y maneja `IOException` (Falla de WiFI del móvil del usuario).
     * Maneja e intercepta los `HttpException` (Errores 401, 500 originarios del backend). Notificando a la UI de forma suave de los fallos, impidiendo paralizaciones irreversibles.
 6.  **Despliegue UI Re-activo**: Finalizada la carga exitosamente, la "Varita Mágica" de Compose detecta inmediatamente la modificación en las variables `var nombre by mutableStateOf("")` sustituyendo los placeholders por los datos del cliente, reactivando los input texts correspondientes para permitir interactuar de nuevo al cliente.
+
+---
+
+## 📝 Notas Adicionales
+
+- La funcionalidad de notas está basada en la aplicación de notas dada en clase.
+- La navegación e integración a la API también están basadas en los ejemplos vistos en clase.
+- Para realizar el diseño de la aplicación me he ayudado de una IA.
