@@ -12,12 +12,15 @@ import com.spc.nutricoach.data.SessionManager
 import com.spc.nutricoach.model.Rutina
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.Flow
+import com.spc.nutricoach.data.RoutineTrackerManager
 import retrofit2.HttpException
 import java.io.IOException
 
 class RutinaViewModel(application: Application) : AndroidViewModel(application) {
 
     private val sessionManager = SessionManager(application)
+    private val routineTrackerManager = RoutineTrackerManager(application)
 
     var rutinas by mutableStateOf<List<Rutina>>(emptyList())
         private set
@@ -68,6 +71,18 @@ class RutinaViewModel(application: Application) : AndroidViewModel(application) 
             error = "Error inesperado: ${e.message}"
         } finally {
             isLoading = false
+        }
+    }
+
+    fun getExerciseWeightFlow(rutinaId: String, exerciseKey: String): Flow<String?> {
+        val clienteId = lastLoadedClientId ?: return kotlinx.coroutines.flow.flowOf(null)
+        return routineTrackerManager.getExerciseWeightFlow(clienteId, rutinaId, exerciseKey)
+    }
+
+    fun saveExerciseWeight(rutinaId: String, exerciseKey: String, weight: String) {
+        viewModelScope.launch {
+            val clienteId = sessionManager.getClienteId() ?: return@launch
+            routineTrackerManager.saveExerciseWeight(clienteId, rutinaId, exerciseKey, weight)
         }
     }
 }

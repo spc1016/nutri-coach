@@ -76,8 +76,9 @@ class DietaViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun toggleMeal(dietaId: String, comidaNombre: String, isCompleted: Boolean) {
-        val key = "${dietaId}_${comidaNombre}"
         viewModelScope.launch {
+            val clienteId = sessionManager.getClienteId() ?: return@launch
+            val key = "${clienteId}_${dietaId}_${comidaNombre}"
             if (isCompleted) {
                 dietTrackerManager.markMealCompleted(key)
             } else {
@@ -88,8 +89,9 @@ class DietaViewModel(application: Application) : AndroidViewModel(application) {
 
     fun clearDietMeals(dietaId: String, comidas: List<Comida>) {
         viewModelScope.launch {
+            val clienteId = sessionManager.getClienteId() ?: return@launch
             comidas.forEach { comida ->
-                val key = "${dietaId}_${comida.nombre}"
+                val key = "${clienteId}_${dietaId}_${comida.nombre}"
                 dietTrackerManager.unmarkMealCompleted(key)
             }
         }

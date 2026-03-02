@@ -56,6 +56,7 @@ fun DetalleDietaView(
 ) {
     val dieta = dietaViewModel.dietas.find { it.id == dietaId }
     val completedMeals by dietaViewModel.completedMealsFlow.collectAsState(initial = emptySet())
+    val clientId = dietaViewModel.lastLoadedClientId
 
     Scaffold(
         containerColor = MainBackground,
@@ -166,7 +167,7 @@ fun DetalleDietaView(
                 val comidasOrdenadas = dieta.comidas.sortedBy { it.orden }
                 items(comidasOrdenadas.size) { index ->
                     val comida = comidasOrdenadas[index]
-                    val mealKey = "${dietaId}_${comida.nombre}"
+                    val mealKey = "${clientId}_${dietaId}_${comida.nombre}"
                     val isCompleted = completedMeals.contains(mealKey)
 
                     Card(

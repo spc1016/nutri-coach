@@ -27,7 +27,16 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -159,7 +168,7 @@ fun DetalleRutinaView(
                         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
                     ) {
                         Column(modifier = Modifier.padding(20.dp)) {
-                            DiaItemDetail(dia = dia)
+                            DiaItemDetail(dia = dia, rutinaId = rutina.id, rutinaViewModel = rutinaViewModel)
                             Spacer(modifier = Modifier.height(20.dp))
                             Button(
                                 onClick = {
@@ -200,7 +209,7 @@ fun DetalleRutinaView(
 }
 
 @Composable
-fun DiaItemDetail(dia: Dia) {
+fun DiaItemDetail(dia: Dia, rutinaId: String, rutinaViewModel: RutinaViewModel) {
     Column {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -231,7 +240,15 @@ fun DiaItemDetail(dia: Dia) {
         Spacer(modifier = Modifier.height(8.dp))
 
         // Ejercicios del día
-        dia.ejercicios.forEach { ejercicio ->
+        dia.ejercicios.forEachIndexed { index, ejercicio ->
+            val uniqueKey = "${dia.nombre}_${index}_${ejercicio.nombreSnapshot}"
+            val weightFlow = remember(rutinaId, uniqueKey) {
+                rutinaViewModel.getExerciseWeightFlow(rutinaId, uniqueKey)
+            }
+            val savedWeight by weightFlow.collectAsState(initial = "")
+            
+            var localWeight by remember(savedWeight) { mutableStateOf(savedWeight ?: "") }
+
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -266,6 +283,46 @@ fun DiaItemDetail(dia: Dia) {
                             text = "💡 ${ejercicio.notas}",
                             style = TextStyle(fontSize = 13.sp, color = Color.Gray),
                             modifier = Modifier.padding(start = 12.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Peso a levantar (kg):",
+                            style = TextStyle(
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = PrimaryGreen
+                            )
+                        )
+                        OutlinedTextField(
+                            value = localWeight,
+                            onValueChange = { 
+                                localWeight = it
+                                rutinaViewModel.saveExerciseWeight(rutinaId, uniqueKey, it)
+                            },
+                            placeholder = { Text("0") },
+                            modifier = Modifier
+                                .width(80.dp)
+                                .height(56.dp),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            singleLine = true,
+                            textStyle = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Bold , color = Color.Black),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = PrimaryGreen,
+                                unfocusedBorderColor = PrimaryGreen.copy(alpha = 0.5f),
+                                focusedContainerColor = Color.White,
+                                unfocusedContainerColor = Color.White
+                            )
                         )
                     }
                 }
