@@ -16,6 +16,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.outlined.RadioButtonUnchecked
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -23,9 +25,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.IconToggleButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -49,6 +55,7 @@ fun DetalleDietaView(
     dietaViewModel: DietaViewModel
 ) {
     val dieta = dietaViewModel.dietas.find { it.id == dietaId }
+    val completedMeals by dietaViewModel.completedMealsFlow.collectAsState(initial = emptySet())
 
     Scaffold(
         containerColor = MainBackground,
@@ -136,11 +143,20 @@ fun DetalleDietaView(
                 
                 Spacer(modifier = Modifier.height(24.dp))
                 
-                Text(
-                    text = "Comidas",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 22.sp
-                )
+                Row(
+                   modifier = Modifier.fillMaxWidth(),
+                   horizontalArrangement = Arrangement.SpaceBetween,
+                   verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Comidas",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 22.sp
+                    )
+                    TextButton(onClick = { dietaViewModel.clearDietMeals(dietaId, dieta.comidas) }) {
+                        Text("Reiniciar", color = PrimaryGreen, fontWeight = FontWeight.Bold)
+                    }
+                }
                 
                 Spacer(modifier = Modifier.height(12.dp))
             }
@@ -150,14 +166,25 @@ fun DetalleDietaView(
                 val comidasOrdenadas = dieta.comidas.sortedBy { it.orden }
                 items(comidasOrdenadas.size) { index ->
                     val comida = comidasOrdenadas[index]
+                    val mealKey = "${dietaId}_${comida.nombre}"
+                    val isCompleted = completedMeals.contains(mealKey)
+
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(24.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (isCompleted) Color(0xFFF0FFF0) else Color.White
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = if (isCompleted) 2.dp else 6.dp)
                     ) {
                         Column(modifier = Modifier.padding(20.dp)) {
-                            ComidaItemDetail(comida = comida)
+                            ComidaItemDetail(
+                                comida = comida,
+                                isCompleted = isCompleted,
+                                onCheckedChange = { checked ->
+                                    dietaViewModel.toggleMeal(dietaId, comida.nombre, checked)
+                                }
+                            )
                         }
                     }
                 }
@@ -179,30 +206,61 @@ fun DetalleDietaView(
 }
 
 @Composable
-fun ComidaItemDetail(comida: Comida) {
+fun ComidaItemDetail(
+    comida: Comida,
+    isCompleted: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
     Column {
         Row(
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Icon(
-                imageVector = Icons.Filled.Restaurant,
-                contentDescription = null,
-                tint = PrimaryGreen,
-                modifier = Modifier.size(20.dp)
-            )
-            Text(
-                text = comida.nombre,
-                style = TextStyle(
-                    brush = AppBrushes.Main,
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 22.sp
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                modifier = Modifier.weight(1f)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Restaurant,
+                    contentDescription = null,
+                    tint = if (isCompleted) Color.Gray else PrimaryGreen,
+                    modifier = Modifier.size(20.dp)
                 )
-            )
-            if (!comida.horaSugerida.isNullOrBlank()) {
                 Text(
-                    text = "· ${comida.horaSugerida}",
-                    style = TextStyle(fontSize = 14.sp, color = Color.Gray)
+                    text = comida.nombre,
+                    style = if (isCompleted) {
+                        TextStyle(
+                            color = Color.Gray,
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 22.sp
+                        )
+                    } else {
+                        TextStyle(
+                            brush = AppBrushes.Main,
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 22.sp
+                        )
+                    }
+                )
+                if (!comida.horaSugerida.isNullOrBlank()) {
+                    Text(
+                        text = "· ${comida.horaSugerida}",
+                        style = TextStyle(fontSize = 14.sp, color = Color.Gray)
+                    )
+                }
+            }
+            
+            IconToggleButton(
+                checked = isCompleted,
+                onCheckedChange = onCheckedChange
+            ) {
+                Icon(
+                    imageVector = if (isCompleted) Icons.Filled.CheckCircle else Icons.Outlined.RadioButtonUnchecked,
+                    contentDescription = null,
+                    tint = if (isCompleted) PrimaryGreen else Color.Gray,
+                    modifier = Modifier.size(28.dp)
                 )
             }
         }

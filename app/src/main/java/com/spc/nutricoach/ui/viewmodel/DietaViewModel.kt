@@ -7,8 +7,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.spc.nutricoach.data.DietTrackerManager
 import com.spc.nutricoach.data.NutriCoachApiClient
 import com.spc.nutricoach.data.SessionManager
+import com.spc.nutricoach.model.Comida
 import com.spc.nutricoach.model.Dieta
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -18,6 +20,9 @@ import java.io.IOException
 class DietaViewModel(application: Application) : AndroidViewModel(application) {
 
     private val sessionManager = SessionManager(application)
+    private val dietTrackerManager = DietTrackerManager(application)
+
+    val completedMealsFlow = dietTrackerManager.completedMealsFlow
 
     var dietas by mutableStateOf<List<Dieta>>(emptyList())
         private set
@@ -67,6 +72,26 @@ class DietaViewModel(application: Application) : AndroidViewModel(application) {
             error = "Error inesperado: ${e.message}"
         } finally {
             isLoading = false
+        }
+    }
+
+    fun toggleMeal(dietaId: String, comidaNombre: String, isCompleted: Boolean) {
+        val key = "${dietaId}_${comidaNombre}"
+        viewModelScope.launch {
+            if (isCompleted) {
+                dietTrackerManager.markMealCompleted(key)
+            } else {
+                dietTrackerManager.unmarkMealCompleted(key)
+            }
+        }
+    }
+
+    fun clearDietMeals(dietaId: String, comidas: List<Comida>) {
+        viewModelScope.launch {
+            comidas.forEach { comida ->
+                val key = "${dietaId}_${comida.nombre}"
+                dietTrackerManager.unmarkMealCompleted(key)
+            }
         }
     }
 }
