@@ -43,9 +43,10 @@ class PerfilUsuarioViewModel(application: Application) : AndroidViewModel(applic
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val clienteId = sessionManager.getClienteId()
+                val token = sessionManager.getToken()
                 
-                if (clienteId != null) {
-                    val cliente = NutriCoachApiClient.service.obtenerCliente(clienteId)
+                if (clienteId != null && token != null) {
+                    val cliente = NutriCoachApiClient.service.obtenerCliente(clienteId, "Bearer $token")
                     nombre = cliente.nombre
                     email = cliente.email
                     telefono = cliente.telefono ?: ""
@@ -54,7 +55,7 @@ class PerfilUsuarioViewModel(application: Application) : AndroidViewModel(applic
                     altura = cliente.altura?.toString() ?: ""
                     objetivo = cliente.objetivo ?: ""
                 } else {
-                    statusMessage = "No se pudo obtener el ID del cliente."
+                    statusMessage = "No se pudo obtener el ID del cliente o el token."
                 }
             } catch (e: HttpException) {
                 Log.e("PERFIL_API", "Error al cargar perfil HTTP ${e.code()}: ${e.message()}")
@@ -83,6 +84,7 @@ class PerfilUsuarioViewModel(application: Application) : AndroidViewModel(applic
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val clienteId = sessionManager.getClienteId() ?: throw Exception("ID de cliente no encontrado")
+                val token = sessionManager.getToken() ?: throw Exception("Token de autenticación no encontrado")
 
                 val request = ModificarClienteRequest(
                     nombre = nombre,
@@ -95,7 +97,7 @@ class PerfilUsuarioViewModel(application: Application) : AndroidViewModel(applic
                     genero = null // No editamos el genero en este perfil pero mandamos null
                 )
 
-                NutriCoachApiClient.service.modificarCliente(clienteId, request)
+                NutriCoachApiClient.service.modificarCliente(clienteId, "Bearer $token", request)
                 
                 // Actualizar el correo electrónico en SessionManager si fue cambiado
                 val currentRole = sessionManager.getRole() ?: "cliente"

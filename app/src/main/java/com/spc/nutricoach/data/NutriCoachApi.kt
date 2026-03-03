@@ -9,6 +9,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import retrofit2.Retrofit
 import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.Header
 import retrofit2.http.POST
 import retrofit2.http.Path
 
@@ -58,12 +59,14 @@ interface NutricionApiService {
 
     @GET("clientes/{id}")
     suspend fun obtenerCliente(
-        @Path("id") clienteId: String
+        @Path("id") clienteId: String,
+        @Header("Authorization") token: String
     ): com.spc.nutricoach.model.Cliente
 
     @retrofit2.http.PUT("clientes/{id}")
     suspend fun modificarCliente(
         @Path("id") clienteId: String,
+        @Header("Authorization") token: String,
         @Body request: ModificarClienteRequest
     )
 
