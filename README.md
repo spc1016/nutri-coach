@@ -1,3 +1,8 @@
+## Credenciales de prueba:
+
+Email: ana@email.com
+Contraseña: 1234
+
 # Documentación Técnica: NutriCoach (App Android)
 
 Este documento expone en profundidad las decisiones técnicas, estructurales y arquitectónicas tomadas para construir el lado del cliente (Android) del ecosistema integral NutriCoach. 
