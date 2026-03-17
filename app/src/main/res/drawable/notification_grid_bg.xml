@@ -1,0 +1,29 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="400dp"
+    android:height="200dp"
+    android:viewportWidth="400"
+    android:viewportHeight="200">
+    
+    <!-- Dark Background -->
+    <path
+        android:fillColor="#060709"
+        android:pathData="M0,0 h400 v200 h-400 z" />
+    
+    <!-- Horizontal Lines -->
+    <path
+        android:strokeColor="#1AFFFFFF"
+        android:strokeWidth="0.5"
+        android:pathData="M0,40 h400 M0,80 h400 M0,120 h400 M0,160 h400" />
+    
+    <!-- Vertical Lines -->
+    <path
+        android:strokeColor="#1AFFFFFF"
+        android:strokeWidth="0.5"
+        android:pathData="M40,0 v200 M80,0 v200 M120,0 v200 M160,0 v200 M200,0 v200 M240,0 v200 M280,0 v200 M320,0 v200 M360,0 v200" />
+
+    <!-- Central Glow (Simulated) -->
+    <path
+        android:fillColor="#1A00E676"
+        android:pathData="M200,100 m-150,0 a150,150 0 1,1 300,0 a150,150 0 1,1 -300,0" />
+
+</vector>
