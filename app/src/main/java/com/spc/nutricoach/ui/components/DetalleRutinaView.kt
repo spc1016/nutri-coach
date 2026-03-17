@@ -45,11 +45,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import androidx.compose.material3.MaterialTheme
 import com.spc.nutricoach.model.Dia
 import com.spc.nutricoach.ui.theme.AppBrushes
-import com.spc.nutricoach.ui.theme.MainBackground
-import com.spc.nutricoach.ui.theme.PrimaryGreen
-import com.spc.nutricoach.ui.theme.SecondaryBackground
 import com.spc.nutricoach.ui.viewmodel.RutinaViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -62,8 +60,8 @@ fun DetalleRutinaView(
     val rutina = rutinaViewModel.rutinas.find { it.id == rutinaId }
 
     Scaffold(
-        containerColor = MainBackground,
-        contentColor = Color.Black,
+        containerColor = MaterialTheme.colorScheme.background,
+        contentColor = MaterialTheme.colorScheme.onBackground,
         topBar = {
             TopAppBar(
                 title = { Text("Detalle de Rutina") },
@@ -73,9 +71,9 @@ fun DetalleRutinaView(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MainBackground,
-                    titleContentColor = Color.Black,
-                    navigationIconContentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onBackground
                 )
             )
         }
@@ -101,32 +99,26 @@ fun DetalleRutinaView(
         ) {
             item {
                 Spacer(modifier = Modifier.height(8.dp))
-                // Nombre de la rutina
                 Text(
                     text = rutina.nombre,
-                    style = TextStyle(
-                        brush = AppBrushes.Main,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 28.sp
+                    style = MaterialTheme.typography.headlineLarge.copy(
+                        brush = AppBrushes.MainGradient
                     )
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Días objetivo
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Filled.FitnessCenter,
                         contentDescription = null,
-                        tint = PrimaryGreen,
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(24.dp)
                     )
                     Text(
                         text = " ${rutina.dias.size} días de entrenamiento",
-                        style = TextStyle(
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color.DarkGray
+                        style = MaterialTheme.typography.bodyLarge.copy(
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     )
                 }
@@ -135,13 +127,15 @@ fun DetalleRutinaView(
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
                         text = "Notas Generales",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontWeight = FontWeight.Bold
+                        )
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = rutina.notasGenerales,
-                        style = TextStyle(fontSize = 15.sp, color = Color.Gray)
+                        style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                     )
                 }
 
@@ -149,14 +143,15 @@ fun DetalleRutinaView(
 
                 Text(
                     text = "Días de Entrenamiento",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 22.sp
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Bold
+                    )
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
             }
 
-            // Días
             if (rutina.dias.isNotEmpty()) {
                 val diasOrdenados = rutina.dias.sortedBy { it.orden }
                 items(diasOrdenados.size) { index ->
@@ -164,8 +159,9 @@ fun DetalleRutinaView(
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(24.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                     ) {
                         Column(modifier = Modifier.padding(20.dp)) {
                             DiaItemDetail(dia = dia, rutinaId = rutina.id, rutinaViewModel = rutinaViewModel)
@@ -177,16 +173,16 @@ fun DetalleRutinaView(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(50.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen),
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = Color.Black),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Icon(
                                     imageVector = Icons.Filled.FitnessCenter,
                                     contentDescription = "Empezar",
-                                    tint = Color.White
+                                    tint = Color.Black
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("Comenzar Entrenamiento", fontWeight = FontWeight.Bold, color = Color.White)
+                                Text("Comenzar Entrenamiento", fontWeight = FontWeight.Bold)
                             }
                         }
                     }
@@ -195,7 +191,7 @@ fun DetalleRutinaView(
                 item {
                     Text(
                         text = "No hay días asignados.",
-                        color = Color.Gray,
+                        style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
                         modifier = Modifier.padding(vertical = 16.dp)
                     )
                 }
@@ -218,28 +214,25 @@ fun DiaItemDetail(dia: Dia, rutinaId: String, rutinaViewModel: RutinaViewModel) 
             Icon(
                 imageVector = Icons.Filled.FitnessCenter,
                 contentDescription = null,
-                tint = PrimaryGreen,
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(20.dp)
             )
             Text(
                 text = dia.nombre,
-                style = TextStyle(
-                    brush = AppBrushes.Main,
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 22.sp,
+                style = MaterialTheme.typography.titleLarge.copy(
+                    brush = AppBrushes.MainGradient
                 )
             )
             if (!dia.enfoque.isNullOrBlank()) {
                 Text(
                     text = "· ${dia.enfoque}",
-                    style = TextStyle(fontSize = 14.sp, color = Color.Gray)
+                    style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                 )
             }
         }
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Ejercicios del día
         dia.ejercicios.forEachIndexed { index, ejercicio ->
             val uniqueKey = "${dia.nombre}_${index}_${ejercicio.nombreSnapshot}"
             val weightFlow = remember(rutinaId, uniqueKey) {
@@ -254,16 +247,15 @@ fun DiaItemDetail(dia: Dia, rutinaId: String, rutinaViewModel: RutinaViewModel) 
                     .fillMaxWidth()
                     .padding(vertical = 4.dp),
                 shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = SecondaryBackground.copy(alpha = 0.3f)),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
                 Column(modifier = Modifier.padding(12.dp)) {
                     Text(
                         text = "• ${ejercicio.nombreSnapshot}",
-                        style = TextStyle(
-                            color = PrimaryGreen,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp
+                        style = MaterialTheme.typography.bodyLarge.copy(
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold
                         )
                     )
 
@@ -273,7 +265,10 @@ fun DiaItemDetail(dia: Dia, rutinaId: String, rutinaViewModel: RutinaViewModel) 
                         text = "${ejercicio.series} series × ${ejercicio.repeticiones} reps" +
                             (if (!ejercicio.descanso.isNullOrBlank()) " | ⏱ ${ejercicio.descanso}s" else "") +
                             (if (!ejercicio.rir.isNullOrBlank()) " | RIR: ${ejercicio.rir}" else ""),
-                        style = TextStyle(fontSize = 14.sp, color = Color.DarkGray, fontWeight = FontWeight.Medium),
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = FontWeight.Medium
+                        ),
                         modifier = Modifier.padding(start = 12.dp)
                     )
 
@@ -281,7 +276,7 @@ fun DiaItemDetail(dia: Dia, rutinaId: String, rutinaViewModel: RutinaViewModel) 
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             text = "💡 ${ejercicio.notas}",
-                            style = TextStyle(fontSize = 13.sp, color = Color.Gray),
+                            style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)),
                             modifier = Modifier.padding(start = 12.dp)
                         )
                     }
@@ -300,7 +295,7 @@ fun DiaItemDetail(dia: Dia, rutinaId: String, rutinaViewModel: RutinaViewModel) 
                             style = TextStyle(
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = PrimaryGreen
+                                color = MaterialTheme.colorScheme.primary
                             )
                         )
                         OutlinedTextField(
@@ -315,13 +310,16 @@ fun DiaItemDetail(dia: Dia, rutinaId: String, rutinaViewModel: RutinaViewModel) 
                                 .height(56.dp),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             singleLine = true,
-                            textStyle = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Bold , color = Color.Black),
+                            textStyle = MaterialTheme.typography.bodyLarge.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            ),
                             shape = RoundedCornerShape(8.dp),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = PrimaryGreen,
-                                unfocusedBorderColor = PrimaryGreen.copy(alpha = 0.5f),
-                                focusedContainerColor = Color.White,
-                                unfocusedContainerColor = Color.White
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                                focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
+                                unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.3f)
                             )
                         )
                     }

@@ -28,15 +28,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import androidx.compose.material3.MaterialTheme
 import com.spc.nutricoach.data.local.entity.NotasEntity
 import com.spc.nutricoach.ui.theme.AppBrushes
-import com.spc.nutricoach.ui.theme.MainBackground
-import com.spc.nutricoach.ui.theme.PrimaryGreen
 import com.spc.nutricoach.ui.viewmodel.NotasViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -65,7 +62,7 @@ fun DetalleNotaView(
     }
 
     Scaffold(
-        containerColor = MainBackground,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
                 title = { Text("Detalle de Nota", fontWeight = FontWeight.Bold) },
@@ -74,7 +71,7 @@ fun DetalleNotaView(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Volver",
-                            tint = Color.Black
+                            tint = MaterialTheme.colorScheme.onBackground
                         )
                     }
                 },
@@ -92,13 +89,13 @@ fun DetalleNotaView(
                         Icon(
                             imageVector = Icons.Filled.Save,
                             contentDescription = "Guardar nota",
-                            tint = if (titulo.isNotBlank() && contenido.isNotBlank()) PrimaryGreen else Color.Gray
+                            tint = if (titulo.isNotBlank() && contenido.isNotBlank()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MainBackground,
-                    titleContentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground
                 )
             )
         }
@@ -109,7 +106,7 @@ fun DetalleNotaView(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center
             ) {
-                CircularProgressIndicator(color = PrimaryGreen)
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
             }
         } else if (nota == null) {
             Column(
@@ -117,7 +114,7 @@ fun DetalleNotaView(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center
             ) {
-                Text("Nota no encontrada", color = Color.Gray, fontSize = 18.sp)
+                Text("Nota no encontrada", style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurfaceVariant))
             }
         } else {
             Column(
@@ -126,25 +123,21 @@ fun DetalleNotaView(
                     .padding(innerPadding)
                     .padding(horizontal = 16.dp)
             ) {
-                // Fecha
                 val dateFormat = SimpleDateFormat("dd MMMM yyyy, HH:mm", Locale.getDefault())
                 val fechaFormatada = dateFormat.format(Date(nota!!.fechaCreacion))
                 
                 Text(
                     text = "Creada el $fechaFormatada",
-                    style = TextStyle(color = Color.Gray, fontSize = 12.sp),
+                    style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
 
-                // Edición Título
                 TextField(
                     value = titulo,
                     onValueChange = { titulo = it },
-                    placeholder = { Text("Título", style = TextStyle(fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, color = Color.LightGray)) },
-                    textStyle = TextStyle(
-                        fontSize = 28.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        brush = AppBrushes.Main
+                    placeholder = { Text("Título", style = MaterialTheme.typography.headlineLarge.copy(color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))) },
+                    textStyle = MaterialTheme.typography.headlineLarge.copy(
+                        brush = AppBrushes.MainGradient
                     ),
                     colors = TextFieldDefaults.colors(
                         focusedContainerColor = Color.Transparent,
@@ -158,14 +151,12 @@ fun DetalleNotaView(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Edición Contenido
                 TextField(
                     value = contenido,
                     onValueChange = { contenido = it },
-                    placeholder = { Text("Escribe tu nota aquí...", style = TextStyle(fontSize = 18.sp, color = Color.LightGray)) },
-                    textStyle = TextStyle(
-                        fontSize = 18.sp,
-                        color = Color.DarkGray
+                    placeholder = { Text("Escribe tu nota aquí...", style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))) },
+                    textStyle = MaterialTheme.typography.bodyLarge.copy(
+                        color = MaterialTheme.colorScheme.onBackground
                     ),
                     colors = TextFieldDefaults.colors(
                         focusedContainerColor = Color.Transparent,
@@ -175,8 +166,8 @@ fun DetalleNotaView(
                     ),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(1f), // Toma el resto del espacio en pantalla
-                    maxLines = Int.MAX_VALUE // Permite crecer sin límite definido
+                        .weight(1f),
+                    maxLines = Int.MAX_VALUE
                 )
                 
                 Spacer(modifier = Modifier.height(24.dp))

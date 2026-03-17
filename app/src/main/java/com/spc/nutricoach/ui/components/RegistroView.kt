@@ -57,9 +57,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import androidx.compose.material3.MaterialTheme
 import com.spc.nutricoach.ui.theme.AppBrushes
-import com.spc.nutricoach.ui.theme.MainBackground
-import com.spc.nutricoach.ui.theme.PrimaryGreen
 import com.spc.nutricoach.ui.viewmodel.RegistroViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -76,17 +75,19 @@ fun RegistroView(navController: NavController, registroViewModel: RegistroViewMo
     }
 
     Scaffold(
-        containerColor = MainBackground,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Registro", style = TextStyle(brush = AppBrushes.Main, fontWeight = FontWeight.Bold)) },
+                title = { Text("Registro", style = MaterialTheme.typography.titleLarge.copy(brush = AppBrushes.MainGradient)) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MainBackground
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onBackground
                 )
             )
         }
@@ -103,7 +104,7 @@ fun RegistroView(navController: NavController, registroViewModel: RegistroViewMo
             
             Text(
                 text = "Crea tu cuenta de Nutri Coach",
-                style = TextStyle(brush = AppBrushes.Secondary, fontWeight = FontWeight.Bold, fontSize = 24.sp),
+                style = MaterialTheme.typography.displaySmall.copy(brush = AppBrushes.AccentGradient, textAlign = androidx.compose.ui.text.style.TextAlign.Center),
                 modifier = Modifier.padding(bottom = 10.dp)
             )
 
@@ -111,7 +112,8 @@ fun RegistroView(navController: NavController, registroViewModel: RegistroViewMo
                 value = registroViewModel.nombre,
                 onValueChange = { registroViewModel.nombre = it },
                 label = "Nombre *",
-                icon = Icons.Filled.Person
+                icon = Icons.Filled.Person,
+                modifier = Modifier.fillMaxWidth()
             )
 
             RegistroTextField(
@@ -119,6 +121,7 @@ fun RegistroView(navController: NavController, registroViewModel: RegistroViewMo
                 onValueChange = { registroViewModel.email = it },
                 label = "Email *",
                 icon = Icons.Filled.Email,
+                modifier = Modifier.fillMaxWidth(),
                 keyboardType = KeyboardType.Email
             )
 
@@ -126,12 +129,12 @@ fun RegistroView(navController: NavController, registroViewModel: RegistroViewMo
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White,
-                    focusedBorderColor = PrimaryGreen,
-                    unfocusedBorderColor = Color.LightGray,
+                    focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.3f),
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
                 ),
-                textStyle = TextStyle(brush = AppBrushes.Main),
+                textStyle = MaterialTheme.typography.bodyLarge.copy(brush = AppBrushes.MainGradient),
                 value = registroViewModel.password,
                 onValueChange = { registroViewModel.password = it },
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
@@ -143,8 +146,8 @@ fun RegistroView(navController: NavController, registroViewModel: RegistroViewMo
                         )
                     }
                 },
-                label = { Text("Contraseña *", style = TextStyle(brush = AppBrushes.Secondary, fontWeight = FontWeight.Bold)) },
-                leadingIcon = { Icon(Icons.Filled.Lock, contentDescription = null, tint = PrimaryGreen) },
+                label = { Text("Contraseña *", style = MaterialTheme.typography.titleSmall.copy(brush = AppBrushes.AccentGradient)) },
+                leadingIcon = { Icon(Icons.Filled.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
             )
             
             RegistroTextField(
@@ -152,6 +155,7 @@ fun RegistroView(navController: NavController, registroViewModel: RegistroViewMo
                 onValueChange = { registroViewModel.telefono = it },
                 label = "Teléfono",
                 icon = Icons.Filled.Phone,
+                modifier = Modifier.fillMaxWidth(),
                 keyboardType = KeyboardType.Phone
             )
             
@@ -196,7 +200,8 @@ fun RegistroView(navController: NavController, registroViewModel: RegistroViewMo
                 value = registroViewModel.objetivo,
                 onValueChange = { registroViewModel.objetivo = it },
                 label = "Objetivo (Opcional)",
-                icon = Icons.Filled.Flag
+                icon = Icons.Filled.Flag,
+                modifier = Modifier.fillMaxWidth()
             )
 
             Spacer(modifier = Modifier.height(10.dp))
@@ -204,21 +209,21 @@ fun RegistroView(navController: NavController, registroViewModel: RegistroViewMo
             Button(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(brush = AppBrushes.Secondary, shape = ButtonDefaults.shape)
+                    .background(brush = AppBrushes.MainGradient, shape = RoundedCornerShape(12.dp))
                     .height(55.dp),
                 onClick = { registroViewModel.doRegistro() },
                 enabled = !registroViewModel.isLoading && !registroViewModel.registroSuccess,
-                colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent, contentColor = Color.Black),
             ) {
                 if (registroViewModel.isLoading) {
                     CircularProgressIndicator(color = Color.White, strokeWidth = 2.dp, modifier = Modifier.size(22.dp))
                 } else {
-                    Text(text = "Registrarme", style = TextStyle(color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp))
+                    Text(text = "Registrarme", style = TextStyle(color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 16.sp))
                 }
             }
 
             if (registroViewModel.statusMessage.isNotEmpty()) {
-                val color = if (registroViewModel.statusMessage.startsWith("Error") || registroViewModel.statusMessage.startsWith("Nombre")) Color.Red else PrimaryGreen
+                val color = if (registroViewModel.statusMessage.startsWith("Error") || registroViewModel.statusMessage.startsWith("Nombre")) Color.Red else MaterialTheme.colorScheme.primary
                 Text(
                     text = registroViewModel.statusMessage,
                     style = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Bold, color = color),
@@ -236,7 +241,7 @@ fun RegistroTextField(
     onValueChange: (String) -> Unit,
     label: String,
     icon: ImageVector,
-    modifier: Modifier = Modifier.fillMaxWidth(),
+    modifier: Modifier = Modifier,
     keyboardType: KeyboardType = KeyboardType.Text
 ) {
     OutlinedTextField(
@@ -244,15 +249,15 @@ fun RegistroTextField(
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
         shape = RoundedCornerShape(20.dp),
         colors = OutlinedTextFieldDefaults.colors(
-            focusedContainerColor = Color.White,
-            unfocusedContainerColor = Color.White,
-            focusedBorderColor = PrimaryGreen,
-            unfocusedBorderColor = Color.LightGray,
+            focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
+            unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.3f),
+            focusedBorderColor = MaterialTheme.colorScheme.primary,
+            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
         ),
-        textStyle = TextStyle(brush = AppBrushes.Main),
+        textStyle = MaterialTheme.typography.bodyLarge.copy(brush = AppBrushes.MainGradient),
         value = value,
         onValueChange = onValueChange,
-        label = { Text(label, style = TextStyle(brush = AppBrushes.Secondary, fontWeight = FontWeight.Bold)) },
-        leadingIcon = { Icon(icon, contentDescription = null, tint = PrimaryGreen) }
+        label = { Text(label, style = MaterialTheme.typography.labelMedium.copy(brush = AppBrushes.AccentGradient)) },
+        leadingIcon = { Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary) }
     )
 }

@@ -40,7 +40,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -48,8 +47,8 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.spc.nutricoach.data.local.entity.NotasEntity
+import androidx.compose.material3.MaterialTheme
 import com.spc.nutricoach.ui.theme.AppBrushes
-import com.spc.nutricoach.ui.theme.MainBackground
 import com.spc.nutricoach.ui.viewmodel.NotasViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -69,63 +68,62 @@ fun NotasView(
     }
 
     Scaffold(
-        containerColor = MainBackground,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
                 title = {
                     Text(
                         text = "Mis Notas",
-                        style = TextStyle(
-                            brush = AppBrushes.Secondary,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 28.sp
+                        style = MaterialTheme.typography.headlineLarge.copy(
+                            brush = AppBrushes.AccentGradient
                         )
                     )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MainBackground,
-                    titleContentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground
                 )
             )
         },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { mostrarDialogo = true },
-                containerColor = com.spc.nutricoach.ui.theme.PrimaryGreen,
-                contentColor = Color.White
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = Color.Black
             ) {
                 Icon(Icons.Filled.Add, contentDescription = "Añadir nota")
             }
         }
     ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(horizontal = 16.dp)
-        ) {
-            if (notas.isEmpty()) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(
-                        text = "No tienes notas aún. ¡Añade una!",
-                        color = Color.Gray,
-                        fontSize = 16.sp
-                    )
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    item { Spacer(modifier = Modifier.height(8.dp)) }
-                    items(notas) { nota ->
-                        NotaCard(
-                            nota = nota,
-                            onClick = { navController.navigate(PantallaDetalleNota(notaId = nota.id)) },
-                            onDelete = { notasViewModel.eliminarNota(nota) }
+        NutriGridBackground(modifier = Modifier.padding(innerPadding)) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp)
+            ) {
+                if (notas.isEmpty()) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text(
+                            text = "No tienes notas aún. ¡Añade una!",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 16.sp
                         )
                     }
-                    item { Spacer(modifier = Modifier.height(80.dp)) } // Spacing for FAB
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        item { Spacer(modifier = Modifier.height(8.dp)) }
+                        items(notas) { nota ->
+                            NotaCard(
+                                nota = nota,
+                                onClick = { navController.navigate(PantallaDetalleNota(notaId = nota.id)) },
+                                onDelete = { notasViewModel.eliminarNota(nota) }
+                            )
+                        }
+                        item { Spacer(modifier = Modifier.height(80.dp)) }
+                    }
                 }
             }
         }
@@ -151,9 +149,10 @@ fun NotaCard(nota: NotasEntity, onClick: () -> Unit, onDelete: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() },
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
             modifier = Modifier
@@ -167,10 +166,8 @@ fun NotaCard(nota: NotasEntity, onClick: () -> Unit, onDelete: () -> Unit) {
             ) {
                 Text(
                     text = nota.titulo,
-                    style = TextStyle(
-                        brush = AppBrushes.Main,
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 22.sp
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        brush = AppBrushes.MainGradient
                     ),
                     modifier = Modifier.weight(1f),
                     maxLines = 1,
@@ -190,9 +187,8 @@ fun NotaCard(nota: NotasEntity, onClick: () -> Unit, onDelete: () -> Unit) {
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = nota.contenido,
-                style = TextStyle(
-                    fontSize = 16.sp,
-                    color = Color.DarkGray
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 ),
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis
@@ -200,9 +196,8 @@ fun NotaCard(nota: NotasEntity, onClick: () -> Unit, onDelete: () -> Unit) {
             Spacer(modifier = Modifier.height(12.dp))
             Text(
                 text = fechaFormatada,
-                style = TextStyle(
-                    fontSize = 12.sp,
-                    color = Color.Gray
+                style = MaterialTheme.typography.labelSmall.copy(
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                 ),
                 modifier = Modifier.align(Alignment.End)
             )
@@ -252,15 +247,16 @@ fun AgregarNotaDialog(
                     }
                 },
                 colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                    containerColor = com.spc.nutricoach.ui.theme.PrimaryGreen
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = Color.Black
                 )
             ) {
-                Text("Guardar", color = Color.White)
+                Text("Guardar", color = Color.Black)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancelar", color = Color.Gray)
+                Text("Cancelar", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     )

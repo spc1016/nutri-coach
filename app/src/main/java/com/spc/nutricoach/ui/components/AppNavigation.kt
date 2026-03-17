@@ -33,9 +33,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import androidx.compose.material3.MaterialTheme
 import com.spc.nutricoach.data.SessionManager
-import com.spc.nutricoach.ui.theme.MainBackground
-import com.spc.nutricoach.ui.theme.PrimaryGreen
 import com.spc.nutricoach.ui.viewmodel.DietaViewModel
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.Serializable
@@ -84,7 +83,7 @@ fun AppNavigation() {
     if (isLoggedIn == null) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator(
-                color = PrimaryGreen
+                color = MaterialTheme.colorScheme.primary
             )
         }
         return
@@ -112,6 +111,18 @@ fun AppNavigation() {
     val navBarStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBarStackEntry?.destination
 
+    LaunchedEffect(Unit) {
+        com.spc.nutricoach.workout.WorkoutManager.navigateToWorkoutEvent.collect {
+            val rutinaId = com.spc.nutricoach.workout.WorkoutManager.rutinaIdActual.value
+            val diaAct = com.spc.nutricoach.workout.WorkoutManager.diaActual.value
+            if (rutinaId != null && diaAct != null) {
+                navController.navigate(PantallaEntrenamientoDia(rutinaId, diaAct.nombre)) {
+                    launchSingleTop = true
+                }
+            }
+        }
+    }
+
     val dietaViewModel: DietaViewModel = viewModel()
     val rutinaViewModel: com.spc.nutricoach.ui.viewmodel.RutinaViewModel = viewModel()
     val entrenamientoViewModel: com.spc.nutricoach.ui.viewmodel.EntrenamientoViewModel = viewModel()
@@ -130,8 +141,8 @@ fun AppNavigation() {
                 exit = slideOutVertically { it }
             ) {
                 NavigationBar (
-                    containerColor = MainBackground,
-                    contentColor = PrimaryGreen
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    contentColor = MaterialTheme.colorScheme.primary
                 ){
 
                     navBarRoutes.forEach { navRoute ->
@@ -142,10 +153,10 @@ fun AppNavigation() {
                                 Icon(imageVector = navRoute.icon, contentDescription = "Icono de ${navRoute.label}")
                             },
                             colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = Color.White,      // Color del icono cuando está seleccionado
-                                unselectedIconColor = Color.Gray,    // Color del icono cuando NO está seleccionado
-                                selectedTextColor = Color.White,      // Color del texto (si usas label)
-                                indicatorColor = PrimaryGreen         // Color de la "píldora" o fondo circular de selección
+                                selectedIconColor = Color.Black,
+                                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                selectedTextColor = Color.Black,
+                                indicatorColor = MaterialTheme.colorScheme.primary
                             )
                         )
                     }

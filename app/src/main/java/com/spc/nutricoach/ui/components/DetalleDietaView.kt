@@ -35,16 +35,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import androidx.compose.material3.MaterialTheme
 import com.spc.nutricoach.model.Comida
 import com.spc.nutricoach.ui.theme.AppBrushes
-import com.spc.nutricoach.ui.theme.MainBackground
-import com.spc.nutricoach.ui.theme.PrimaryGreen
-import com.spc.nutricoach.ui.theme.SecondaryBackground
 import com.spc.nutricoach.ui.viewmodel.DietaViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -59,8 +55,8 @@ fun DetalleDietaView(
     val clientId = dietaViewModel.lastLoadedClientId
 
     Scaffold(
-        containerColor = MainBackground,
-        contentColor = Color.Black,
+        containerColor = MaterialTheme.colorScheme.background,
+        contentColor = MaterialTheme.colorScheme.onBackground,
         topBar = {
             TopAppBar(
                 title = { Text("Detalle de Dieta") },
@@ -70,9 +66,9 @@ fun DetalleDietaView(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MainBackground,
-                    titleContentColor = Color.Black,
-                    navigationIconContentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onBackground
                 )
             )
         }
@@ -98,19 +94,15 @@ fun DetalleDietaView(
         ) {
             item {
                 Spacer(modifier = Modifier.height(8.dp))
-                // Nombre de la dieta
                 Text(
                     text = dieta.nombre,
-                    style = TextStyle(
-                        brush = AppBrushes.Main,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 28.sp
+                    style = MaterialTheme.typography.headlineLarge.copy(
+                        brush = AppBrushes.MainGradient
                     )
                 )
                 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Kcal objetivo
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Filled.LocalFireDepartment,
@@ -120,10 +112,8 @@ fun DetalleDietaView(
                     )
                     Text(
                         text = " ${dieta.kcalObjetivo} kcal/día recomendadas",
-                        style = TextStyle(
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color.DarkGray
+                        style = MaterialTheme.typography.bodyLarge.copy(
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     )
                 }
@@ -132,13 +122,15 @@ fun DetalleDietaView(
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
                         text = "Notas Generales",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontWeight = FontWeight.Bold
+                        )
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = dieta.notasGenerales,
-                        style = TextStyle(fontSize = 15.sp, color = Color.Gray)
+                        style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                     )
                 }
                 
@@ -151,18 +143,19 @@ fun DetalleDietaView(
                 ) {
                     Text(
                         text = "Comidas",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 22.sp
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontWeight = FontWeight.Bold
+                        )
                     )
                     TextButton(onClick = { dietaViewModel.clearDietMeals(dietaId, dieta.comidas) }) {
-                        Text("Reiniciar", color = PrimaryGreen, fontWeight = FontWeight.Bold)
+                        Text("Reiniciar", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                     }
                 }
                 
                 Spacer(modifier = Modifier.height(12.dp))
             }
 
-            // Comidas
             if (dieta.comidas.isNotEmpty()) {
                 val comidasOrdenadas = dieta.comidas.sortedBy { it.orden }
                 items(comidasOrdenadas.size) { index ->
@@ -172,11 +165,12 @@ fun DetalleDietaView(
 
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(24.dp),
+                        shape = RoundedCornerShape(16.dp),
                         colors = CardDefaults.cardColors(
-                            containerColor = if (isCompleted) Color(0xFFF0FFF0) else Color.White
+                            containerColor = if (isCompleted) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
                         ),
-                        elevation = CardDefaults.cardElevation(defaultElevation = if (isCompleted) 2.dp else 6.dp)
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                     ) {
                         Column(modifier = Modifier.padding(20.dp)) {
                             ComidaItemDetail(
@@ -193,7 +187,7 @@ fun DetalleDietaView(
                 item {
                     Text(
                         text = "No hay comidas asignadas.",
-                        color = Color.Gray,
+                        style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
                         modifier = Modifier.padding(vertical = 16.dp)
                     )
                 }
@@ -226,29 +220,25 @@ fun ComidaItemDetail(
                 Icon(
                     imageVector = Icons.Filled.Restaurant,
                     contentDescription = null,
-                    tint = if (isCompleted) Color.Gray else PrimaryGreen,
+                    tint = if (isCompleted) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(20.dp)
                 )
                 Text(
                     text = comida.nombre,
                     style = if (isCompleted) {
-                        TextStyle(
-                            color = Color.Gray,
-                            fontWeight = FontWeight.ExtraBold,
-                            fontSize = 22.sp
+                        MaterialTheme.typography.titleLarge.copy(
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     } else {
-                        TextStyle(
-                            brush = AppBrushes.Main,
-                            fontWeight = FontWeight.ExtraBold,
-                            fontSize = 22.sp
+                        MaterialTheme.typography.titleLarge.copy(
+                            brush = AppBrushes.MainGradient
                         )
                     }
                 )
                 if (!comida.horaSugerida.isNullOrBlank()) {
                     Text(
                         text = "· ${comida.horaSugerida}",
-                        style = TextStyle(fontSize = 14.sp, color = Color.Gray)
+                        style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                     )
                 }
             }
@@ -260,7 +250,7 @@ fun ComidaItemDetail(
                 Icon(
                     imageVector = if (isCompleted) Icons.Filled.CheckCircle else Icons.Outlined.RadioButtonUnchecked,
                     contentDescription = null,
-                    tint = if (isCompleted) PrimaryGreen else Color.Gray,
+                    tint = if (isCompleted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(28.dp)
                 )
             }
@@ -268,14 +258,13 @@ fun ComidaItemDetail(
         
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Alimentos de la comida
         comida.alimentos.forEach { alimento ->
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 4.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = SecondaryBackground.copy(alpha = 0.3f)),
+                shape = RoundedCornerShape(8.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
                 Column(modifier = Modifier.padding(12.dp)) {
@@ -284,18 +273,16 @@ fun ComidaItemDetail(
                     
                     Text(
                         text = "• ${alimento.nombreSnapshot}",
-                        style = TextStyle(
-                            color = PrimaryGreen,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp
+                        style = MaterialTheme.typography.bodyLarge.copy(
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold
                         )
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = "$formatCantidad ${alimento.unidad}",
-                        style = TextStyle(
-                            fontSize = 14.sp,
-                            color = Color.DarkGray,
+                        style = MaterialTheme.typography.bodyLarge.copy(
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontWeight = FontWeight.Medium
                         ),
                         modifier = Modifier.padding(start = 12.dp)

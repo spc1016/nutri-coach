@@ -46,11 +46,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import androidx.compose.material3.MaterialTheme
 import com.spc.nutricoach.data.SessionManager
 import com.spc.nutricoach.model.Dieta
 import com.spc.nutricoach.ui.theme.AppBrushes
-import com.spc.nutricoach.ui.theme.MainBackground
-import com.spc.nutricoach.ui.theme.PrimaryGreen
 import com.spc.nutricoach.ui.viewmodel.DietaViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -68,17 +67,15 @@ fun MainView(
     val letraInicial = email?.firstOrNull()?.uppercase() ?: "U"
 
     Scaffold(
-        containerColor = MainBackground,
-        contentColor = Color.Black,
+        containerColor = MaterialTheme.colorScheme.background,
+        contentColor = MaterialTheme.colorScheme.onBackground,
         topBar = {
             TopAppBar(
                 title = { 
                     Text(
                         text = "Mis Dietas",
-                        style = TextStyle(
-                            brush = AppBrushes.Secondary,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 28.sp
+                        style = MaterialTheme.typography.headlineLarge.copy(
+                            brush = AppBrushes.AccentGradient
                         )
                     )
                 },
@@ -87,7 +84,7 @@ fun MainView(
                         Icon(
                             imageVector = Icons.Default.Refresh,
                             contentDescription = "Actualizar dietas",
-                            tint = PrimaryGreen
+                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
                     Box(
@@ -95,7 +92,7 @@ fun MainView(
                             .padding(end = 16.dp)
                             .size(40.dp)
                             .clip(CircleShape)
-                            .background(AppBrushes.Main)
+                            .background(AppBrushes.MainGradient)
                             .clickable { navController.navigate(PantallaPerfil) },
                         contentAlignment = Alignment.Center
                     ) {
@@ -110,76 +107,72 @@ fun MainView(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MainBackground,
-                    titleContentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground
                 )
             )
         }
     ) { innerPadding ->
+        NutriGridBackground(modifier = Modifier.padding(innerPadding)) {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                item { Spacer(modifier = Modifier.height(8.dp)) }
 
-        LazyColumn(
-            modifier = Modifier
-                .padding(innerPadding)
-                .fillMaxSize()
-                .padding(horizontal = 20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            item { Spacer(modifier = Modifier.height(8.dp)) }
-
-            // Estado de carga
-            if (dietaViewModel.isLoading) {
-                item {
-                    Box(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(color = PrimaryGreen)
+                if (dietaViewModel.isLoading) {
+                    item {
+                        Box(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                        }
                     }
                 }
-            }
 
-            // Error
-            dietaViewModel.error?.let { errorMsg ->
-                item {
-                    Text(
-                        text = errorMsg,
-                        style = TextStyle(
-                            color = Color.Red,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold
-                        ),
-                        modifier = Modifier.padding(vertical = 16.dp)
-                    )
-                }
-            }
-
-            // Sin dietas
-            if (!dietaViewModel.isLoading && dietaViewModel.error == null && dietaViewModel.dietas.isEmpty()) {
-                item {
-                    Text(
-                        text = "No tienes dietas asignadas",
-                        style = TextStyle(
-                            color = Color.Gray,
-                            fontSize = 16.sp
-                        ),
-                        modifier = Modifier.padding(vertical = 40.dp)
-                    )
-                }
-            }
-
-            // Lista de dietas
-            items(dietaViewModel.dietas) { dieta ->
-                DietaCard(
-                    dieta = dieta,
-                    onClick = {
-                        navController.navigate(PantallaDetalleDieta(dietaId = dieta.id))
+                dietaViewModel.error?.let { errorMsg ->
+                    item {
+                        Text(
+                            text = errorMsg,
+                            style = TextStyle(
+                                color = Color.Red,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold
+                            ),
+                            modifier = Modifier.padding(vertical = 16.dp)
+                        )
                     }
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-            }
+                }
 
-            item {
-                Spacer(modifier = Modifier.height(24.dp))
+                if (!dietaViewModel.isLoading && dietaViewModel.error == null && dietaViewModel.dietas.isEmpty()) {
+                    item {
+                        Text(
+                            text = "No tienes dietas asignadas",
+                            style = TextStyle(
+                                color = Color.Gray,
+                                fontSize = 16.sp
+                            ),
+                            modifier = Modifier.padding(vertical = 40.dp)
+                        )
+                    }
+                }
+
+                items(dietaViewModel.dietas) { dieta ->
+                    DietaCard(
+                        dieta = dieta,
+                        onClick = {
+                            navController.navigate(PantallaDetalleDieta(dietaId = dieta.id))
+                        }
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+
+                item {
+                    Spacer(modifier = Modifier.height(24.dp))
+                }
             }
         }
     }
@@ -191,9 +184,12 @@ fun DietaCard(dieta: Dieta, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() },
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
+        ),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
             modifier = Modifier
@@ -203,19 +199,15 @@ fun DietaCard(dieta: Dieta, onClick: () -> Unit) {
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                // Nombre de la dieta
                 Text(
                     text = dieta.nombre,
-                    style = TextStyle(
-                        brush = AppBrushes.Main,
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 22.sp
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        brush = AppBrushes.MainGradient
                     )
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Kcal objetivo
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Filled.LocalFireDepartment,
@@ -225,15 +217,12 @@ fun DietaCard(dieta: Dieta, onClick: () -> Unit) {
                     )
                     Text(
                         text = " ${dieta.kcalObjetivo} kcal/día",
-                        style = TextStyle(
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color.DarkGray
+                        style = MaterialTheme.typography.bodyLarge.copy(
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     )
                 }
 
-                // Notas generales
                 if (!dieta.notasGenerales.isNullOrBlank()) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
@@ -242,11 +231,10 @@ fun DietaCard(dieta: Dieta, onClick: () -> Unit) {
                     )
                 }
             }
-            // Chevron to indicate clickability
             Icon(
                 imageVector = Icons.Filled.ChevronRight,
                 contentDescription = "Ver detalle",
-                tint = PrimaryGreen,
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(32.dp)
             )
         }

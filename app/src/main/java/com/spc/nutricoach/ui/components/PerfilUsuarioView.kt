@@ -23,7 +23,6 @@ import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Cake
 import androidx.compose.material.icons.filled.Scale
 import androidx.compose.material.icons.filled.Height
-import androidx.compose.material.icons.filled.Wc
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -38,7 +37,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -56,9 +54,8 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.spc.nutricoach.data.SessionManager
+import androidx.compose.material3.MaterialTheme
 import com.spc.nutricoach.ui.theme.AppBrushes
-import com.spc.nutricoach.ui.theme.MainBackground
-import com.spc.nutricoach.ui.theme.PrimaryGreen
 import com.spc.nutricoach.ui.viewmodel.LoginViewModel
 import com.spc.nutricoach.ui.viewmodel.PerfilUsuarioViewModel
 
@@ -77,8 +74,8 @@ fun PerfilUsuarioView(
     val letra = email?.firstOrNull()?.uppercase() ?: "U"
 
     Scaffold(
-        containerColor = MainBackground,
-        contentColor = Color.Black,
+        containerColor = MaterialTheme.colorScheme.background,
+        contentColor = MaterialTheme.colorScheme.onBackground,
         topBar = {
             TopAppBar(
                 title = { Text("Mi Perfil") },
@@ -88,9 +85,9 @@ fun PerfilUsuarioView(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MainBackground,
-                    titleContentColor = Color.Black,
-                    navigationIconContentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onBackground
                 )
             )
         }
@@ -109,7 +106,7 @@ fun PerfilUsuarioView(
                 modifier = Modifier
                     .size(80.dp)
                     .clip(androidx.compose.foundation.shape.CircleShape)
-                    .background(AppBrushes.Main),
+                    .background(AppBrushes.MainGradient),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -125,14 +122,15 @@ fun PerfilUsuarioView(
             Spacer(modifier = Modifier.height(24.dp))
             
             if (perfilViewModel.isLoading && perfilViewModel.nombre.isEmpty()) {
-                CircularProgressIndicator(color = PrimaryGreen)
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 Spacer(modifier = Modifier.height(24.dp))
             } else {
                 PerfilTextField(
                     value = perfilViewModel.nombre,
                     onValueChange = { perfilViewModel.nombre = it },
                     label = "Nombre",
-                    icon = Icons.Filled.Person
+                    icon = Icons.Filled.Person,
+                    modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(10.dp))
 
@@ -141,6 +139,7 @@ fun PerfilUsuarioView(
                     onValueChange = { perfilViewModel.email = it },
                     label = "Email",
                     icon = Icons.Filled.Email,
+                    modifier = Modifier.fillMaxWidth(),
                     keyboardType = KeyboardType.Email
                 )
                 Spacer(modifier = Modifier.height(10.dp))
@@ -150,6 +149,7 @@ fun PerfilUsuarioView(
                     onValueChange = { perfilViewModel.telefono = it },
                     label = "Teléfono",
                     icon = Icons.Filled.Phone,
+                    modifier = Modifier.fillMaxWidth(),
                     keyboardType = KeyboardType.Phone
                 )
                 Spacer(modifier = Modifier.height(10.dp))
@@ -190,12 +190,13 @@ fun PerfilUsuarioView(
                     value = perfilViewModel.objetivo,
                     onValueChange = { perfilViewModel.objetivo = it },
                     label = "Objetivo",
-                    icon = Icons.Filled.Flag
+                    icon = Icons.Filled.Flag,
+                    modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(24.dp))
                 
                 if (perfilViewModel.statusMessage.isNotEmpty()) {
-                    val color = if (perfilViewModel.statusMessage.contains("Error") || perfilViewModel.statusMessage.contains("obligatorios")) Color.Red else PrimaryGreen
+                    val color = if (perfilViewModel.statusMessage.contains("Error") || perfilViewModel.statusMessage.contains("obligatorios")) Color.Red else MaterialTheme.colorScheme.primary
                     Text(
                         text = perfilViewModel.statusMessage,
                         style = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Bold, color = color),
@@ -206,20 +207,20 @@ fun PerfilUsuarioView(
                 Button(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(brush = AppBrushes.Main, shape = ButtonDefaults.shape)
+                        .background(brush = AppBrushes.MainGradient, shape = RoundedCornerShape(12.dp))
                         .height(55.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent, contentColor = Color.Black),
                     enabled = !perfilViewModel.isLoading,
                     onClick = {
                         perfilViewModel.guardarCambios()
                     }
                 ) {
                     if (perfilViewModel.isLoading) {
-                        CircularProgressIndicator(color = Color.White, strokeWidth = 2.dp, modifier = Modifier.size(22.dp))
+                        CircularProgressIndicator(color = Color.Black, strokeWidth = 2.dp, modifier = Modifier.size(22.dp))
                     } else {
                         Text(
                             text = "Guardar Cambios",
-                            style = TextStyle(color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                            style = TextStyle(color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                         )
                     }
                 }
@@ -230,9 +231,9 @@ fun PerfilUsuarioView(
             Button(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(brush = AppBrushes.Secondary, shape = ButtonDefaults.shape)
-                    .height(55.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                        .background(brush = AppBrushes.AccentGradient, shape = RoundedCornerShape(12.dp))
+                        .height(55.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent, contentColor = Color.Black),
                 onClick = {
                     loginViewModel.logout()
                     navController.navigate(PantallaLogin) {
@@ -242,7 +243,7 @@ fun PerfilUsuarioView(
             ) {
                 Text(
                     text = "Cerrar Sesión",
-                    style = TextStyle(color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    style = TextStyle(color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 )
             }
             
@@ -257,7 +258,7 @@ fun PerfilTextField(
     onValueChange: (String) -> Unit,
     label: String,
     icon: ImageVector,
-    modifier: Modifier = Modifier.fillMaxWidth(),
+    modifier: Modifier = Modifier,
     keyboardType: KeyboardType = KeyboardType.Text
 ) {
     OutlinedTextField(
@@ -265,16 +266,16 @@ fun PerfilTextField(
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
         shape = RoundedCornerShape(20.dp),
         colors = OutlinedTextFieldDefaults.colors(
-            focusedContainerColor = Color.White,
-            unfocusedContainerColor = Color.White,
-            focusedBorderColor = PrimaryGreen,
-            unfocusedBorderColor = Color.LightGray,
+            focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
+            unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.3f),
+            focusedBorderColor = MaterialTheme.colorScheme.primary,
+            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
         ),
-        textStyle = TextStyle(brush = AppBrushes.Main),
+        textStyle = MaterialTheme.typography.bodyLarge.copy(brush = AppBrushes.MainGradient),
         value = value,
         onValueChange = onValueChange,
-        label = { Text(label, style = TextStyle(brush = AppBrushes.Secondary, fontWeight = FontWeight.Bold)) },
-        leadingIcon = { Icon(icon, contentDescription = null, tint = PrimaryGreen) }
+        label = { Text(label, style = MaterialTheme.typography.titleSmall.copy(brush = AppBrushes.AccentGradient)) },
+        leadingIcon = { Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary) }
     )
 }
 

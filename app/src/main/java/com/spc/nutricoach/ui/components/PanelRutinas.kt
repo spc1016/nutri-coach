@@ -46,11 +46,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import androidx.compose.material3.MaterialTheme
 import com.spc.nutricoach.data.SessionManager
 import com.spc.nutricoach.model.Rutina
 import com.spc.nutricoach.ui.theme.AppBrushes
-import com.spc.nutricoach.ui.theme.MainBackground
-import com.spc.nutricoach.ui.theme.PrimaryGreen
 import com.spc.nutricoach.ui.viewmodel.RutinaViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -69,17 +68,15 @@ fun RutinasView(
     val letraInicial = email?.firstOrNull()?.uppercase() ?: "U"
 
     Scaffold(
-        containerColor = MainBackground,
-        contentColor = Color.Black,
+        containerColor = MaterialTheme.colorScheme.background,
+        contentColor = MaterialTheme.colorScheme.onBackground,
         topBar = {
             TopAppBar(
                 title = { 
                     Text(
                         text = "Mis Rutinas",
-                        style = TextStyle(
-                            brush = AppBrushes.Secondary,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 28.sp
+                        style = MaterialTheme.typography.headlineLarge.copy(
+                            brush = AppBrushes.AccentGradient
                         )
                     )
                 },
@@ -88,7 +85,7 @@ fun RutinasView(
                         Icon(
                             imageVector = Icons.Default.Refresh,
                             contentDescription = "Actualizar rutinas",
-                            tint = PrimaryGreen
+                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
                     Box(
@@ -96,7 +93,7 @@ fun RutinasView(
                             .padding(end = 16.dp)
                             .size(40.dp)
                             .clip(CircleShape)
-                            .background(AppBrushes.Main)
+                            .background(AppBrushes.MainGradient)
                             .clickable { navController.navigate(PantallaPerfil) },
                         contentAlignment = Alignment.Center
                     ) {
@@ -111,72 +108,72 @@ fun RutinasView(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MainBackground,
-                    titleContentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground
                 )
             )
         }
     ) { innerPadding ->
+        NutriGridBackground(modifier = Modifier.padding(innerPadding)) {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                item { Spacer(modifier = Modifier.height(8.dp)) }
 
-        LazyColumn(
-            modifier = Modifier
-                .padding(innerPadding)
-                .fillMaxSize()
-                .padding(horizontal = 20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            item { Spacer(modifier = Modifier.height(8.dp)) }
-
-            if (rutinaViewModel.isLoading) {
-                item {
-                    Box(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(color = PrimaryGreen)
+                if (rutinaViewModel.isLoading) {
+                    item {
+                        Box(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                        }
                     }
                 }
-            }
 
-            rutinaViewModel.error?.let { errorMsg ->
-                item {
-                    Text(
-                        text = errorMsg,
-                        style = TextStyle(
-                            color = Color.Red,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold
-                        ),
-                        modifier = Modifier.padding(vertical = 16.dp)
-                    )
-                }
-            }
-
-            if (!rutinaViewModel.isLoading && rutinaViewModel.error == null && rutinaViewModel.rutinas.isEmpty()) {
-                item {
-                    Text(
-                        text = "No tienes rutinas asignadas",
-                        style = TextStyle(
-                            color = Color.Gray,
-                            fontSize = 16.sp
-                        ),
-                        modifier = Modifier.padding(vertical = 40.dp)
-                    )
-                }
-            }
-
-            items(rutinaViewModel.rutinas) { rutina ->
-                RutinaCard(
-                    rutina = rutina,
-                    onClick = {
-                        navController.navigate(PantallaDetalleRutina(rutinaId = rutina.id))
+                rutinaViewModel.error?.let { errorMsg ->
+                    item {
+                        Text(
+                            text = errorMsg,
+                            style = TextStyle(
+                                color = Color.Red,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold
+                            ),
+                            modifier = Modifier.padding(vertical = 16.dp)
+                        )
                     }
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-            }
+                }
 
-            item {
-                Spacer(modifier = Modifier.height(24.dp))
+                if (!rutinaViewModel.isLoading && rutinaViewModel.error == null && rutinaViewModel.rutinas.isEmpty()) {
+                    item {
+                        Text(
+                            text = "No tienes rutinas asignadas",
+                            style = TextStyle(
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = 16.sp
+                            ),
+                            modifier = Modifier.padding(vertical = 40.dp)
+                        )
+                    }
+                }
+
+                items(rutinaViewModel.rutinas) { rutina ->
+                    RutinaCard(
+                        rutina = rutina,
+                        onClick = {
+                            navController.navigate(PantallaDetalleRutina(rutinaId = rutina.id))
+                        }
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+
+                item {
+                    Spacer(modifier = Modifier.height(24.dp))
+                }
             }
         }
     }
@@ -188,9 +185,10 @@ fun RutinaCard(rutina: Rutina, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() },
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
             modifier = Modifier
@@ -202,10 +200,8 @@ fun RutinaCard(rutina: Rutina, onClick: () -> Unit) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = rutina.nombre,
-                    style = TextStyle(
-                        brush = AppBrushes.Main,
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 22.sp
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        brush = AppBrushes.MainGradient
                     )
                 )
 
@@ -215,15 +211,13 @@ fun RutinaCard(rutina: Rutina, onClick: () -> Unit) {
                     Icon(
                         imageVector = Icons.Filled.FitnessCenter,
                         contentDescription = null,
-                        tint = PrimaryGreen,
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(22.dp)
                     )
                     Text(
                         text = " ${rutina.dias.size} días de entrenamiento",
-                        style = TextStyle(
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color.DarkGray
+                        style = MaterialTheme.typography.bodyLarge.copy(
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     )
                 }
@@ -232,14 +226,14 @@ fun RutinaCard(rutina: Rutina, onClick: () -> Unit) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = rutina.notasGenerales,
-                        style = TextStyle(fontSize = 14.sp, color = Color.Gray)
+                        style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                     )
                 }
             }
             Icon(
                 imageVector = Icons.Filled.ChevronRight,
                 contentDescription = "Ver detalle",
-                tint = PrimaryGreen,
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(32.dp)
             )
         }

@@ -1,6 +1,12 @@
 package com.spc.nutricoach.ui.components
 
+import android.Manifest
 import android.annotation.SuppressLint
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,6 +35,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -42,17 +49,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
 import com.spc.nutricoach.ui.theme.AppBrushes
-import com.spc.nutricoach.ui.theme.MainBackground
-import com.spc.nutricoach.ui.theme.PrimaryGreen
 import com.spc.nutricoach.ui.viewmodel.EntrenamientoViewModel
 import com.spc.nutricoach.ui.viewmodel.RutinaViewModel
+import com.spc.nutricoach.workout.WorkoutService
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -63,23 +70,47 @@ fun EntrenamientoDiaView(
     rutinaViewModel: RutinaViewModel,
     entrenamientoViewModel: EntrenamientoViewModel
 ) {
-    // Initialize the view model if it hasn't been initialized for this routine/day
+    val context = LocalContext.current
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        val launcher = rememberLauncherForActivityResult(
+            ActivityResultContracts.RequestPermission()
+        ) { _ -> }
+
+        LaunchedEffect(Unit) {
+            if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+    }
+
     LaunchedEffect(rutinaId, diaNombre) {
         val rutina = rutinaViewModel.rutinas.find { it.id == rutinaId }
         if (rutina != null) {
             val dia = rutina.dias.find { it.nombre == diaNombre }
             if (dia != null) {
                 entrenamientoViewModel.iniciarOReanudar(rutinaId, dia)
+                val intent = Intent(context, WorkoutService::class.java).apply {
+                    action = WorkoutService.ACTION_START
+                }
+                context.startForegroundService(intent)
             }
         }
     }
 
-    val diaActual = entrenamientoViewModel.diaActual
-    val isFinished = entrenamientoViewModel.isFinished
+    val diaActual by entrenamientoViewModel.diaActual.collectAsState()
+    val isFinished by entrenamientoViewModel.isFinished.collectAsState()
+    val isStopped by entrenamientoViewModel.isStopped.collectAsState()
+
+    LaunchedEffect(isStopped) {
+        if (isStopped) {
+            navController.popBackStack()
+        }
+    }
 
     Scaffold(
-        containerColor = MainBackground,
-        contentColor = Color.Black,
+        containerColor = MaterialTheme.colorScheme.background,
+        contentColor = MaterialTheme.colorScheme.onBackground,
         topBar = {
             TopAppBar(
                 title = { Text(diaActual?.nombre ?: "Entrenamiento") },
@@ -89,9 +120,9 @@ fun EntrenamientoDiaView(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MainBackground,
-                    titleContentColor = Color.Black,
-                    navigationIconContentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onBackground
                 ),
                 actions = {
                     if (diaActual != null) {
@@ -114,7 +145,7 @@ fun EntrenamientoDiaView(
                 if (isFinished) {
                     Text("Error al cargar el entrenamiento.")
                 } else {
-                    CircularProgressIndicator(color = PrimaryGreen)
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 }
                 return@Scaffold
             }
@@ -122,7 +153,7 @@ fun EntrenamientoDiaView(
             if (isFinished) {
                 WorkoutFinishedScreen(navController, entrenamientoViewModel)
             } else {
-                ActiveWorkoutScreen(entrenamientoViewModel, rutinaViewModel, rutinaId, diaActual.nombre)
+                ActiveWorkoutScreen(entrenamientoViewModel, rutinaViewModel, rutinaId, diaActual!!.nombre)
             }
         }
     }
@@ -135,12 +166,13 @@ fun ActiveWorkoutScreen(
     rutinaId: String,
     diaNombre: String
 ) {
-    val dia = viewModel.diaActual ?: return
-    val exerciseIndex = viewModel.currentExerciseIndex
+    val diaState by viewModel.diaActual.collectAsState()
+    val dia = diaState ?: return
+    val exerciseIndex by viewModel.currentExerciseIndex.collectAsState()
     if (exerciseIndex >= dia.ejercicios.size) return
     
     val currentExercise = dia.ejercicios[exerciseIndex]
-    val currentSet = viewModel.currentSet
+    val currentSet by viewModel.currentSet.collectAsState()
     val totalSets = currentExercise.series
     
     val totalExercises = dia.ejercicios.size
@@ -156,7 +188,6 @@ fun ActiveWorkoutScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        // Top section: Progress
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -165,9 +196,10 @@ fun ActiveWorkoutScreen(
         ) {
             Text(
                 text = "Ejercicio ${exerciseIndex + 1} de $totalExercises",
-                fontSize = 16.sp,
-                color = Color.Gray,
-                fontWeight = FontWeight.Medium
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.Medium
+                )
             )
             Spacer(modifier = Modifier.height(8.dp))
             LinearProgressIndicator(
@@ -175,23 +207,20 @@ fun ActiveWorkoutScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(8.dp),
-                color = PrimaryGreen,
-                trackColor = Color.LightGray,
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.surfaceVariant,
                 strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
             )
         }
 
-        // Middle section: Exercise details
         Column(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
                 text = currentExercise.nombreSnapshot,
-                style = TextStyle(
-                    brush = AppBrushes.Main,
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.ExtraBold,
+                style = MaterialTheme.typography.headlineLarge.copy(
+                    brush = AppBrushes.MainGradient,
                     textAlign = TextAlign.Center
                 )
             )
@@ -200,9 +229,10 @@ fun ActiveWorkoutScreen(
             
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
-                shape = RoundedCornerShape(24.dp)
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)),
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                shape = RoundedCornerShape(16.dp)
             ) {
                 Column(
                     modifier = Modifier.padding(32.dp),
@@ -210,9 +240,10 @@ fun ActiveWorkoutScreen(
                 ) {
                     Text(
                         text = "Serie $currentSet de $totalSets",
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Black,
-                        color = Color.DarkGray
+                        style = MaterialTheme.typography.headlineSmall.copy(
+                            fontWeight = FontWeight.Black,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
                     )
                     
                     Spacer(modifier = Modifier.height(24.dp))
@@ -231,49 +262,52 @@ fun ActiveWorkoutScreen(
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
                             text = "💡 ${currentExercise.notas}",
-                            fontSize = 14.sp,
-                            color = Color.Gray,
-                            textAlign = TextAlign.Center
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center
+                            )
                         )
                     }
                 }
             }
         }
 
-        // Bottom section: Controls
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 32.dp),
             contentAlignment = Alignment.Center
         ) {
-            if (viewModel.isResting) {
+            val isResting by viewModel.isResting.collectAsState()
+            val restTimeRemaining by viewModel.restTimeRemaining.collectAsState()
+
+            if (isResting) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(
                         imageVector = Icons.Default.Timer,
                         contentDescription = "Tiempo de descanso",
-                        tint = PrimaryGreen,
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(36.dp)
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = "Descanso",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color.Gray
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     )
                     Text(
-                        text = formatTime(viewModel.restTimeRemaining),
-                        style = TextStyle(
-                            brush = AppBrushes.Main,
-                            fontSize = 64.sp,
+                        text = formatTime(restTimeRemaining),
+                        style = MaterialTheme.typography.headlineMedium.copy(
+                            brush = AppBrushes.MainGradient,
                             fontWeight = FontWeight.Black
                         )
                     )
                     Spacer(modifier = Modifier.height(24.dp))
                     OutlinedButton(
                         onClick = { viewModel.skipRest() },
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = PrimaryGreen),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
                         shape = RoundedCornerShape(16.dp),
                         modifier = Modifier.height(56.dp)
                     ) {
@@ -288,17 +322,16 @@ fun ActiveWorkoutScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(64.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = Color.Black),
                     elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp, pressedElevation = 8.dp),
                     shape = RoundedCornerShape(24.dp)
                 ) {
-                    Icon(imageVector = Icons.Default.CheckCircle, contentDescription = null, tint = Color.White)
+                    Icon(imageVector = Icons.Default.CheckCircle, contentDescription = null, tint = Color.Black)
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
                         text = "SERIE TERMINADA",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.ExtraBold,
-                        color = Color.White,
                         letterSpacing = 1.sp
                     )
                 }
@@ -310,8 +343,8 @@ fun ActiveWorkoutScreen(
 @Composable
 fun InfoBox(label: String, value: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(text = label, fontSize = 14.sp, color = Color.Gray)
-        Text(text = value, fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+        Text(text = label, style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant))
+        Text(text = value, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface))
     }
 }
 
@@ -325,25 +358,24 @@ fun WorkoutFinishedScreen(navController: NavController, viewModel: Entrenamiento
         Icon(
             imageVector = Icons.Default.EmojiEvents,
             contentDescription = "Completado",
-            tint = PrimaryGreen,
+            tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(80.dp)
         )
         Spacer(modifier = Modifier.height(24.dp))
         Text(
             text = "¡Entrenamiento Completado!",
-            style = TextStyle(
-                brush = AppBrushes.Main,
-                fontSize = 32.sp,
-                fontWeight = FontWeight.ExtraBold,
+            style = MaterialTheme.typography.headlineLarge.copy(
+                brush = AppBrushes.MainGradient,
                 textAlign = TextAlign.Center
             )
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
             text = "Has terminado todos los ejercicios de este día.",
-            fontSize = 16.sp,
-            color = Color.Gray,
-            textAlign = TextAlign.Center
+            style = MaterialTheme.typography.bodyLarge.copy(
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
         )
         Spacer(modifier = Modifier.height(32.dp))
         Button(
@@ -351,10 +383,10 @@ fun WorkoutFinishedScreen(navController: NavController, viewModel: Entrenamiento
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen),
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = Color.Black),
             shape = RoundedCornerShape(16.dp)
         ) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = Color.White)
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = Color.Black)
             Spacer(modifier = Modifier.width(8.dp))
             Text("Volver a la Rutina", fontSize = 18.sp, fontWeight = FontWeight.Bold)
         }
@@ -365,7 +397,7 @@ fun WorkoutFinishedScreen(navController: NavController, viewModel: Entrenamiento
                 .fillMaxWidth()
                 .height(56.dp),
             shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = PrimaryGreen)
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
         ) {
             Text("Volver a Empezar", fontSize = 18.sp, fontWeight = FontWeight.Bold)
         }
@@ -376,5 +408,5 @@ fun WorkoutFinishedScreen(navController: NavController, viewModel: Entrenamiento
 fun formatTime(seconds: Int): String {
     val mins = seconds / 60
     val secs = seconds % 60
-    return String.format("%02d:%02d", mins, secs)
+    return String.format(java.util.Locale.getDefault(), "%02d:%02d", mins, secs)
 }

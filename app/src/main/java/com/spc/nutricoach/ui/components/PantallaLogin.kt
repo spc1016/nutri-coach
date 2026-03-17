@@ -44,10 +44,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import androidx.compose.material3.MaterialTheme
 import com.spc.nutricoach.R
 import com.spc.nutricoach.ui.theme.AppBrushes
-import com.spc.nutricoach.ui.theme.MainBackground
-import com.spc.nutricoach.ui.theme.PrimaryGreen
 import com.spc.nutricoach.ui.viewmodel.LoginViewModel
 
 @Composable
@@ -67,7 +66,7 @@ fun LoginView(navController: NavController, loginViewModel: LoginViewModel = vie
         }
     }
 
-    Scaffold(containerColor = MainBackground) { innerPadding ->
+    Scaffold(containerColor = MaterialTheme.colorScheme.background) { innerPadding ->
         Column(
             modifier = Modifier
                 .padding(innerPadding)
@@ -83,44 +82,44 @@ fun LoginView(navController: NavController, loginViewModel: LoginViewModel = vie
             Spacer(modifier = Modifier.padding(10.dp))
             Text(
                 text = "Nutri Coach",
-                style = TextStyle(brush = AppBrushes.Secondary, fontWeight = FontWeight.Bold, fontSize = 40.sp)
+                style = MaterialTheme.typography.headlineLarge.copy(
+                    brush = AppBrushes.MainGradient
+                )
             )
             Spacer(modifier = Modifier.padding(15.dp))
 
-            // Campo Email
             OutlinedTextField(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 60.dp),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                shape = RoundedCornerShape(60.dp),
+                shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White,
-                    focusedBorderColor = PrimaryGreen,
-                    unfocusedBorderColor = Color.LightGray,
+                    focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.3f),
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
                 ),
-                textStyle = TextStyle(brush = AppBrushes.Main),
+                textStyle = MaterialTheme.typography.bodyLarge,
                 value = inputEmail,
                 onValueChange = { inputEmail = it },
                 label = {
-                    Text("Email", style = TextStyle(brush = AppBrushes.Secondary, fontWeight = FontWeight.Bold))
+                    Text("Email", style = MaterialTheme.typography.labelMedium.copy(color = MaterialTheme.colorScheme.primary))
                 },
                 leadingIcon = {
-                    Icon(Icons.Filled.Email, contentDescription = null, tint = PrimaryGreen)
+                    Icon(Icons.Filled.Email, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                 },
             )
             Spacer(modifier = Modifier.padding(15.dp))
 
-            // Campo Contraseña
             OutlinedTextField(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 60.dp),
-                shape = RoundedCornerShape(60.dp),
+                shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White,
-                    focusedBorderColor = PrimaryGreen,
-                    unfocusedBorderColor = Color.LightGray,
+                    focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.3f),
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
                 ),
-                textStyle = TextStyle(brush = AppBrushes.Main),
+                textStyle = MaterialTheme.typography.bodyLarge,
                 value = inputPassw,
                 onValueChange = { inputPassw = it },
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
@@ -128,15 +127,16 @@ fun LoginView(navController: NavController, loginViewModel: LoginViewModel = vie
                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
                         Icon(
                             imageVector = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
-                            contentDescription = null
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 },
                 label = {
-                    Text("Contraseña", style = TextStyle(brush = AppBrushes.Secondary, fontWeight = FontWeight.Bold))
+                    Text("Contraseña", style = MaterialTheme.typography.labelMedium.copy(color = MaterialTheme.colorScheme.primary))
                 },
                 leadingIcon = {
-                    Icon(Icons.Filled.Lock, contentDescription = null, tint = PrimaryGreen)
+                    Icon(Icons.Filled.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                 },
             )
             Spacer(modifier = Modifier.padding(15.dp))
@@ -146,24 +146,24 @@ fun LoginView(navController: NavController, loginViewModel: LoginViewModel = vie
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 60.dp)
-                    .background(brush = AppBrushes.Secondary, shape = ButtonDefaults.shape)
+                    .background(brush = AppBrushes.MainGradient, shape = RoundedCornerShape(12.dp))
                     .height(60.dp),
                 onClick = {
                     loginViewModel.doLogin(inputEmail,inputPassw)
                 },
                 enabled = !loginViewModel.isLoading,
-                colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent, contentColor = Color.Black),
             ) {
                 if (loginViewModel.isLoading) {
                     CircularProgressIndicator(
-                        color = Color.White,
+                        color = Color.Black,
                         strokeWidth = 2.dp,
                         modifier = Modifier.size(22.dp)
                     )
                 } else {
                     Text(
                         text = "Iniciar Sesión",
-                        style = TextStyle(color = Color.White, fontWeight = FontWeight.Bold)
+                        style = TextStyle(color = Color.Black, fontWeight = FontWeight.Bold)
                     )
                 }
             }
@@ -173,7 +173,7 @@ fun LoginView(navController: NavController, loginViewModel: LoginViewModel = vie
             if (loginViewModel.statusMessage.isNotEmpty()) {
                 val color = if (loginViewModel.statusMessage.startsWith("Error") ||
                     loginViewModel.statusMessage.startsWith("Sin"))
-                    Color.Red else PrimaryGreen
+                    Color.Red else MaterialTheme.colorScheme.primary
                 Text(
                     text = loginViewModel.statusMessage,
                     style = TextStyle(fontSize = 13.sp, fontWeight = FontWeight.Bold, color = color)
@@ -183,7 +183,7 @@ fun LoginView(navController: NavController, loginViewModel: LoginViewModel = vie
 
             Text(
                 text = "¿No tienes cuenta? Regístrate Aquí",
-                style = TextStyle(fontSize = 13.sp, color = PrimaryGreen),
+                style = MaterialTheme.typography.labelMedium.copy(color = MaterialTheme.colorScheme.primary),
                 modifier = Modifier.clickable { navController.navigate(PantallaRegistro) }.padding(8.dp)
             )
         }
