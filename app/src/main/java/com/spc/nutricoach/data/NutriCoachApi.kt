@@ -50,6 +50,40 @@ data class ModificarClienteRequest(
     val genero: String? = null
 )
 
+@Serializable
+data class CrearRutinaRequest(
+    val nombre: String,
+    val cliente_id: String,
+    val dias: List<com.spc.nutricoach.model.Dia> = emptyList(),
+    val activa: Boolean = true,
+    val publica: Boolean = false
+)
+
+@Serializable
+data class CrearRutinaResponse(
+    val id: String
+)
+
+@Serializable
+data class AgregarDiaRequest(
+    val nombre: String,
+    val ejercicios: List<com.spc.nutricoach.model.Ejercicio> = emptyList()
+)
+
+@Serializable
+data class AgregarEjercicioRequest(
+    val ejercicio_id: String,
+    val nombre_snapshot: String,
+    val series: Int,
+    val repeticiones: Int,
+    val descanso_segundos: Int
+)
+
+@Serializable
+data class ModificarRutinaRequest(
+    val publica: Boolean? = null
+)
+
 interface NutricionApiService {
     @POST("login")
     suspend fun login(@Body request: LoginRequest): LoginApiResponse
@@ -71,10 +105,49 @@ interface NutricionApiService {
     )
 
     @GET("clientes/{id}/dietas-activas")
-    suspend fun obtenerDietasCliente(@Path("id") clienteId: String): List<Dieta>
+    suspend fun obtenerDietasCliente(
+        @Path("id") clienteId: String,
+        @Header("Authorization") token: String
+    ): List<Dieta>
 
     @GET("clientes/{id}/rutinas-activas")
-    suspend fun obtenerRutinasCliente(@Path("id") clienteId: String): List<com.spc.nutricoach.model.Rutina>
+    suspend fun obtenerRutinasCliente(
+        @Path("id") clienteId: String,
+        @Header("Authorization") token: String
+    ): List<com.spc.nutricoach.model.Rutina>
+
+    @GET("rutinas/publicas")
+    suspend fun obtenerRutinasPublicas(
+        @Header("Authorization") token: String
+    ): List<com.spc.nutricoach.model.Rutina>
+
+    @POST("rutinas")
+    suspend fun crearRutina(
+        @Header("Authorization") token: String,
+        @Body request: CrearRutinaRequest
+    ): CrearRutinaResponse
+
+    @POST("rutinas/{id}/dias")
+    suspend fun agregarDiaARutina(
+        @Path("id") rutinaId: String,
+        @Header("Authorization") token: String,
+        @Body request: AgregarDiaRequest
+    )
+
+    @POST("rutinas/{id}/dias/{dia_index}/ejercicios")
+    suspend fun agregarEjercicioADia(
+        @Path("id") rutinaId: String,
+        @Path("dia_index") diaIndex: Int,
+        @Header("Authorization") token: String,
+        @Body request: AgregarEjercicioRequest
+    )
+
+    @retrofit2.http.PUT("rutinas/{id}")
+    suspend fun modificarRutina(
+        @Path("id") rutinaId: String,
+        @Header("Authorization") token: String,
+        @Body request: ModificarRutinaRequest
+    )
 }
 
 object NutriCoachApiClient {

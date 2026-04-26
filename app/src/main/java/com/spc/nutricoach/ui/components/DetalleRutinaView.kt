@@ -16,14 +16,19 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -31,7 +36,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -40,15 +45,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.compose.material3.MaterialTheme
+import com.spc.nutricoach.data.SessionManager
 import com.spc.nutricoach.model.Dia
 import com.spc.nutricoach.ui.theme.AppBrushes
 import com.spc.nutricoach.ui.viewmodel.RutinaViewModel
+import androidx.compose.runtime.Composable
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -57,7 +65,16 @@ fun DetalleRutinaView(
     rutinaId: String,
     rutinaViewModel: RutinaViewModel
 ) {
-    val rutina = rutinaViewModel.rutinas.find { it.id == rutinaId }
+    val rutina = rutinaViewModel.rutinas.find { it.id == rutinaId } ?: rutinaViewModel.rutinasPublicas.find { it.id == rutinaId }
+
+    val context = LocalContext.current
+    val sessionManager = remember { SessionManager(context) }
+    var currentClienteId by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(Unit) {
+        currentClienteId = sessionManager.getClienteId()
+    }
+    
+    val isReadOnly = currentClienteId != null && rutina?.clienteId != currentClienteId
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -108,6 +125,41 @@ fun DetalleRutinaView(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
+                if (!isReadOnly) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "Hacer pública",
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                color = MaterialTheme.colorScheme.onSurface,
+                                fontWeight = FontWeight.Bold
+                            )
+                        )
+                        var isToggling by remember { mutableStateOf(false) }
+                        Switch(
+                            checked = rutina.publica,
+                            onCheckedChange = { isPublica ->
+                                isToggling = true
+                                rutinaViewModel.toggleRutinaPublica(rutina.id, isPublica) { _, _ ->
+                                    isToggling = false
+                                }
+                            },
+                            enabled = !isToggling,
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = MaterialTheme.colorScheme.primary,
+                                checkedTrackColor = MaterialTheme.colorScheme.primaryContainer,
+                                uncheckedThumbColor = MaterialTheme.colorScheme.outline,
+                                uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant
+                            )
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
+
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Filled.FitnessCenter,
@@ -156,6 +208,7 @@ fun DetalleRutinaView(
                 val diasOrdenados = rutina.dias.sortedBy { it.orden }
                 items(diasOrdenados.size) { index ->
                     val dia = diasOrdenados[index]
+                    val diaIndexOriginal = rutina.dias.indexOf(dia) // Obtener indice real
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(24.dp),
@@ -164,7 +217,7 @@ fun DetalleRutinaView(
                         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                     ) {
                         Column(modifier = Modifier.padding(20.dp)) {
-                            DiaItemDetail(dia = dia, rutinaId = rutina.id, rutinaViewModel = rutinaViewModel)
+                            DiaItemDetail(dia = dia, diaIndex = diaIndexOriginal, rutinaId = rutina.id, rutinaViewModel = rutinaViewModel, isReadOnly = isReadOnly)
                             Spacer(modifier = Modifier.height(20.dp))
                             Button(
                                 onClick = {
@@ -197,15 +250,75 @@ fun DetalleRutinaView(
                 }
             }
 
-            item {
+            if (!isReadOnly) {
+                item {
+                    var showAddDiaDialog by remember { mutableStateOf(false) }
+                    Button(
+                        onClick = { showAddDiaDialog = true },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondaryContainer, contentColor = MaterialTheme.colorScheme.onSecondaryContainer),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("Añadir Día", fontWeight = FontWeight.Bold)
+                }
+
+                if (showAddDiaDialog) {
+                    var nombreDia by remember { mutableStateOf("") }
+                    var isSubmitting by remember { mutableStateOf(false) }
+
+                    AlertDialog(
+                        onDismissRequest = { if (!isSubmitting) showAddDiaDialog = false },
+                        title = { Text("Nuevo Día") },
+                        text = {
+                            OutlinedTextField(
+                                value = nombreDia,
+                                onValueChange = { nombreDia = it },
+                                label = { Text("Nombre del día (ej. Día de Pierna)") },
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth(),
+                                enabled = !isSubmitting
+                            )
+                        },
+                        confirmButton = {
+                            Button(
+                                onClick = {
+                                    if (nombreDia.isNotBlank()) {
+                                        isSubmitting = true
+                                        rutinaViewModel.agregarDia(rutina.id, nombreDia) { _, _ ->
+                                            isSubmitting = false
+                                            showAddDiaDialog = false
+                                        }
+                                    }
+                                },
+                                enabled = !isSubmitting
+                            ) {
+                                if (isSubmitting) CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                                else Text("Guardar")
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showAddDiaDialog = false }, enabled = !isSubmitting) {
+                                Text("Cancelar")
+                            }
+                        }
+                    )
+                }
+                
                 Spacer(modifier = Modifier.height(32.dp))
+            }
+            } else {
+                item {
+                    Spacer(modifier = Modifier.height(32.dp))
+                }
             }
         }
     }
 }
 
 @Composable
-fun DiaItemDetail(dia: Dia, rutinaId: String, rutinaViewModel: RutinaViewModel) {
+fun DiaItemDetail(dia: Dia, diaIndex: Int, rutinaId: String, rutinaViewModel: RutinaViewModel, isReadOnly: Boolean = false) {
     Column {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -281,49 +394,149 @@ fun DiaItemDetail(dia: Dia, rutinaId: String, rutinaViewModel: RutinaViewModel) 
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    if (!isReadOnly) {
+                        Spacer(modifier = Modifier.height(12.dp))
 
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 12.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Peso a levantar (kg):",
-                            style = TextStyle(
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        )
-                        OutlinedTextField(
-                            value = localWeight,
-                            onValueChange = { 
-                                localWeight = it
-                                rutinaViewModel.saveExerciseWeight(rutinaId, uniqueKey, it)
-                            },
-                            placeholder = { Text("0") },
+                        Row(
                             modifier = Modifier
-                                .width(80.dp)
-                                .height(56.dp),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            singleLine = true,
-                            textStyle = MaterialTheme.typography.bodyLarge.copy(
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            ),
-                            shape = RoundedCornerShape(8.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                                focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
-                                unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.3f)
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Peso a levantar (kg):",
+                                style = TextStyle(
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
                             )
-                        )
+                            OutlinedTextField(
+                                value = localWeight,
+                                onValueChange = { 
+                                    localWeight = it
+                                    rutinaViewModel.saveExerciseWeight(rutinaId, uniqueKey, it)
+                                },
+                                placeholder = { Text("0") },
+                                modifier = Modifier
+                                    .width(80.dp)
+                                    .height(56.dp),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                singleLine = true,
+                                textStyle = MaterialTheme.typography.bodyLarge.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                ),
+                                shape = RoundedCornerShape(8.dp),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                                    focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
+                                    unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.3f)
+                                )
+                            )
+                        }
                     }
                 }
+            }
+        }
+
+        if (!isReadOnly) {
+            Spacer(modifier = Modifier.height(16.dp))
+
+            var showAddEjercicioDialog by remember { mutableStateOf(false) }
+            
+            Button(
+                onClick = { showAddEjercicioDialog = true },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant, contentColor = MaterialTheme.colorScheme.onSurfaceVariant),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text("Añadir Ejercicio", fontWeight = FontWeight.Bold)
+            }
+
+            if (showAddEjercicioDialog) {
+                var nombreEj by remember { mutableStateOf("") }
+                var seriesEj by remember { mutableStateOf("") }
+                var repsEj by remember { mutableStateOf("") }
+                var descansoEj by remember { mutableStateOf("") }
+                var isSubmitting by remember { mutableStateOf(false) }
+
+                AlertDialog(
+                    onDismissRequest = { if (!isSubmitting) showAddEjercicioDialog = false },
+                    title = { Text("Nuevo Ejercicio") },
+                    text = {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedTextField(
+                                value = nombreEj,
+                                onValueChange = { nombreEj = it },
+                                label = { Text("Nombre del Ejercicio") },
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth(),
+                                enabled = !isSubmitting
+                            )
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                OutlinedTextField(
+                                    value = seriesEj,
+                                    onValueChange = { seriesEj = it },
+                                    label = { Text("Series") },
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                    singleLine = true,
+                                    modifier = Modifier.weight(1f),
+                                    enabled = !isSubmitting
+                                )
+                                OutlinedTextField(
+                                    value = repsEj,
+                                    onValueChange = { repsEj = it },
+                                    label = { Text("Reps") },
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                    singleLine = true,
+                                    modifier = Modifier.weight(1f),
+                                    enabled = !isSubmitting
+                                )
+                            }
+                            OutlinedTextField(
+                                value = descansoEj,
+                                onValueChange = { descansoEj = it },
+                                label = { Text("Descanso (s)") },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth(),
+                                enabled = !isSubmitting
+                            )
+                        }
+                    },
+                    confirmButton = {
+                        Button(
+                            onClick = {
+                                if (nombreEj.isNotBlank() && seriesEj.isNotBlank() && repsEj.isNotBlank()) {
+                                    isSubmitting = true
+                                    rutinaViewModel.agregarEjercicio(
+                                        rutinaId = rutinaId,
+                                        diaIndex = diaIndex,
+                                        nombre = nombreEj,
+                                        series = seriesEj.toIntOrNull() ?: 0,
+                                        repeticiones = repsEj.toIntOrNull() ?: 0,
+                                        descanso = descansoEj.toIntOrNull() ?: 0
+                                    ) { _, _ ->
+                                        isSubmitting = false
+                                        showAddEjercicioDialog = false
+                                    }
+                                }
+                            },
+                            enabled = !isSubmitting
+                        ) {
+                            if (isSubmitting) CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                            else Text("Guardar")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showAddEjercicioDialog = false }, enabled = !isSubmitting) {
+                            Text("Cancelar")
+                        }
+                    }
+                )
             }
         }
     }

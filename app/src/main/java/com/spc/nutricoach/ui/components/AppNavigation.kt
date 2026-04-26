@@ -7,9 +7,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.EditNote
-import androidx.compose.material.icons.filled.FitnessCenter
-import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -40,10 +41,13 @@ import kotlinx.coroutines.flow.first
 import kotlinx.serialization.Serializable
 
 @Serializable
-object PantallaInicio
+object PantallaFeed
 
 @Serializable
-object PantallaRutinas
+object PantallaPublicar
+
+@Serializable
+object PantallaPersonal
 
 @Serializable
 object PantallaLogin
@@ -91,14 +95,19 @@ fun AppNavigation() {
 
     val navBarRoutes = listOf(
         NavRoute(
-            label = "Inicio",
-            icon = Icons.Default.Restaurant,
-            routeObject = PantallaInicio
+            label = "Feed",
+            icon = Icons.Default.Home,
+            routeObject = PantallaFeed
         ),
         NavRoute(
-            label = "Rutinas",
-            icon = Icons.Default.FitnessCenter,
-            routeObject = PantallaRutinas
+            label = "Publicar",
+            icon = Icons.Default.AddCircle,
+            routeObject = PantallaPublicar
+        ),
+        NavRoute(
+            label = "Personal",
+            icon = Icons.Default.Person,
+            routeObject = PantallaPersonal
         ),
         NavRoute(
             label = "Notas",
@@ -167,13 +176,20 @@ fun AppNavigation() {
         NavHost(
             modifier = Modifier.padding(bottom = innerPadding.calculateBottomPadding()),
             navController = navController,
-            startDestination = if (isLoggedIn == true) PantallaInicio else PantallaLogin
+            startDestination = if (isLoggedIn == true) PantallaFeed else PantallaLogin
         ) {
-            composable<PantallaInicio> {
-                MainView(navController = navController, dietaViewModel = dietaViewModel)
+            composable<PantallaFeed> {
+                FeedView(navController = navController, rutinaViewModel = rutinaViewModel)
             }
-            composable<PantallaRutinas> {
-                RutinasView(navController = navController, rutinaViewModel = rutinaViewModel)
+            composable<PantallaPublicar> {
+                PublicarView(navController = navController)
+            }
+            composable<PantallaPersonal> {
+                PersonalView(
+                    navController = navController,
+                    dietaViewModel = dietaViewModel,
+                    rutinaViewModel = rutinaViewModel
+                )
             }
             composable<PantallaLogin> {
                 LoginView(navController)

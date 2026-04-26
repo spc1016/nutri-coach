@@ -57,7 +57,13 @@ class DietaViewModel(application: Application) : AndroidViewModel(application) {
                 isLoading = false
                 return
             }
-            val resultado = NutriCoachApiClient.service.obtenerDietasCliente(clienteId)
+            val token = sessionManager.getToken()
+            if (token.isNullOrBlank()) {
+                error = "No hay sesión activa"
+                isLoading = false
+                return
+            }
+            val resultado = NutriCoachApiClient.service.obtenerDietasCliente(clienteId, "Bearer $token")
             Log.d("DIETAS", "Dietas obtenidas: ${resultado.size}")
             dietas = resultado
             lastLoadedClientId = clienteId

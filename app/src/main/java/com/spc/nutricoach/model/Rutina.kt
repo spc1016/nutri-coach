@@ -66,6 +66,7 @@ data class Rutina(
     val nombre: String = "",
     @SerialName("fecha_asignacion") val fechaAsignacion: String? = null,
     val activa: Boolean = true,
+    val publica: Boolean = false,
     @SerialName("notas_generales") val notasGenerales: String? = null,
     val dias: List<Dia> = emptyList()
 )
