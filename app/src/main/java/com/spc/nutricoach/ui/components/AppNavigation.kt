@@ -73,6 +73,9 @@ object PantallaNotas
 @Serializable
 data class PantallaDetalleNota(val notaId: Int)
 
+@Serializable
+object PantallaQrScanner
+
 @Composable
 fun AppNavigation() {
     val context = LocalContext.current
@@ -235,6 +238,12 @@ fun AppNavigation() {
                     navController = navController,
                     notaId = args.notaId,
                     notasViewModel = notasViewModel
+                )
+            }
+            composable<PantallaQrScanner> {
+                QrScannerView(
+                    navController = navController,
+                    rutinaViewModel = rutinaViewModel
                 )
             }
         }

@@ -7,7 +7,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -64,6 +68,13 @@ fun FeedView(navController: NavController, rutinaViewModel: RutinaViewModel = vi
                     )
                 },
                 actions = {
+                    IconButton(onClick = { rutinaViewModel.cargarRutinasPublicas(force = true) }) {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = "Actualizar feed",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
                     Box(
                         modifier = Modifier
                             .padding(end = 16.dp)

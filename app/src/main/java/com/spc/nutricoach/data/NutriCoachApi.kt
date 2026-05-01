@@ -121,6 +121,12 @@ interface NutricionApiService {
         @Header("Authorization") token: String
     ): List<com.spc.nutricoach.model.Rutina>
 
+    @GET("rutinas/{id}")
+    suspend fun obtenerRutinaPorId(
+        @Path("id") rutinaId: String,
+        @Header("Authorization") token: String
+    ): com.spc.nutricoach.model.Rutina
+
     @POST("rutinas")
     suspend fun crearRutina(
         @Header("Authorization") token: String,
@@ -151,7 +157,7 @@ interface NutricionApiService {
 }
 
 object NutriCoachApiClient {
-    private const val BASE_URL = "http://nutricoach.us-east-1.elasticbeanstalk.com/"
+    private const val BASE_URL = "https://api-nutri-coach.onrender.com/"
 
     private val json = Json { ignoreUnknownKeys = true }
 

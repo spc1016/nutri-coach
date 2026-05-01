@@ -51,8 +51,8 @@ class RutinaViewModel(application: Application) : AndroidViewModel(application) 
             loadRutinas(clienteId)
         }
     }
-    
-    private suspend fun loadRutinas(clienteId: String?){
+
+    private suspend fun loadRutinas(clienteId: String?) {
         try {
             if (clienteId.isNullOrBlank()) {
                 error = "No se encontró el ID del cliente"
@@ -65,7 +65,8 @@ class RutinaViewModel(application: Application) : AndroidViewModel(application) 
                 isLoading = false
                 return
             }
-            val resultado = NutriCoachApiClient.service.obtenerRutinasCliente(clienteId, "Bearer $token")
+            val resultado =
+                NutriCoachApiClient.service.obtenerRutinasCliente(clienteId, "Bearer $token")
             Log.d("RUTINAS", "Rutinas obtenidas: ${resultado.size}")
             rutinas = resultado
             lastLoadedClientId = clienteId
@@ -134,7 +135,7 @@ class RutinaViewModel(application: Application) : AndroidViewModel(application) 
                     onResult(false, "No se encontró el ID del cliente")
                     return@launch
                 }
-                
+
                 val token = sessionManager.getToken()
                 if (token.isNullOrBlank()) {
                     onResult(false, "No hay sesión activa")
@@ -145,9 +146,9 @@ class RutinaViewModel(application: Application) : AndroidViewModel(application) 
                     nombre = nombre,
                     cliente_id = clienteId
                 )
-                
+
                 NutriCoachApiClient.service.crearRutina("Bearer $token", request)
-                
+
                 // Recargar rutinas para mostrar la nueva
                 loadRutinas(clienteId)
                 onResult(true, null)
@@ -169,10 +170,10 @@ class RutinaViewModel(application: Application) : AndroidViewModel(application) 
                     onResult(false, "No hay sesión activa")
                     return@launch
                 }
-                
+
                 val request = com.spc.nutricoach.data.AgregarDiaRequest(nombre = nombre)
                 NutriCoachApiClient.service.agregarDiaARutina(rutinaId, "Bearer $token", request)
-                
+
                 // Recargar rutinas
                 val clienteId = sessionManager.getClienteId()
                 loadRutinas(clienteId)
@@ -184,12 +185,12 @@ class RutinaViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     fun agregarEjercicio(
-        rutinaId: String, 
-        diaIndex: Int, 
-        nombre: String, 
-        series: Int, 
-        repeticiones: Int, 
-        descanso: Int, 
+        rutinaId: String,
+        diaIndex: Int,
+        nombre: String,
+        series: Int,
+        repeticiones: Int,
+        descanso: Int,
         onResult: (Boolean, String?) -> Unit
     ) {
         viewModelScope.launch(Dispatchers.IO) {
@@ -199,7 +200,7 @@ class RutinaViewModel(application: Application) : AndroidViewModel(application) 
                     onResult(false, "No hay sesión activa")
                     return@launch
                 }
-                
+
                 val request = com.spc.nutricoach.data.AgregarEjercicioRequest(
                     ejercicio_id = "000000000000000000000000",
                     nombre_snapshot = nombre,
@@ -207,9 +208,14 @@ class RutinaViewModel(application: Application) : AndroidViewModel(application) 
                     repeticiones = repeticiones,
                     descanso_segundos = descanso
                 )
-                
-                NutriCoachApiClient.service.agregarEjercicioADia(rutinaId, diaIndex, "Bearer $token", request)
-                
+
+                NutriCoachApiClient.service.agregarEjercicioADia(
+                    rutinaId,
+                    diaIndex,
+                    "Bearer $token",
+                    request
+                )
+
                 // Recargar rutinas
                 val clienteId = sessionManager.getClienteId()
                 loadRutinas(clienteId)
@@ -220,7 +226,11 @@ class RutinaViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
-    fun toggleRutinaPublica(rutinaId: String, isPublica: Boolean, onResult: (Boolean, String?) -> Unit) {
+    fun toggleRutinaPublica(
+        rutinaId: String,
+        isPublica: Boolean,
+        onResult: (Boolean, String?) -> Unit
+    ) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val token = sessionManager.getToken()
@@ -228,16 +238,59 @@ class RutinaViewModel(application: Application) : AndroidViewModel(application) 
                     onResult(false, "No hay sesión activa")
                     return@launch
                 }
-                
+
                 val request = com.spc.nutricoach.data.ModificarRutinaRequest(publica = isPublica)
                 NutriCoachApiClient.service.modificarRutina(rutinaId, "Bearer $token", request)
-                
+
                 // Actualizar estado local para evitar parpadeos
-                rutinas = rutinas.map { if (it.id == rutinaId) it.copy(publica = isPublica) else it }
+                rutinas =
+                    rutinas.map { if (it.id == rutinaId) it.copy(publica = isPublica) else it }
                 onResult(true, null)
             } catch (e: Exception) {
                 onResult(false, "Error: ${e.message}")
             }
         }
     }
-}
+
+    fun clonarRutinaPorId(rutinaId: String, onResult: (Boolean, String?) -> Unit) {
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.Main) {
+            val result = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                try {
+                    val clienteId = sessionManager.getClienteId()
+                    if (clienteId.isNullOrBlank()) {
+                        return@withContext Pair(false, "No se encontró el ID del cliente")
+                    }
+                    val token = sessionManager.getToken()
+                    if (token.isNullOrBlank()) {
+                        return@withContext Pair(false, "No hay sesión activa")
+                    }
+
+                    // 1. Obtener la rutina original
+                    val original =
+                        NutriCoachApiClient.service.obtenerRutinaPorId(rutinaId, "Bearer $token")
+
+                    // 2. Crear una copia para el usuario actual
+                    val request = com.spc.nutricoach.data.CrearRutinaRequest(
+                        nombre = original.nombre,
+                        cliente_id = clienteId,
+                        dias = original.dias,
+                        activa = true,
+                        publica = false
+                    )
+                    NutriCoachApiClient.service.crearRutina("Bearer $token", request)
+
+                    // 3. Recargar rutinas del usuario
+                    loadRutinas(clienteId)
+                    Pair(true, null)
+                } catch (e: retrofit2.HttpException) {
+                    Pair(false, "Error del servidor (${e.code()})")
+                } catch (e: java.io.IOException) {
+                    Pair(false, "Error de conexión")
+                } catch (e: Exception) {
+                    Pair(false, "Error: ${e.message}")
+                }
+            }
+            onResult(result.first, result.second)
+        }
+    }
+    }

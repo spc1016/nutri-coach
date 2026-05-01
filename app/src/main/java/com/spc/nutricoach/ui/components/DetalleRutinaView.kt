@@ -1,5 +1,6 @@
 package com.spc.nutricoach.ui.components
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,6 +17,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.QrCode2
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -45,9 +48,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -56,6 +61,7 @@ import com.spc.nutricoach.data.SessionManager
 import com.spc.nutricoach.model.Dia
 import com.spc.nutricoach.ui.theme.AppBrushes
 import com.spc.nutricoach.ui.viewmodel.RutinaViewModel
+import com.spc.nutricoach.util.QrUtils
 import androidx.compose.runtime.Composable
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -154,6 +160,72 @@ fun DetalleRutinaView(
                                 uncheckedThumbColor = MaterialTheme.colorScheme.outline,
                                 uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant
                             )
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Botón Compartir QR
+                    var showQrDialog by remember { mutableStateOf(false) }
+                    Button(
+                        onClick = { showQrDialog = true },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.QrCode2,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Compartir QR", fontWeight = FontWeight.Bold)
+                    }
+
+                    if (showQrDialog) {
+                        val qrBitmap = remember(rutina.id) {
+                            QrUtils.generateQrBitmap(rutina.id)
+                        }
+                        AlertDialog(
+                            onDismissRequest = { showQrDialog = false },
+                            title = {
+                                Text(
+                                    text = "QR de Rutina",
+                                    style = MaterialTheme.typography.titleLarge.copy(
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                )
+                            },
+                            text = {
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Image(
+                                        bitmap = qrBitmap.asImageBitmap(),
+                                        contentDescription = "QR de la rutina",
+                                        modifier = Modifier.size(250.dp)
+                                    )
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    Text(
+                                        text = "Escanea este código desde otra cuenta para copiar la rutina",
+                                        style = MaterialTheme.typography.bodyMedium.copy(
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        ),
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+                            },
+                            confirmButton = {
+                                TextButton(onClick = { showQrDialog = false }) {
+                                    Text("Cerrar")
+                                }
+                            }
                         )
                     }
 

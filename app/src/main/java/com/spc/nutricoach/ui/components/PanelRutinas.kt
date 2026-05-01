@@ -19,6 +19,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -81,6 +83,13 @@ fun RutinasView(
                     )
                 },
                 actions = {
+                    IconButton(onClick = { navController.navigate(PantallaQrScanner) }) {
+                        Icon(
+                            imageVector = Icons.Default.QrCodeScanner,
+                            contentDescription = "Escanear QR",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
                     IconButton(onClick = { rutinaViewModel.cargarRutinas(force = true) }) {
                         Icon(
                             imageVector = Icons.Default.Refresh,
@@ -220,6 +229,24 @@ fun RutinaCard(rutina: Rutina, onClick: () -> Unit) {
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     )
+                }
+                
+                if (!rutina.cliente.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Filled.Person,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(22.dp)
+                        )
+                        Text(
+                            text = " Por: ${rutina.cliente}",
+                            style = MaterialTheme.typography.bodyLarge.copy(
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        )
+                    }
                 }
 
                 if (!rutina.notasGenerales.isNullOrBlank()) {

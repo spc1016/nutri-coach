@@ -66,6 +66,13 @@ dependencies {
     implementation("androidx.room:room-paging:2.8.4")
     ksp("androidx.room:room-compiler:2.8.4")
     implementation("androidx.compose.ui:ui-text-google-fonts")
+    // QR Generation
+    implementation("com.google.zxing:core:3.5.3")
+    // QR Scanning (ML Kit + CameraX)
+    implementation("com.google.mlkit:barcode-scanning:17.3.0")
+    implementation("androidx.camera:camera-camera2:1.4.2")
+    implementation("androidx.camera:camera-lifecycle:1.4.2")
+    implementation("androidx.camera:camera-view:1.4.2")
     implementation(libs.androidx.navigation.compose)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
