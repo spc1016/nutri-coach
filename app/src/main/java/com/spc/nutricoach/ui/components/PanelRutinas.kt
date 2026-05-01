@@ -54,7 +54,7 @@ import com.spc.nutricoach.model.Rutina
 import com.spc.nutricoach.ui.theme.AppBrushes
 import com.spc.nutricoach.ui.viewmodel.RutinaViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
+/*@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RutinasView(
     navController: NavController,
@@ -63,7 +63,7 @@ fun RutinasView(
     LaunchedEffect(Unit) {
         rutinaViewModel.cargarRutinas()
     }
-    
+
     val context = LocalContext.current
     val sessionManager = remember { SessionManager(context) }
     val email by sessionManager.userEmailFlow.collectAsState(initial = "")
@@ -74,7 +74,7 @@ fun RutinasView(
         contentColor = MaterialTheme.colorScheme.onBackground,
         topBar = {
             TopAppBar(
-                title = { 
+                title = {
                     Text(
                         text = "Mis Rutinas",
                         style = MaterialTheme.typography.headlineLarge.copy(
@@ -186,7 +186,7 @@ fun RutinasView(
             }
         }
     }
-}
+}*/
 
 @Composable
 fun RutinaCard(rutina: Rutina, onClick: () -> Unit) {
