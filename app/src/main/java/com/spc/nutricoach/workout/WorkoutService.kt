@@ -68,7 +68,7 @@ class WorkoutService : Service() {
                 restTimeRemaining = restTimeRemaining
             )
             
-            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.notify(NOTIFICATION_ID, notification)
 
         }.launchIn(serviceScope)

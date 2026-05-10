@@ -87,7 +87,7 @@ fun NotasView(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { mostrarDialogo = true },
+                onClick = { },
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = Color.Black
             ) {

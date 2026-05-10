@@ -59,6 +59,9 @@ object PantallaRegistro
 object PantallaPerfil
 
 @Serializable
+data class PantallaDetallePost(val postId: String)
+
+@Serializable
 data class PantallaPerfilPublico(val clienteId: String)
 
 @Serializable
@@ -142,6 +145,7 @@ fun AppNavigation() {
     val rutinaViewModel: com.spc.nutricoach.ui.viewmodel.RutinaViewModel = viewModel()
     val entrenamientoViewModel: com.spc.nutricoach.ui.viewmodel.EntrenamientoViewModel = viewModel()
     val notasViewModel: com.spc.nutricoach.ui.viewmodel.NotasViewModel = viewModel()
+    val feedViewModel: com.spc.nutricoach.ui.viewmodel.FeedViewModel = viewModel()
 
     val showNavBar = navBarRoutes.any { navRoute ->
         currentDestination?.hasRoute(navRoute.routeObject::class) == true
@@ -185,10 +189,14 @@ fun AppNavigation() {
             startDestination = if (isLoggedIn == true) PantallaFeed else PantallaLogin
         ) {
             composable<PantallaFeed> {
-                FeedView(navController = navController, rutinaViewModel = rutinaViewModel)
+                FeedView(navController = navController)
             }
             composable<PantallaPublicar> {
-                PublicarView(navController = navController)
+                PublicarView(
+                    navController = navController,
+                    feedViewModel = feedViewModel,
+                    rutinaViewModel = rutinaViewModel
+                )
             }
             composable<PantallaPersonal> {
                 PersonalView(
@@ -209,6 +217,14 @@ fun AppNavigation() {
                     navController = navController,
                     dietaId = detalle.dietaId,
                     dietaViewModel = dietaViewModel
+                )
+            }
+            composable<PantallaDetallePost> { backStackEntry ->
+                val args = backStackEntry.toRoute<PantallaDetallePost>()
+                DetallePostView(
+                    navController = navController,
+                    postId = args.postId,
+                    feedViewModel = feedViewModel
                 )
             }
             composable<PantallaDetalleRutina> { backStackEntry ->

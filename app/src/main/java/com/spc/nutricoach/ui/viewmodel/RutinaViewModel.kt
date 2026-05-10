@@ -253,8 +253,8 @@ class RutinaViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     fun clonarRutinaPorId(rutinaId: String, onResult: (Boolean, String?) -> Unit) {
-        viewModelScope.launch(kotlinx.coroutines.Dispatchers.Main) {
-            val result = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        viewModelScope.launch(Dispatchers.Main) {
+            val result = kotlinx.coroutines.withContext(Dispatchers.IO) {
                 try {
                     val clienteId = sessionManager.getClienteId()
                     if (clienteId.isNullOrBlank()) {
@@ -282,9 +282,9 @@ class RutinaViewModel(application: Application) : AndroidViewModel(application) 
                     // 3. Recargar rutinas del usuario
                     loadRutinas(clienteId)
                     Pair(true, null)
-                } catch (e: retrofit2.HttpException) {
+                } catch (e: HttpException) {
                     Pair(false, "Error del servidor (${e.code()})")
-                } catch (e: java.io.IOException) {
+                } catch (e: IOException) {
                     Pair(false, "Error de conexión")
                 } catch (e: Exception) {
                     Pair(false, "Error: ${e.message}")

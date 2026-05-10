@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
@@ -25,25 +24,19 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.spc.nutricoach.data.SessionManager
 import com.spc.nutricoach.ui.theme.AppBrushes
-import com.spc.nutricoach.ui.viewmodel.RutinaViewModel
-import com.spc.nutricoach.ui.viewmodel.UsuariosViewModel
+import com.spc.nutricoach.ui.viewmodel.FeedViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FeedView(
-    navController: NavController,
-    rutinaViewModel: RutinaViewModel = viewModel(),
-    usuariosViewModel: UsuariosViewModel = viewModel()
-) {
-    var selectedTabIndex by remember { mutableStateOf(0) }
-    
+fun FeedView(navController: NavController, feedViewModel: FeedViewModel = viewModel()) {
     LaunchedEffect(Unit) {
-        rutinaViewModel.cargarRutinasPublicas()
-        usuariosViewModel.cargarUsuarios()
+        feedViewModel.cargarPosts()
+        feedViewModel.cargarUsuarios()
     }
     val context = LocalContext.current
     val sessionManager = remember { SessionManager(context) }
     val email by sessionManager.userEmailFlow.collectAsState(initial = "")
+    val currentUserId by sessionManager.clienteIdFlow.collectAsState(initial = "")
     val letraInicial = email?.firstOrNull()?.uppercase() ?: "U"
 
     Scaffold(
@@ -60,10 +53,7 @@ fun FeedView(
                     )
                 },
                 actions = {
-                    IconButton(onClick = { 
-                        if (selectedTabIndex == 0) rutinaViewModel.cargarRutinasPublicas(force = true)
-                        else usuariosViewModel.cargarUsuarios(force = true)
-                    }) {
+                    IconButton(onClick = { feedViewModel.cargarPosts(force = true) }) {
                         Icon(
                             imageVector = Icons.Default.Refresh,
                             contentDescription = "Actualizar feed",
@@ -76,7 +66,7 @@ fun FeedView(
                             .size(40.dp)
                             .clip(CircleShape)
                             .background(AppBrushes.MainGradient)
-                            .clickable { navController.navigate(PantallaPerfil) },
+                            .clickable { navController.navigate(PantallaPerfil) }, 
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
@@ -99,23 +89,23 @@ fun FeedView(
         NutriGridBackground(modifier = Modifier.padding(innerPadding)) {
             Column(modifier = Modifier.fillMaxSize()) {
                 TabRow(
-                    selectedTabIndex = selectedTabIndex,
+                    selectedTabIndex = feedViewModel.selectedTab,
                     containerColor = MaterialTheme.colorScheme.background,
                     contentColor = MaterialTheme.colorScheme.primary
                 ) {
                     Tab(
-                        selected = selectedTabIndex == 0,
-                        onClick = { selectedTabIndex = 0 },
-                        text = { Text("Rutinas") }
+                        selected = feedViewModel.selectedTab == 0,
+                        onClick = { feedViewModel.selectedTab = 0 },
+                        text = { Text("Posts", fontWeight = FontWeight.Bold) }
                     )
                     Tab(
-                        selected = selectedTabIndex == 1,
-                        onClick = { selectedTabIndex = 1 },
-                        text = { Text("Usuarios") }
+                        selected = feedViewModel.selectedTab == 1,
+                        onClick = { feedViewModel.selectedTab = 1 },
+                        text = { Text("Usuarios", fontWeight = FontWeight.Bold) }
                     )
                 }
-
-                if (selectedTabIndex == 0) {
+                
+                if (feedViewModel.selectedTab == 0) {
                     LazyColumn(
                         modifier = Modifier
                             .fillMaxSize()
@@ -124,7 +114,7 @@ fun FeedView(
                     ) {
                         item { Spacer(modifier = Modifier.height(16.dp)) }
 
-                        if (rutinaViewModel.isLoading && rutinaViewModel.rutinasPublicas.isEmpty()) {
+                        if (feedViewModel.isLoading && feedViewModel.posts.isEmpty()) {
                             item {
                                 Box(
                                     modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp),
@@ -135,10 +125,10 @@ fun FeedView(
                             }
                         }
 
-                        if (!rutinaViewModel.isLoading && rutinaViewModel.rutinasPublicas.isEmpty()) {
+                        if (!feedViewModel.isLoading && feedViewModel.posts.isEmpty()) {
                             item {
                                 Text(
-                                    text = "No hay rutinas públicas en la comunidad",
+                                    text = "No hay posts en la comunidad",
                                     style = TextStyle(
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         fontSize = 16.sp
@@ -148,14 +138,21 @@ fun FeedView(
                             }
                         }
 
-                        items(rutinaViewModel.rutinasPublicas) { rutina ->
-                            RutinaCard(
-                                rutina = rutina,
+                        items(feedViewModel.posts) { post ->
+                            PostCard(
+                                post = post,
+                                currentUserId = currentUserId ?: "",
+                                onLikeClick = { feedViewModel.toggleLike(post.id) },
+                                onCommentClick = { 
+                                    navController.navigate(PantallaDetallePost(post.id))
+                                },
+                                onRoutineClick = { rutinaId ->
+                                    navController.navigate(PantallaDetalleRutina(rutinaId))
+                                },
                                 onClick = {
-                                    navController.navigate(PantallaDetalleRutina(rutinaId = rutina.id))
+                                    navController.navigate(PantallaDetallePost(post.id))
                                 }
                             )
-                            Spacer(modifier = Modifier.height(16.dp))
                         }
 
                         item {
@@ -163,87 +160,113 @@ fun FeedView(
                         }
                     }
                 } else {
-                    Column(modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
-                        Spacer(modifier = Modifier.height(16.dp))
-                        OutlinedTextField(
-                            value = usuariosViewModel.searchQuery,
-                            onValueChange = { usuariosViewModel.searchQuery = it },
-                            modifier = Modifier.fillMaxWidth(),
-                            placeholder = { Text("Buscar usuarios...") },
-                            leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Buscar") },
-                            shape = RoundedCornerShape(20.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                            )
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 20.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        item { Spacer(modifier = Modifier.height(16.dp)) }
                         
-                        val filteredUsers = usuariosViewModel.usuarios.filter {
-                            it.nombre.contains(usuariosViewModel.searchQuery, ignoreCase = true) ||
-                            it.email.contains(usuariosViewModel.searchQuery, ignoreCase = true)
-                        }
-
-                        if (usuariosViewModel.isLoading && usuariosViewModel.usuarios.isEmpty()) {
-                            Box(
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                            }
-                        } else if (filteredUsers.isEmpty()) {
-                            Text(
-                                text = "No se encontraron usuarios",
-                                style = TextStyle(color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 16.sp),
-                                modifier = Modifier.padding(vertical = 40.dp).align(Alignment.CenterHorizontally)
+                        item {
+                            OutlinedTextField(
+                                value = feedViewModel.searchQuery,
+                                onValueChange = { feedViewModel.searchQuery = it },
+                                label = { Text("Buscar usuarios...") },
+                                leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Buscar") },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = 16.dp),
+                                shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
                             )
-                        } else {
-                            LazyColumn(modifier = Modifier.fillMaxSize()) {
-                                items(filteredUsers) { usuario ->
-                                    val isFollowing = usuariosViewModel.myFollowingIds.contains(usuario.id)
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(12.dp))
-                                            .clip(RoundedCornerShape(12.dp))
-                                            .clickable { 
-                                                if (usuario.id != null) {
-                                                    navController.navigate(PantallaPerfilPublico(usuario.id))
-                                                }
-                                            }
-                                            .padding(16.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.SpaceBetween
-                                    ) {
-                                        Column {
-                                            Text(
-                                                text = usuario.nombre,
-                                                style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
-                                            )
-                                            Text(
-                                                text = "${usuario.seguidores_count} seguidores",
-                                                style = TextStyle(fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                            )
-                                        }
-                                        Button(
-                                            onClick = { 
-                                                usuario.id?.let { usuariosViewModel.toggleFollow(it) } 
-                                            },
-                                            colors = ButtonDefaults.buttonColors(
-                                                containerColor = if (isFollowing) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.primary,
-                                                contentColor = if (isFollowing) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onPrimary
-                                            )
-                                        ) {
-                                            Text(if (isFollowing) "Siguiendo" else "Seguir")
-                                        }
-                                    }
-                                    Spacer(modifier = Modifier.height(12.dp))
+                        }
+                        
+                        val usuariosFiltrados = feedViewModel.clientes.filter { 
+                            it.nombre.contains(feedViewModel.searchQuery, ignoreCase = true) 
+                        }
+                        
+                        items(usuariosFiltrados) { cliente ->
+                            val isFollowing = feedViewModel.seguidosIds.contains(cliente.id)
+                            UsuarioCard(
+                                cliente = cliente,
+                                isFollowing = isFollowing,
+                                onFollowClick = { cliente.id?.let { feedViewModel.toggleFollow(it) } },
+                                onClick = { 
+                                    cliente.id?.let { navController.navigate(PantallaPerfilPublico(it)) }
                                 }
-                                item { Spacer(modifier = Modifier.height(80.dp)) }
-                            }
+                            )
+                        }
+                        
+                        item {
+                            Spacer(modifier = Modifier.height(80.dp))
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun UsuarioCard(
+    cliente: com.spc.nutricoach.model.Cliente,
+    isFollowing: Boolean,
+    onFollowClick: () -> Unit,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp)
+            .clickable { onClick() },
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(AppBrushes.MainGradient),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = cliente.nombre.firstOrNull()?.uppercase() ?: "U",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 20.sp
+                )
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = cliente.nombre,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = "${cliente.seguidores_count} seguidores",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Button(
+                onClick = onFollowClick,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (isFollowing) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.primary,
+                    contentColor = if (isFollowing) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onPrimary
+                ),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                modifier = Modifier.height(36.dp)
+            ) {
+                Text(if (isFollowing) "Siguiendo" else "Seguir", fontSize = 12.sp, fontWeight = FontWeight.Bold)
             }
         }
     }

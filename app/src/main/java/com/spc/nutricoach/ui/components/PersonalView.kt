@@ -135,7 +135,7 @@ fun PersonalView(
         floatingActionButton = {
             if (selectedTabIndex == 1) {
                 FloatingActionButton(
-                    onClick = { showCrearRutinaDialog = true },
+                    onClick = { },
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary
                 ) {

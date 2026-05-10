@@ -55,4 +55,8 @@ class SessionManager(private val context: Context) {
     val userEmailFlow: Flow<String?> = context.dataStore.data.map { prefs ->
         prefs[KEY_EMAIL]
     }
+
+    val clienteIdFlow: Flow<String?> = context.dataStore.data.map { prefs ->
+        prefs[KEY_CLIENT_ID]
+    }
 }

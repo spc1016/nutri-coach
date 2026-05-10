@@ -155,7 +155,7 @@ fun QrScannerView(
                                         .build()
 
                                     imageAnalysis.setAnalyzer(analysisExecutor) { imageProxy ->
-                                        @androidx.camera.core.ExperimentalGetImage
+                                        @ExperimentalGetImage
                                         val mediaImage = imageProxy.image
                                         if (mediaImage != null && !isProcessing) {
                                             val inputImage = InputImage.fromMediaImage(
