@@ -115,6 +115,29 @@ class RutinaViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
+    fun cargarRutinaPorId(rutinaId: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                // If it's already in the lists, no need to fetch
+                if (rutinas.any { it.id == rutinaId } || rutinasPublicas.any { it.id == rutinaId }) {
+                    return@launch
+                }
+                
+                val token = sessionManager.getToken()
+                if (token.isNullOrBlank()) return@launch
+                
+                isLoading = true
+                val rutina = NutriCoachApiClient.service.obtenerRutinaPorId(rutinaId, "Bearer $token")
+                
+                // Add it to rutinasPublicas so it can be viewed
+                rutinasPublicas = rutinasPublicas + rutina
+            } catch (e: Exception) {
+                Log.e("RUTINAS_API", "Error al cargar rutina por ID", e)
+            } finally {
+                isLoading = false
+            }
+        }
+    }
     fun getExerciseWeightFlow(rutinaId: String, exerciseKey: String): Flow<String?> {
         val clienteId = lastLoadedClientId ?: return kotlinx.coroutines.flow.flowOf(null)
         return routineTrackerManager.getExerciseWeightFlow(clienteId, rutinaId, exerciseKey)

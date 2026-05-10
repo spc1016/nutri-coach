@@ -75,8 +75,11 @@ fun DetalleRutinaView(
     val context = LocalContext.current
     val sessionManager = remember { SessionManager(context) }
     var currentClienteId by remember { mutableStateOf<String?>(null) }
-    LaunchedEffect(Unit) {
+    LaunchedEffect(rutinaId) {
         currentClienteId = sessionManager.getClienteId()
+        if (rutina == null) {
+            rutinaViewModel.cargarRutinaPorId(rutinaId)
+        }
     }
     
     val isReadOnly = currentClienteId != null && rutina?.clienteId != currentClienteId
@@ -107,7 +110,11 @@ fun DetalleRutinaView(
                     .padding(innerPadding),
                 contentAlignment = Alignment.Center
             ) {
-                Text("Error: Rutina no encontrada")
+                if (rutinaViewModel.isLoading) {
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                } else {
+                    Text("Error: Rutina no encontrada")
+                }
             }
             return@Scaffold
         }
