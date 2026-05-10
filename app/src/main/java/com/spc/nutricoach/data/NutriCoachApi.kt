@@ -154,6 +154,31 @@ interface NutricionApiService {
         @Header("Authorization") token: String,
         @Body request: ModificarRutinaRequest
     )
+
+    @GET("clientes")
+    suspend fun obtenerTodosClientes(): List<com.spc.nutricoach.model.Cliente>
+
+    @POST("clientes/{id}/seguir")
+    suspend fun seguirUsuario(
+        @Path("id") userId: String,
+        @Header("Authorization") token: String
+    )
+
+    @retrofit2.http.DELETE("clientes/{id}/seguir")
+    suspend fun dejarDeSeguirUsuario(
+        @Path("id") userId: String,
+        @Header("Authorization") token: String
+    )
+
+    @GET("clientes/{id}/seguidores")
+    suspend fun obtenerSeguidores(
+        @Path("id") userId: String
+    ): List<com.spc.nutricoach.model.Cliente>
+
+    @GET("clientes/{id}/seguidos")
+    suspend fun obtenerSeguidos(
+        @Path("id") userId: String
+    ): List<com.spc.nutricoach.model.Cliente>
 }
 
 object NutriCoachApiClient {

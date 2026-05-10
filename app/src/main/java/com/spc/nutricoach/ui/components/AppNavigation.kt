@@ -59,6 +59,9 @@ object PantallaRegistro
 object PantallaPerfil
 
 @Serializable
+data class PantallaPerfilPublico(val clienteId: String)
+
+@Serializable
 data class PantallaDetalleDieta(val dietaId: String)
 
 @Serializable
@@ -228,6 +231,14 @@ fun AppNavigation() {
             }
             composable<PantallaPerfil> {
                 PerfilUsuarioView(navController)
+            }
+            composable<PantallaPerfilPublico> { backStackEntry ->
+                val args = backStackEntry.toRoute<PantallaPerfilPublico>()
+                PerfilPublicoView(
+                    navController = navController,
+                    clienteId = args.clienteId,
+                    rutinaViewModel = rutinaViewModel
+                )
             }
             composable<PantallaNotas> {
                 NotasView(navController = navController, notasViewModel = notasViewModel)

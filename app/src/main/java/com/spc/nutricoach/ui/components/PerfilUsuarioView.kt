@@ -58,6 +58,12 @@ import androidx.compose.material3.MaterialTheme
 import com.spc.nutricoach.ui.theme.AppBrushes
 import com.spc.nutricoach.ui.viewmodel.LoginViewModel
 import com.spc.nutricoach.ui.viewmodel.PerfilUsuarioViewModel
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -72,6 +78,8 @@ fun PerfilUsuarioView(
     val email by sessionManager.userEmailFlow.collectAsState(initial = "")
     
     val letra = email?.firstOrNull()?.uppercase() ?: "U"
+
+    var showDialog by remember { mutableStateOf<String?>(null) } // "seguidores" or "seguidos"
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -124,7 +132,118 @@ fun PerfilUsuarioView(
             if (perfilViewModel.isLoading && perfilViewModel.nombre.isEmpty()) {
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 Spacer(modifier = Modifier.height(24.dp))
+            } else if (!perfilViewModel.isEditing) {
+                // Modo Vista
+                Text(
+                    text = perfilViewModel.nombre.ifEmpty { "Usuario" },
+                    style = TextStyle(fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = perfilViewModel.email,
+                    style = TextStyle(fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.clickable { 
+                            perfilViewModel.cargarListas()
+                            showDialog = "seguidores" 
+                        }.padding(8.dp)
+                    ) {
+                        Text(text = "${perfilViewModel.seguidoresCount}", style = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground))
+                        Text(text = "Seguidores", style = TextStyle(fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant))
+                    }
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.clickable { 
+                            perfilViewModel.cargarListas()
+                            showDialog = "seguidos" 
+                        }.padding(8.dp)
+                    ) {
+                        Text(text = "${perfilViewModel.seguidosCount}", style = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground))
+                        Text(text = "Seguidos", style = TextStyle(fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant))
+                    }
+                }
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Button(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(brush = AppBrushes.MainGradient, shape = RoundedCornerShape(12.dp))
+                        .height(55.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent, contentColor = Color.Black),
+                    onClick = { perfilViewModel.isEditing = true }
+                ) {
+                    Text(
+                        text = "Editar Perfil",
+                        style = TextStyle(color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    )
+                }
+
+                if (showDialog != null) {
+                    androidx.compose.material3.AlertDialog(
+                        onDismissRequest = { showDialog = null },
+                        title = { Text(if (showDialog == "seguidores") "Seguidores" else "Seguidos") },
+                        text = {
+                            if (perfilViewModel.isLoadingListas) {
+                                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                                    CircularProgressIndicator()
+                                }
+                            } else {
+                                val list = if (showDialog == "seguidores") perfilViewModel.seguidoresList else perfilViewModel.seguidosList
+                                if (list.isEmpty()) {
+                                    Text("No hay usuarios.")
+                                } else {
+                                    LazyColumn(modifier = Modifier.fillMaxHeight(0.5f)) {
+                                        items(list) { usuario ->
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(usuario.nombre, fontWeight = FontWeight.Bold)
+                                                if (showDialog == "seguidos") {
+                                                    Button(
+                                                        onClick = {
+                                                            if (usuario.id != null) {
+                                                                perfilViewModel.dejarDeSeguir(usuario.id)
+                                                            }
+                                                        },
+                                                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                                                    ) {
+                                                        Text("Dejar de seguir", fontSize = 12.sp)
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        confirmButton = {
+                            Button(onClick = { showDialog = null }) {
+                                Text("Cerrar")
+                            }
+                        }
+                    )
+                }
             } else {
+                // Modo Edición
+                Button(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant, contentColor = MaterialTheme.colorScheme.onSurfaceVariant),
+                    onClick = { perfilViewModel.isEditing = false }
+                ) {
+                    Text("Cancelar Edición")
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                
                 PerfilTextField(
                     value = perfilViewModel.nombre,
                     onValueChange = { perfilViewModel.nombre = it },

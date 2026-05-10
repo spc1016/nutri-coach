@@ -14,6 +14,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
 import java.io.IOException
+import com.spc.nutricoach.model.Cliente
 
 class PerfilUsuarioViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -27,11 +28,20 @@ class PerfilUsuarioViewModel(application: Application) : AndroidViewModel(applic
     var altura by mutableStateOf("")
     var objetivo by mutableStateOf("")
 
+    var seguidoresCount by mutableStateOf(0)
+    var seguidosCount by mutableStateOf(0)
+    
+    var isEditing by mutableStateOf(false)
+
     var statusMessage by mutableStateOf("")
         private set
 
     var isLoading by mutableStateOf(false)
         private set
+        
+    var seguidoresList by mutableStateOf<List<Cliente>>(emptyList())
+    var seguidosList by mutableStateOf<List<Cliente>>(emptyList())
+    var isLoadingListas by mutableStateOf(false)
 
     init {
         cargarPerfil()
@@ -54,6 +64,8 @@ class PerfilUsuarioViewModel(application: Application) : AndroidViewModel(applic
                     peso = cliente.peso?.toString() ?: ""
                     altura = cliente.altura?.toString() ?: ""
                     objetivo = cliente.objetivo ?: ""
+                    seguidoresCount = cliente.seguidores_count
+                    seguidosCount = cliente.seguidos_count
                 } else {
                     statusMessage = "No se pudo obtener el ID del cliente o el token."
                 }
@@ -116,6 +128,41 @@ class PerfilUsuarioViewModel(application: Application) : AndroidViewModel(applic
                 statusMessage = "Error inesperado: ${e.message}"
             } finally {
                 isLoading = false
+            }
+        }
+    }
+
+    fun cargarListas() {
+        viewModelScope.launch(Dispatchers.IO) {
+            isLoadingListas = true
+            try {
+                val clienteId = sessionManager.getClienteId()
+                if (clienteId != null) {
+                    val followers = NutriCoachApiClient.service.obtenerSeguidores(clienteId)
+                    val following = NutriCoachApiClient.service.obtenerSeguidos(clienteId)
+                    seguidoresList = followers
+                    seguidosList = following
+                }
+            } catch (e: Exception) {
+                Log.e("PERFIL_API", "Error al cargar listas: ${e.message}")
+            } finally {
+                isLoadingListas = false
+            }
+        }
+    }
+
+    fun dejarDeSeguir(usuarioId: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val token = sessionManager.getToken()
+                if (token != null) {
+                    NutriCoachApiClient.service.dejarDeSeguirUsuario(usuarioId, "Bearer $token")
+                    // Update lists locally
+                    seguidosList = seguidosList.filter { it.id != usuarioId }
+                    seguidosCount = seguidosList.size
+                }
+            } catch (e: Exception) {
+                Log.e("PERFIL_API", "Error al dejar de seguir: ${e.message}")
             }
         }
     }
