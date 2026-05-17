@@ -82,6 +82,7 @@ fun PersonalView(
     val tabs = listOf("Dietas", "Rutinas")
 
     var showCrearRutinaDialog by remember { mutableStateOf(false) }
+    var showCrearDietaDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -133,9 +134,17 @@ fun PersonalView(
             )
         },
         floatingActionButton = {
-            if (selectedTabIndex == 1) {
+            if (selectedTabIndex == 0) {
                 FloatingActionButton(
-                    onClick = { },
+                    onClick = { showCrearDietaDialog = true },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                ) {
+                    Icon(imageVector = Icons.Default.Add, contentDescription = "Agregar Dieta")
+                }
+            } else if (selectedTabIndex == 1) {
+                FloatingActionButton(
+                    onClick = { showCrearRutinaDialog = true },
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary
                 ) {
@@ -389,6 +398,78 @@ fun PersonalView(
                 dismissButton = {
                     TextButton(
                         onClick = { showCrearRutinaDialog = false },
+                        enabled = !isSubmitting
+                    ) {
+                        Text("Cancelar")
+                    }
+                }
+            )
+        }
+        
+        if (showCrearDietaDialog) {
+            var nombreDieta by remember { mutableStateOf("") }
+            var isSubmitting by remember { mutableStateOf(false) }
+            var errorMsg by remember { mutableStateOf<String?>(null) }
+            
+            AlertDialog(
+                onDismissRequest = { 
+                    if (!isSubmitting) showCrearDietaDialog = false 
+                },
+                title = { Text("Nueva Dieta") },
+                text = {
+                    Column {
+                        OutlinedTextField(
+                            value = nombreDieta,
+                            onValueChange = { nombreDieta = it },
+                            label = { Text("Nombre de la Dieta") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            enabled = !isSubmitting
+                        )
+                        if (errorMsg != null) {
+                            Text(
+                                text = errorMsg!!,
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
+                        }
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            if (nombreDieta.isNotBlank()) {
+                                isSubmitting = true
+                                errorMsg = null
+                                dietaViewModel.crearDieta(nombreDieta) { success, msg ->
+                                    isSubmitting = false
+                                    if (success) {
+                                        showCrearDietaDialog = false
+                                    } else {
+                                        errorMsg = msg ?: "Error al crear la dieta"
+                                    }
+                                }
+                            } else {
+                                errorMsg = "El nombre no puede estar vacío"
+                            }
+                        },
+                        enabled = !isSubmitting
+                    ) {
+                        if (isSubmitting) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Text("Guardar")
+                        }
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = { showCrearDietaDialog = false },
                         enabled = !isSubmitting
                     ) {
                         Text("Cancelar")

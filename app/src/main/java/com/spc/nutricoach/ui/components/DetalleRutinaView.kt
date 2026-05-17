@@ -18,6 +18,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.QrCode2
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -93,6 +98,101 @@ fun DetalleRutinaView(
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
+                    }
+                },
+                actions = {
+                    if (!isReadOnly && rutina != null) {
+                        var expanded by remember { mutableStateOf(false) }
+                        var showEditDialog by remember { mutableStateOf(false) }
+                        var showDeleteDialog by remember { mutableStateOf(false) }
+
+                        IconButton(onClick = { expanded = true }) {
+                            Icon(Icons.Filled.MoreVert, contentDescription = "Opciones")
+                        }
+                        
+                        DropdownMenu(
+                            expanded = expanded,
+                            onDismissRequest = { expanded = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Editar nombre") },
+                                onClick = { 
+                                    expanded = false
+                                    showEditDialog = true
+                                },
+                                leadingIcon = { Icon(Icons.Filled.Edit, contentDescription = null) }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Eliminar rutina", color = MaterialTheme.colorScheme.error) },
+                                onClick = { 
+                                    expanded = false
+                                    showDeleteDialog = true
+                                },
+                                leadingIcon = { Icon(Icons.Filled.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) }
+                            )
+                        }
+
+                        if (showEditDialog) {
+                            var newName by remember { mutableStateOf(rutina.nombre) }
+                            var isSubmitting by remember { mutableStateOf(false) }
+                            AlertDialog(
+                                onDismissRequest = { if (!isSubmitting) showEditDialog = false },
+                                title = { Text("Editar nombre") },
+                                text = {
+                                    OutlinedTextField(
+                                        value = newName,
+                                        onValueChange = { newName = it },
+                                        singleLine = true,
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                },
+                                confirmButton = {
+                                    Button(
+                                        onClick = {
+                                            if (newName.isNotBlank()) {
+                                                isSubmitting = true
+                                                rutinaViewModel.modificarNombreRutina(rutina.id, newName) { success, _ ->
+                                                    isSubmitting = false
+                                                    if (success) showEditDialog = false
+                                                }
+                                            }
+                                        },
+                                        enabled = !isSubmitting
+                                    ) { Text("Guardar") }
+                                },
+                                dismissButton = {
+                                    TextButton(onClick = { showEditDialog = false }) { Text("Cancelar") }
+                                }
+                            )
+                        }
+
+                        if (showDeleteDialog) {
+                            var isDeleting by remember { mutableStateOf(false) }
+                            AlertDialog(
+                                onDismissRequest = { if (!isDeleting) showDeleteDialog = false },
+                                title = { Text("Eliminar rutina") },
+                                text = { Text("¿Estás seguro de que deseas eliminar esta rutina? Esta acción no se puede deshacer.") },
+                                confirmButton = {
+                                    Button(
+                                        onClick = {
+                                            isDeleting = true
+                                            rutinaViewModel.eliminarRutina(rutina.id) { success, _ ->
+                                                isDeleting = false
+                                                if (success) {
+                                                    showDeleteDialog = false
+                                                    navController.popBackStack()
+                                                }
+                                            }
+                                        },
+                                        enabled = !isDeleting,
+                                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                                    ) { Text("Eliminar") }
+                                },
+                                dismissButton = {
+                                    TextButton(onClick = { showDeleteDialog = false }) { Text("Cancelar") }
+                                }
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -400,25 +500,57 @@ fun DiaItemDetail(dia: Dia, diaIndex: Int, rutinaId: String, rutinaViewModel: Ru
     Column {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
+            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Icon(
-                imageVector = Icons.Filled.FitnessCenter,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(20.dp)
-            )
-            Text(
-                text = dia.nombre,
-                style = MaterialTheme.typography.titleLarge.copy(
-                    brush = AppBrushes.MainGradient
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                modifier = Modifier.weight(1f)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.FitnessCenter,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
                 )
-            )
-            if (!dia.enfoque.isNullOrBlank()) {
                 Text(
-                    text = "· ${dia.enfoque}",
-                    style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    text = dia.nombre,
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        brush = AppBrushes.MainGradient
+                    )
                 )
+                if (!dia.enfoque.isNullOrBlank()) {
+                    Text(
+                        text = "· ${dia.enfoque}",
+                        style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    )
+                }
+            }
+            if (!isReadOnly) {
+                var showDeleteDiaDialog by remember { mutableStateOf(false) }
+                IconButton(onClick = { showDeleteDiaDialog = true }) {
+                    Icon(Icons.Filled.Delete, contentDescription = "Eliminar Día", tint = MaterialTheme.colorScheme.error)
+                }
+                if (showDeleteDiaDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showDeleteDiaDialog = false },
+                        title = { Text("Eliminar Día") },
+                        text = { Text("¿Estás seguro de eliminar el día '${dia.nombre}'?") },
+                        confirmButton = {
+                            Button(
+                                onClick = {
+                                    rutinaViewModel.eliminarDia(rutinaId, diaIndex) { _, _ -> }
+                                    showDeleteDiaDialog = false
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                            ) { Text("Eliminar") }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showDeleteDiaDialog = false }) { Text("Cancelar") }
+                        }
+                    )
+                }
             }
         }
 
@@ -442,13 +574,48 @@ fun DiaItemDetail(dia: Dia, diaIndex: Int, rutinaId: String, rutinaViewModel: Ru
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
                 Column(modifier = Modifier.padding(12.dp)) {
-                    Text(
-                        text = "• ${ejercicio.nombreSnapshot}",
-                        style = MaterialTheme.typography.bodyLarge.copy(
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.Bold
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "• ${ejercicio.nombreSnapshot}",
+                            style = MaterialTheme.typography.bodyLarge.copy(
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Bold
+                            ),
+                            modifier = Modifier.weight(1f)
                         )
-                    )
+                        if (!isReadOnly) {
+                            var showDeleteEjDialog by remember { mutableStateOf(false) }
+                            IconButton(
+                                onClick = { showDeleteEjDialog = true },
+                                modifier = Modifier.size(24.dp)
+                            ) {
+                                Icon(Icons.Filled.Delete, contentDescription = "Eliminar", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(16.dp))
+                            }
+                            if (showDeleteEjDialog) {
+                                AlertDialog(
+                                    onDismissRequest = { showDeleteEjDialog = false },
+                                    title = { Text("Eliminar Ejercicio") },
+                                    text = { Text("¿Eliminar '${ejercicio.nombreSnapshot}'?") },
+                                    confirmButton = {
+                                        Button(
+                                            onClick = {
+                                                rutinaViewModel.eliminarEjercicio(rutinaId, diaIndex, index) { _, _ -> }
+                                                showDeleteEjDialog = false
+                                            },
+                                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                                        ) { Text("Eliminar") }
+                                    },
+                                    dismissButton = {
+                                        TextButton(onClick = { showDeleteEjDialog = false }) { Text("Cancelar") }
+                                    }
+                                )
+                            }
+                        }
+                    }
 
                     Spacer(modifier = Modifier.height(4.dp))
                     

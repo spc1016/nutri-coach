@@ -18,6 +18,7 @@ data class Post(
     @SerialName("autor_nombre") val autorNombre: String = "",
     val texto: String = "",
     @SerialName("rutina_id") val rutinaId: String? = null,
+    @SerialName("dieta_id") val dietaId: String? = null,
     val likes: Int = 0,
     @SerialName("liked_by") val likedBy: List<String> = emptyList(),
     val comentarios: List<Comentario> = emptyList(),
@@ -28,7 +29,8 @@ data class Post(
 @Serializable
 data class CrearPostRequest(
     val texto: String,
-    @SerialName("rutina_id") val rutinaId: String? = null
+    @SerialName("rutina_id") val rutinaId: String? = null,
+    @SerialName("dieta_id") val dietaId: String? = null
 )
 
 @Serializable

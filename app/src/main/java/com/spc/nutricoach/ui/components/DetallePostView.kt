@@ -7,6 +7,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.*
@@ -51,7 +53,7 @@ fun DetallePostView(
                 title = { Text("Comentarios") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Volver")
+                        Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -99,7 +101,7 @@ fun DetallePostView(
                             .background(AppBrushes.MainGradient, shape = CircleShape)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Send,
+                            imageVector = Icons.AutoMirrored.Filled.Send,
                             contentDescription = "Enviar",
                             tint = Color.White
                         )
@@ -128,6 +130,9 @@ fun DetallePostView(
                             onCommentClick = { /* Ya estamos aquí */ },
                             onRoutineClick = { rutinaId ->
                                 navController.navigate(PantallaDetalleRutina(rutinaId))
+                            },
+                            onDietaClick = { dietaId ->
+                                navController.navigate(PantallaDetalleDieta(dietaId))
                             },
                             onClick = { /* Nada */ }
                         )

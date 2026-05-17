@@ -21,13 +21,15 @@ import com.spc.nutricoach.data.SessionManager
 import com.spc.nutricoach.ui.theme.AppBrushes
 import com.spc.nutricoach.ui.viewmodel.FeedViewModel
 import com.spc.nutricoach.ui.viewmodel.RutinaViewModel
+import com.spc.nutricoach.ui.viewmodel.DietaViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PublicarView(
     navController: NavController,
     feedViewModel: FeedViewModel,
-    rutinaViewModel: RutinaViewModel
+    rutinaViewModel: RutinaViewModel,
+    dietaViewModel: DietaViewModel
 ) {
     val context = LocalContext.current
     val sessionManager = remember { SessionManager(context) }
@@ -37,13 +39,22 @@ fun PublicarView(
     var textoPost by remember { mutableStateOf("") }
     var rutinaSeleccionadaId by remember { mutableStateOf<String?>(null) }
     var rutinaSeleccionadaNombre by remember { mutableStateOf("Ninguna") }
-    var isDropdownExpanded by remember { mutableStateOf(false) }
+    var isRutinaDropdownExpanded by remember { mutableStateOf(false) }
+
+    var dietaSeleccionadaId by remember { mutableStateOf<String?>(null) }
+    var dietaSeleccionadaNombre by remember { mutableStateOf("Ninguna") }
+    var isDietaDropdownExpanded by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
+        val clienteId = sessionManager.getClienteId()
         rutinaViewModel.cargarRutinas()
+        if (clienteId != null) {
+            dietaViewModel.loadDietas(clienteId)
+        }
     }
 
     val rutinasPublicas = rutinaViewModel.rutinas.filter { it.publica }
+    val dietasPublicas = dietaViewModel.dietas.filter { it.publica }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -143,14 +154,14 @@ fun PublicarView(
                 Spacer(modifier = Modifier.height(8.dp))
                 
                 ExposedDropdownMenuBox(
-                    expanded = isDropdownExpanded,
-                    onExpandedChange = { isDropdownExpanded = !isDropdownExpanded }
+                    expanded = isRutinaDropdownExpanded,
+                    onExpandedChange = { isRutinaDropdownExpanded = !isRutinaDropdownExpanded }
                 ) {
                     OutlinedTextField(
                         value = rutinaSeleccionadaNombre,
                         onValueChange = {},
                         readOnly = true,
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isDropdownExpanded) },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isRutinaDropdownExpanded) },
                         modifier = Modifier
                             .menuAnchor()
                             .fillMaxWidth(),
@@ -158,15 +169,15 @@ fun PublicarView(
                     )
                     
                     ExposedDropdownMenu(
-                        expanded = isDropdownExpanded,
-                        onDismissRequest = { isDropdownExpanded = false }
+                        expanded = isRutinaDropdownExpanded,
+                        onDismissRequest = { isRutinaDropdownExpanded = false }
                     ) {
                         DropdownMenuItem(
                             text = { Text("Ninguna") },
                             onClick = {
                                 rutinaSeleccionadaId = null
                                 rutinaSeleccionadaNombre = "Ninguna"
-                                isDropdownExpanded = false
+                                isRutinaDropdownExpanded = false
                             }
                         )
                         rutinasPublicas.forEach { rutina ->
@@ -175,14 +186,71 @@ fun PublicarView(
                                 onClick = {
                                     rutinaSeleccionadaId = rutina.id
                                     rutinaSeleccionadaNombre = rutina.nombre
-                                    isDropdownExpanded = false
+                                    isRutinaDropdownExpanded = false
                                 }
                             )
                         }
                         if (rutinasPublicas.isEmpty()) {
                             DropdownMenuItem(
                                 text = { Text("No tienes rutinas públicas") },
-                                onClick = { isDropdownExpanded = false },
+                                onClick = { isRutinaDropdownExpanded = false },
+                                enabled = false
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // Diet Dropdown
+                Text(
+                    text = "Vincular dieta (opcional)",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                ExposedDropdownMenuBox(
+                    expanded = isDietaDropdownExpanded,
+                    onExpandedChange = { isDietaDropdownExpanded = !isDietaDropdownExpanded }
+                ) {
+                    OutlinedTextField(
+                        value = dietaSeleccionadaNombre,
+                        onValueChange = {},
+                        readOnly = true,
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isDietaDropdownExpanded) },
+                        modifier = Modifier
+                            .menuAnchor()
+                            .fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    
+                    ExposedDropdownMenu(
+                        expanded = isDietaDropdownExpanded,
+                        onDismissRequest = { isDietaDropdownExpanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Ninguna") },
+                            onClick = {
+                                dietaSeleccionadaId = null
+                                dietaSeleccionadaNombre = "Ninguna"
+                                isDietaDropdownExpanded = false
+                            }
+                        )
+                        dietasPublicas.forEach { dieta ->
+                            DropdownMenuItem(
+                                text = { Text(dieta.nombre) },
+                                onClick = {
+                                    dietaSeleccionadaId = dieta.id
+                                    dietaSeleccionadaNombre = dieta.nombre
+                                    isDietaDropdownExpanded = false
+                                }
+                            )
+                        }
+                        if (dietasPublicas.isEmpty()) {
+                            DropdownMenuItem(
+                                text = { Text("No tienes dietas públicas") },
+                                onClick = { isDietaDropdownExpanded = false },
                                 enabled = false
                             )
                         }
@@ -195,11 +263,13 @@ fun PublicarView(
                 Button(
                     onClick = {
                         if (textoPost.isNotBlank()) {
-                            feedViewModel.crearPost(textoPost, rutinaSeleccionadaId) { success, _ ->
+                            feedViewModel.crearPost(textoPost, rutinaSeleccionadaId, dietaSeleccionadaId) { success, _ ->
                                 if (success) {
                                     textoPost = ""
                                     rutinaSeleccionadaId = null
                                     rutinaSeleccionadaNombre = "Ninguna"
+                                    dietaSeleccionadaId = null
+                                    dietaSeleccionadaNombre = "Ninguna"
                                     navController.navigate(PantallaFeed)
                                 }
                             }

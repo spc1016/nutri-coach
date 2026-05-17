@@ -195,7 +195,8 @@ fun AppNavigation() {
                 PublicarView(
                     navController = navController,
                     feedViewModel = feedViewModel,
-                    rutinaViewModel = rutinaViewModel
+                    rutinaViewModel = rutinaViewModel,
+                    dietaViewModel = dietaViewModel
                 )
             }
             composable<PantallaPersonal> {

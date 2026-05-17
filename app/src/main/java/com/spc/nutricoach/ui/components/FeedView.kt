@@ -149,6 +149,9 @@ fun FeedView(navController: NavController, feedViewModel: FeedViewModel = viewMo
                                 onRoutineClick = { rutinaId ->
                                     navController.navigate(PantallaDetalleRutina(rutinaId))
                                 },
+                                onDietaClick = { dietaId ->
+                                    navController.navigate(PantallaDetalleDieta(dietaId))
+                                },
                                 onClick = {
                                     navController.navigate(PantallaDetallePost(post.id))
                                 }

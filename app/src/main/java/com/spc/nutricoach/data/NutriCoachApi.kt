@@ -86,6 +86,43 @@ data class AgregarEjercicioRequest(
 
 @Serializable
 data class ModificarRutinaRequest(
+    val nombre: String? = null,
+    val publica: Boolean? = null
+)
+
+@Serializable
+data class CrearDietaRequest(
+    val nombre: String,
+    val cliente_id: String,
+    val kcal_objetivo: Int = 0,
+    val comidas: List<com.spc.nutricoach.model.Comida> = emptyList(),
+    val activa: Boolean = true,
+    val publica: Boolean = false
+)
+
+@Serializable
+data class CrearDietaResponse(
+    val id: String
+)
+
+@Serializable
+data class AgregarComidaRequest(
+    val nombre: String,
+    val hora_sugerida: String? = null,
+    val alimentos: List<com.spc.nutricoach.model.Alimento> = emptyList()
+)
+
+@Serializable
+data class AgregarAlimentoRequest(
+    val alimento_id: String,
+    val nombre_snapshot: String,
+    val cantidad: Double,
+    val unidad: String
+)
+
+@Serializable
+data class ModificarDietaRequest(
+    val nombre: String? = null,
     val publica: Boolean? = null
 )
 
@@ -158,6 +195,82 @@ interface NutricionApiService {
         @Path("id") rutinaId: String,
         @Header("Authorization") token: String,
         @Body request: ModificarRutinaRequest
+    )
+
+    @DELETE("rutinas/{id}")
+    suspend fun eliminarRutina(
+        @Path("id") rutinaId: String,
+        @Header("Authorization") token: String
+    )
+
+    @DELETE("rutinas/{id}/dias/{dia_index}")
+    suspend fun eliminarDia(
+        @Path("id") rutinaId: String,
+        @Path("dia_index") diaIndex: Int,
+        @Header("Authorization") token: String
+    )
+
+    @DELETE("rutinas/{id}/dias/{dia_index}/ejercicios/{ejercicio_index}")
+    suspend fun eliminarEjercicio(
+        @Path("id") rutinaId: String,
+        @Path("dia_index") diaIndex: Int,
+        @Path("ejercicio_index") ejercicioIndex: Int,
+        @Header("Authorization") token: String
+    )
+
+    // --- Endpoints Dietas ---
+    @GET("dietas/publicas")
+    suspend fun obtenerDietasPublicas(
+        @Header("Authorization") token: String
+    ): List<Dieta>
+
+    @POST("dietas")
+    suspend fun crearDieta(
+        @Header("Authorization") token: String,
+        @Body request: CrearDietaRequest
+    ): CrearDietaResponse
+
+    @retrofit2.http.PUT("dietas/{id}")
+    suspend fun modificarDieta(
+        @Path("id") dietaId: String,
+        @Header("Authorization") token: String,
+        @Body request: ModificarDietaRequest
+    )
+
+    @DELETE("dietas/{id}")
+    suspend fun eliminarDieta(
+        @Path("id") dietaId: String,
+        @Header("Authorization") token: String
+    )
+
+    @POST("dietas/{id}/comidas")
+    suspend fun agregarComidaADieta(
+        @Path("id") dietaId: String,
+        @Header("Authorization") token: String,
+        @Body request: AgregarComidaRequest
+    )
+
+    @POST("dietas/{id}/comidas/{comida_index}/alimentos")
+    suspend fun agregarAlimentoAComida(
+        @Path("id") dietaId: String,
+        @Path("comida_index") comidaIndex: Int,
+        @Header("Authorization") token: String,
+        @Body request: AgregarAlimentoRequest
+    )
+
+    @DELETE("dietas/{id}/comidas/{comida_index}")
+    suspend fun eliminarComida(
+        @Path("id") dietaId: String,
+        @Path("comida_index") comidaIndex: Int,
+        @Header("Authorization") token: String
+    )
+
+    @DELETE("dietas/{id}/comidas/{comida_index}/alimentos/{alimento_index}")
+    suspend fun eliminarAlimento(
+        @Path("id") dietaId: String,
+        @Path("comida_index") comidaIndex: Int,
+        @Path("alimento_index") alimentoIndex: Int,
+        @Header("Authorization") token: String
     )
 
     // --- Endpoints Comunidad / Posts ---

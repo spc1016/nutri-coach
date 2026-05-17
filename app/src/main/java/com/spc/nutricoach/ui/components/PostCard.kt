@@ -28,6 +28,7 @@ fun PostCard(
     onLikeClick: () -> Unit,
     onCommentClick: () -> Unit,
     onRoutineClick: (String) -> Unit,
+    onDietaClick: (String) -> Unit,
     onClick: (() -> Unit)? = null
 ) {
     val isLiked = post.likedBy.contains(currentUserId)
@@ -96,6 +97,18 @@ fun PostCard(
                     label = { Text("Ver Rutina Asociada") },
                     colors = SuggestionChipDefaults.suggestionChipColors(
                         containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                    )
+                )
+            }
+
+            // Optional: Diet Link
+            if (!post.dietaId.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                SuggestionChip(
+                    onClick = { post.dietaId?.let { onDietaClick(it) } },
+                    label = { Text("Ver Dieta Asociada") },
+                    colors = SuggestionChipDefaults.suggestionChipColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f)
                     )
                 )
             }

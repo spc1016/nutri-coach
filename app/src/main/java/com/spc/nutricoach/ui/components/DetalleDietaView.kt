@@ -18,6 +18,20 @@ import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.outlined.RadioButtonUnchecked
+import androidx.compose.material.icons.outlined.RadioButtonUnchecked
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -32,6 +46,12 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalContext
+import com.spc.nutricoach.data.SessionManager
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -50,9 +70,20 @@ fun DetalleDietaView(
     dietaId: String,
     dietaViewModel: DietaViewModel
 ) {
-    val dieta = dietaViewModel.dietas.find { it.id == dietaId }
+    val dieta = dietaViewModel.dietas.find { it.id == dietaId } ?: dietaViewModel.dietasPublicas.find { it.id == dietaId }
     val completedMeals by dietaViewModel.completedMealsFlow.collectAsState(initial = emptySet())
-    val clientId = dietaViewModel.lastLoadedClientId
+    val context = LocalContext.current
+    val sessionManager = remember { SessionManager(context) }
+    var currentClienteId by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(dietaId) {
+        currentClienteId = sessionManager.getClienteId()
+        if (dieta == null) {
+            dietaViewModel.cargarDietaPorId(dietaId)
+        }
+    }
+    
+    val isReadOnly = currentClienteId != null && dieta?.clienteId != currentClienteId
+    val clientId = currentClienteId
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -63,6 +94,101 @@ fun DetalleDietaView(
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
+                    }
+                },
+                actions = {
+                    if (!isReadOnly && dieta != null) {
+                        var expanded by remember { mutableStateOf(false) }
+                        var showEditDialog by remember { mutableStateOf(false) }
+                        var showDeleteDialog by remember { mutableStateOf(false) }
+
+                        IconButton(onClick = { expanded = true }) {
+                            Icon(Icons.Filled.MoreVert, contentDescription = "Opciones")
+                        }
+                        
+                        DropdownMenu(
+                            expanded = expanded,
+                            onDismissRequest = { expanded = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Editar nombre") },
+                                onClick = { 
+                                    expanded = false
+                                    showEditDialog = true
+                                },
+                                leadingIcon = { Icon(Icons.Filled.Edit, contentDescription = null) }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Eliminar dieta", color = MaterialTheme.colorScheme.error) },
+                                onClick = { 
+                                    expanded = false
+                                    showDeleteDialog = true
+                                },
+                                leadingIcon = { Icon(Icons.Filled.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) }
+                            )
+                        }
+
+                        if (showEditDialog) {
+                            var newName by remember { mutableStateOf(dieta.nombre) }
+                            var isSubmitting by remember { mutableStateOf(false) }
+                            AlertDialog(
+                                onDismissRequest = { if (!isSubmitting) showEditDialog = false },
+                                title = { Text("Editar nombre") },
+                                text = {
+                                    OutlinedTextField(
+                                        value = newName,
+                                        onValueChange = { newName = it },
+                                        singleLine = true,
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                },
+                                confirmButton = {
+                                    Button(
+                                        onClick = {
+                                            if (newName.isNotBlank()) {
+                                                isSubmitting = true
+                                                dietaViewModel.modificarNombreDieta(dieta.id, newName) { success, _ ->
+                                                    isSubmitting = false
+                                                    if (success) showEditDialog = false
+                                                }
+                                            }
+                                        },
+                                        enabled = !isSubmitting
+                                    ) { Text("Guardar") }
+                                },
+                                dismissButton = {
+                                    TextButton(onClick = { showEditDialog = false }) { Text("Cancelar") }
+                                }
+                            )
+                        }
+
+                        if (showDeleteDialog) {
+                            var isDeleting by remember { mutableStateOf(false) }
+                            AlertDialog(
+                                onDismissRequest = { if (!isDeleting) showDeleteDialog = false },
+                                title = { Text("Eliminar dieta") },
+                                text = { Text("¿Estás seguro de que deseas eliminar esta dieta? Esta acción no se puede deshacer.") },
+                                confirmButton = {
+                                    Button(
+                                        onClick = {
+                                            isDeleting = true
+                                            dietaViewModel.eliminarDieta(dieta.id) { success, _ ->
+                                                isDeleting = false
+                                                if (success) {
+                                                    showDeleteDialog = false
+                                                    navController.popBackStack()
+                                                }
+                                            }
+                                        },
+                                        enabled = !isDeleting,
+                                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                                    ) { Text("Eliminar") }
+                                },
+                                dismissButton = {
+                                    TextButton(onClick = { showDeleteDialog = false }) { Text("Cancelar") }
+                                }
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -102,6 +228,40 @@ fun DetalleDietaView(
                 )
                 
                 Spacer(modifier = Modifier.height(12.dp))
+
+                if (!isReadOnly) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "Hacer pública",
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                color = MaterialTheme.colorScheme.onSurface,
+                                fontWeight = FontWeight.Bold
+                            )
+                        )
+                        var isToggling by remember { mutableStateOf(false) }
+                        Switch(
+                            checked = dieta.publica,
+                            onCheckedChange = { isPublica ->
+                                isToggling = true
+                                dietaViewModel.toggleDietaPublica(dieta.id, isPublica) { _, _ ->
+                                    isToggling = false
+                                }
+                            },
+                            enabled = !isToggling,
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = MaterialTheme.colorScheme.primary,
+                                checkedTrackColor = MaterialTheme.colorScheme.primaryContainer,
+                                uncheckedThumbColor = MaterialTheme.colorScheme.outline,
+                                uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant
+                            )
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
@@ -178,6 +338,16 @@ fun DetalleDietaView(
                                 isCompleted = isCompleted,
                                 onCheckedChange = { checked ->
                                     dietaViewModel.toggleMeal(dietaId, comida.nombre, checked)
+                                },
+                                isReadOnly = isReadOnly,
+                                onDeleteComida = {
+                                    dietaViewModel.eliminarComida(dietaId, index) { _, _ -> }
+                                },
+                                onDeleteAlimento = { alimentoIndex ->
+                                    dietaViewModel.eliminarAlimento(dietaId, index, alimentoIndex) { _, _ -> }
+                                },
+                                onAddAlimento = { nombre, cantidad, unidad ->
+                                    dietaViewModel.agregarAlimento(dietaId, index, nombre, cantidad, unidad) { _, _ -> }
                                 }
                             )
                         }
@@ -193,8 +363,62 @@ fun DetalleDietaView(
                 }
             }
             
-            item {
-                Spacer(modifier = Modifier.height(32.dp))
+            if (!isReadOnly) {
+                item {
+                    var showAddComidaDialog by remember { mutableStateOf(false) }
+                    Button(
+                        onClick = { showAddComidaDialog = true },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondaryContainer, contentColor = MaterialTheme.colorScheme.onSecondaryContainer),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("Añadir Comida", fontWeight = FontWeight.Bold)
+                    }
+
+                    if (showAddComidaDialog) {
+                        var nombreComida by remember { mutableStateOf("") }
+                        var isSubmitting by remember { mutableStateOf(false) }
+
+                        AlertDialog(
+                            onDismissRequest = { if (!isSubmitting) showAddComidaDialog = false },
+                            title = { Text("Nueva Comida") },
+                            text = {
+                                OutlinedTextField(
+                                    value = nombreComida,
+                                    onValueChange = { nombreComida = it },
+                                    label = { Text("Nombre (ej. Desayuno)") },
+                                    singleLine = true,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    enabled = !isSubmitting
+                                )
+                            },
+                            confirmButton = {
+                                Button(
+                                    onClick = {
+                                        if (nombreComida.isNotBlank()) {
+                                            isSubmitting = true
+                                            dietaViewModel.agregarComida(dietaId, nombreComida) { _, _ ->
+                                                isSubmitting = false
+                                                showAddComidaDialog = false
+                                            }
+                                        }
+                                    },
+                                    enabled = !isSubmitting
+                                ) { Text("Guardar") }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { showAddComidaDialog = false }, enabled = !isSubmitting) {
+                                    Text("Cancelar")
+                                }
+                            }
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(32.dp))
+                }
+            } else {
+                item { Spacer(modifier = Modifier.height(32.dp)) }
             }
         }
     }
@@ -204,7 +428,11 @@ fun DetalleDietaView(
 fun ComidaItemDetail(
     comida: Comida,
     isCompleted: Boolean,
-    onCheckedChange: (Boolean) -> Unit
+    onCheckedChange: (Boolean) -> Unit,
+    isReadOnly: Boolean = false,
+    onDeleteComida: () -> Unit = {},
+    onDeleteAlimento: (Int) -> Unit = {},
+    onAddAlimento: (String, Double, String) -> Unit = { _, _, _ -> }
 ) {
     Column {
         Row(
@@ -243,22 +471,49 @@ fun ComidaItemDetail(
                 }
             }
             
-            IconToggleButton(
-                checked = isCompleted,
-                onCheckedChange = onCheckedChange
-            ) {
-                Icon(
-                    imageVector = if (isCompleted) Icons.Filled.CheckCircle else Icons.Outlined.RadioButtonUnchecked,
-                    contentDescription = null,
-                    tint = if (isCompleted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(28.dp)
-                )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (!isReadOnly) {
+                    var showDeleteDialog by remember { mutableStateOf(false) }
+                    IconButton(onClick = { showDeleteDialog = true }) {
+                        Icon(Icons.Filled.Delete, contentDescription = "Eliminar Comida", tint = MaterialTheme.colorScheme.error)
+                    }
+                    if (showDeleteDialog) {
+                        AlertDialog(
+                            onDismissRequest = { showDeleteDialog = false },
+                            title = { Text("Eliminar Comida") },
+                            text = { Text("¿Eliminar '${comida.nombre}'?") },
+                            confirmButton = {
+                                Button(
+                                    onClick = {
+                                        onDeleteComida()
+                                        showDeleteDialog = false
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                                ) { Text("Eliminar") }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { showDeleteDialog = false }) { Text("Cancelar") }
+                            }
+                        )
+                    }
+                }
+                IconToggleButton(
+                    checked = isCompleted,
+                    onCheckedChange = onCheckedChange
+                ) {
+                    Icon(
+                        imageVector = if (isCompleted) Icons.Filled.CheckCircle else Icons.Outlined.RadioButtonUnchecked,
+                        contentDescription = null,
+                        tint = if (isCompleted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
             }
         }
         
         Spacer(modifier = Modifier.height(8.dp))
 
-        comida.alimentos.forEach { alimento ->
+        comida.alimentos.forEachIndexed { alimentoIndex, alimento ->
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -271,13 +526,45 @@ fun ComidaItemDetail(
                     val c = alimento.cantidad
                     val formatCantidad = if (c % 1.0 == 0.0) c.toInt().toString() else c.toString()
                     
-                    Text(
-                        text = "• ${alimento.nombreSnapshot}",
-                        style = MaterialTheme.typography.bodyLarge.copy(
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.Bold
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "• ${alimento.nombreSnapshot}",
+                            style = MaterialTheme.typography.bodyLarge.copy(
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Bold
+                            ),
+                            modifier = Modifier.weight(1f)
                         )
-                    )
+                        if (!isReadOnly) {
+                            var showDeleteAlimentoDialog by remember { mutableStateOf(false) }
+                            IconButton(onClick = { showDeleteAlimentoDialog = true }, modifier = Modifier.size(24.dp)) {
+                                Icon(Icons.Filled.Delete, contentDescription = "Eliminar Alimento", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(16.dp))
+                            }
+                            if (showDeleteAlimentoDialog) {
+                                AlertDialog(
+                                    onDismissRequest = { showDeleteAlimentoDialog = false },
+                                    title = { Text("Eliminar Alimento") },
+                                    text = { Text("¿Eliminar '${alimento.nombreSnapshot}'?") },
+                                    confirmButton = {
+                                        Button(
+                                            onClick = {
+                                                onDeleteAlimento(alimentoIndex)
+                                                showDeleteAlimentoDialog = false
+                                            },
+                                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                                        ) { Text("Eliminar") }
+                                    },
+                                    dismissButton = {
+                                        TextButton(onClick = { showDeleteAlimentoDialog = false }) { Text("Cancelar") }
+                                    }
+                                )
+                            }
+                        }
+                    }
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = "$formatCantidad ${alimento.unidad}",
@@ -288,6 +575,73 @@ fun ComidaItemDetail(
                         modifier = Modifier.padding(start = 12.dp)
                     )
                 }
+            }
+        }
+        
+        if (!isReadOnly) {
+            Spacer(modifier = Modifier.height(16.dp))
+            var showAddAlimentoDialog by remember { mutableStateOf(false) }
+            
+            Button(
+                onClick = { showAddAlimentoDialog = true },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant, contentColor = MaterialTheme.colorScheme.onSurfaceVariant),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text("Añadir Alimento", fontWeight = FontWeight.Bold)
+            }
+
+            if (showAddAlimentoDialog) {
+                var nombreAlimento by remember { mutableStateOf("") }
+                var cantidadAlimento by remember { mutableStateOf("") }
+                var unidadAlimento by remember { mutableStateOf("") }
+
+                AlertDialog(
+                    onDismissRequest = { showAddAlimentoDialog = false },
+                    title = { Text("Nuevo Alimento") },
+                    text = {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedTextField(
+                                value = nombreAlimento,
+                                onValueChange = { nombreAlimento = it },
+                                label = { Text("Nombre") },
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                OutlinedTextField(
+                                    value = cantidadAlimento,
+                                    onValueChange = { cantidadAlimento = it },
+                                    label = { Text("Cantidad") },
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                    singleLine = true,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                OutlinedTextField(
+                                    value = unidadAlimento,
+                                    onValueChange = { unidadAlimento = it },
+                                    label = { Text("Unidad (ej. g, ml)") },
+                                    singleLine = true,
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                        }
+                    },
+                    confirmButton = {
+                        Button(
+                            onClick = {
+                                if (nombreAlimento.isNotBlank() && cantidadAlimento.isNotBlank()) {
+                                    val cant = cantidadAlimento.toDoubleOrNull() ?: 0.0
+                                    onAddAlimento(nombreAlimento, cant, unidadAlimento)
+                                    showAddAlimentoDialog = false
+                                }
+                            }
+                        ) { Text("Guardar") }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showAddAlimentoDialog = false }) { Text("Cancelar") }
+                    }
+                )
             }
         }
     }

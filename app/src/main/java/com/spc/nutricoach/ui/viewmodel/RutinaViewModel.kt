@@ -275,6 +275,65 @@ class RutinaViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
+    fun modificarNombreRutina(rutinaId: String, nombre: String, onResult: (Boolean, String?) -> Unit) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val token = sessionManager.getToken()
+                if (token.isNullOrBlank()) return@launch
+                val request = com.spc.nutricoach.data.ModificarRutinaRequest(nombre = nombre)
+                NutriCoachApiClient.service.modificarRutina(rutinaId, "Bearer $token", request)
+                rutinas = rutinas.map { if (it.id == rutinaId) it.copy(nombre = nombre) else it }
+                onResult(true, null)
+            } catch (e: Exception) {
+                onResult(false, "Error: ${e.message}")
+            }
+        }
+    }
+
+    fun eliminarRutina(rutinaId: String, onResult: (Boolean, String?) -> Unit) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val token = sessionManager.getToken()
+                if (token.isNullOrBlank()) return@launch
+                NutriCoachApiClient.service.eliminarRutina(rutinaId, "Bearer $token")
+                rutinas = rutinas.filterNot { it.id == rutinaId }
+                onResult(true, null)
+            } catch (e: Exception) {
+                onResult(false, "Error: ${e.message}")
+            }
+        }
+    }
+
+    fun eliminarDia(rutinaId: String, diaIndex: Int, onResult: (Boolean, String?) -> Unit) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val token = sessionManager.getToken()
+                if (token.isNullOrBlank()) return@launch
+                NutriCoachApiClient.service.eliminarDia(rutinaId, diaIndex, "Bearer $token")
+                val clienteId = sessionManager.getClienteId()
+                loadRutinas(clienteId)
+                onResult(true, null)
+            } catch (e: Exception) {
+                onResult(false, "Error: ${e.message}")
+            }
+        }
+    }
+
+    fun eliminarEjercicio(rutinaId: String, diaIndex: Int, ejercicioIndex: Int, onResult: (Boolean, String?) -> Unit) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val token = sessionManager.getToken()
+                if (token.isNullOrBlank()) return@launch
+                NutriCoachApiClient.service.eliminarEjercicio(rutinaId, diaIndex, ejercicioIndex, "Bearer $token")
+                val clienteId = sessionManager.getClienteId()
+                loadRutinas(clienteId)
+                onResult(true, null)
+            } catch (e: Exception) {
+                onResult(false, "Error: ${e.message}")
+            }
+        }
+    }
+
     fun clonarRutinaPorId(rutinaId: String, onResult: (Boolean, String?) -> Unit) {
         viewModelScope.launch(Dispatchers.Main) {
             val result = kotlinx.coroutines.withContext(Dispatchers.IO) {
