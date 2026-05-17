@@ -91,7 +91,7 @@ fun LoginView(navController: NavController, loginViewModel: LoginViewModel = vie
             OutlinedTextField(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 60.dp),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                shape = RoundedCornerShape(12.dp),
+                shape = MaterialTheme.shapes.medium,
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
                     unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.3f),
@@ -112,7 +112,7 @@ fun LoginView(navController: NavController, loginViewModel: LoginViewModel = vie
 
             OutlinedTextField(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 60.dp),
-                shape = RoundedCornerShape(12.dp),
+                shape = MaterialTheme.shapes.medium,
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
                     unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.3f),
@@ -146,7 +146,7 @@ fun LoginView(navController: NavController, loginViewModel: LoginViewModel = vie
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 60.dp)
-                    .background(brush = AppBrushes.MainGradient, shape = RoundedCornerShape(12.dp))
+                    .background(brush = AppBrushes.MainGradient, shape = MaterialTheme.shapes.medium)
                     .height(60.dp),
                 onClick = {
                     loginViewModel.doLogin(inputEmail,inputPassw)

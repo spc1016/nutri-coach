@@ -21,6 +21,8 @@ import androidx.compose.ui.unit.sp
 import com.spc.nutricoach.model.Post
 import com.spc.nutricoach.ui.theme.AppBrushes
 
+import com.spc.nutricoach.ui.theme.adaptiveContainer
+
 @Composable
 fun PostCard(
     post: Post,
@@ -33,15 +35,12 @@ fun PostCard(
 ) {
     val isLiked = post.likedBy.contains(currentUserId)
 
-    Card(
+    Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp)
-            .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-        )
+            .adaptiveContainer(cornerRadius = 16.dp, elevation = 2.dp)
+            .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier)
     ) {
         Column(
             modifier = Modifier.padding(16.dp)

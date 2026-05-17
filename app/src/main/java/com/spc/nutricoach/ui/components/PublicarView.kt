@@ -140,7 +140,7 @@ fun PublicarView(
                         focusedBorderColor = MaterialTheme.colorScheme.primary,
                         unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
                     ),
-                    shape = RoundedCornerShape(12.dp)
+                        shape = MaterialTheme.shapes.medium
                 )
 
                 Spacer(modifier = Modifier.height(20.dp))
@@ -165,7 +165,7 @@ fun PublicarView(
                         modifier = Modifier
                             .menuAnchor()
                             .fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp)
+                            shape = MaterialTheme.shapes.medium
                     )
                     
                     ExposedDropdownMenu(
@@ -222,7 +222,7 @@ fun PublicarView(
                         modifier = Modifier
                             .menuAnchor()
                             .fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp)
+                            shape = MaterialTheme.shapes.medium
                     )
                     
                     ExposedDropdownMenu(
@@ -278,7 +278,7 @@ fun PublicarView(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp),
-                    shape = RoundedCornerShape(16.dp),
+                    shape = MaterialTheme.shapes.large,
                     enabled = textoPost.isNotBlank()
                 ) {
                     Text("Publicar", fontSize = 18.sp, fontWeight = FontWeight.Bold)

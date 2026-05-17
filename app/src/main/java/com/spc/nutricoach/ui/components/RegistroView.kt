@@ -127,7 +127,7 @@ fun RegistroView(navController: NavController, registroViewModel: RegistroViewMo
 
             OutlinedTextField(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
+        shape = MaterialTheme.shapes.large,
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
                     unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.3f),
@@ -209,7 +209,7 @@ fun RegistroView(navController: NavController, registroViewModel: RegistroViewMo
             Button(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(brush = AppBrushes.MainGradient, shape = RoundedCornerShape(12.dp))
+                    .background(brush = AppBrushes.MainGradient, shape = MaterialTheme.shapes.medium)
                     .height(55.dp),
                 onClick = { registroViewModel.doRegistro() },
                 enabled = !registroViewModel.isLoading && !registroViewModel.registroSuccess,
@@ -247,7 +247,7 @@ fun RegistroTextField(
     OutlinedTextField(
         modifier = modifier,
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
-        shape = RoundedCornerShape(20.dp),
+        shape = MaterialTheme.shapes.large,
         colors = OutlinedTextFieldDefaults.colors(
             focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
             unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.3f),

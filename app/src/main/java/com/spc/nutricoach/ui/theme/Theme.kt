@@ -12,31 +12,55 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
 private val DarkColorScheme = darkColorScheme(
-    primary = PrimaryNeon,
-    secondary = SecondaryTeal,
-    tertiary = AccentYellowGreen,
-    background = DarkBackground,
-    surface = DarkSurface,
-    onPrimary = Color.Black,
-    onSecondary = Color.Black,
-    onTertiary = Color.Black,
-    onBackground = TextMainDark,
-    onSurface = TextMainDark,
-    outline = DarkBorder
+    primary = ht_primary,
+    onPrimary = ht_onPrimary,
+    primaryContainer = ht_primaryContainer,
+    onPrimaryContainer = ht_onPrimaryContainer,
+    secondary = ht_secondary,
+    onSecondary = ht_onSecondary,
+    secondaryContainer = ht_secondaryContainer,
+    onSecondaryContainer = ht_onSecondaryContainer,
+    tertiary = ht_tertiary,
+    onTertiary = ht_onTertiary,
+    tertiaryContainer = ht_tertiaryContainer,
+    onTertiaryContainer = ht_onTertiaryContainer,
+    background = ht_background,
+    onBackground = ht_onBackground,
+    surface = ht_surface,
+    onSurface = ht_onSurface,
+    surfaceVariant = ht_surfaceVariant,
+    onSurfaceVariant = ht_onSurfaceVariant,
+    error = ht_error,
+    onError = ht_onError,
+    errorContainer = ht_errorContainer,
+    onErrorContainer = ht_onErrorContainer,
+    outline = ht_outline
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = PrimaryNeon,
-    secondary = SecondaryTeal,
-    tertiary = AccentYellowGreen,
-    background = LightBackground,
-    surface = LightSurface,
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = TextMainLight,
-    onSurface = TextMainLight,
-    outline = LightBorder
+    primary = vw_primary,
+    onPrimary = vw_onPrimary,
+    primaryContainer = vw_primaryContainer,
+    onPrimaryContainer = vw_onPrimaryContainer,
+    secondary = vw_secondary,
+    onSecondary = vw_onSecondary,
+    secondaryContainer = vw_secondaryContainer,
+    onSecondaryContainer = vw_onSecondaryContainer,
+    tertiary = vw_tertiary,
+    onTertiary = vw_onTertiary,
+    tertiaryContainer = vw_tertiaryContainer,
+    onTertiaryContainer = vw_onTertiaryContainer,
+    background = vw_background,
+    onBackground = vw_onBackground,
+    surface = vw_surface,
+    onSurface = vw_onSurface,
+    surfaceVariant = vw_surfaceVariant,
+    onSurfaceVariant = vw_onSurfaceVariant,
+    error = vw_error,
+    onError = vw_onError,
+    errorContainer = vw_errorContainer,
+    onErrorContainer = vw_onErrorContainer,
+    outline = vw_outline
 )
 
 @Composable
@@ -51,14 +75,17 @@ fun NutriCoachTheme(
             val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
-
         darkTheme -> DarkColorScheme
         else -> LightColorScheme
     }
 
+    val typography = if (darkTheme) DarkTypography else LightTypography
+    val shapes = if (darkTheme) DarkShapes else LightShapes
+
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = Typography,
+        typography = typography,
+        shapes = shapes,
         content = content
     )
 }

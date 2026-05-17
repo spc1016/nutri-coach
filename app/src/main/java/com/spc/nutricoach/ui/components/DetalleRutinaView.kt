@@ -65,6 +65,7 @@ import com.spc.nutricoach.data.SessionManager
 import com.spc.nutricoach.model.Dia
 import com.spc.nutricoach.ui.theme.AppBrushes
 import com.spc.nutricoach.ui.viewmodel.RutinaViewModel
+import com.spc.nutricoach.ui.theme.adaptiveContainer
 import com.spc.nutricoach.util.QrUtils
 import androidx.compose.runtime.Composable
 
@@ -387,12 +388,14 @@ fun DetalleRutinaView(
                 items(diasOrdenados.size) { index ->
                     val dia = diasOrdenados[index]
                     val diaIndexOriginal = rutina.dias.indexOf(dia) // Obtener indice real
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(24.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .adaptiveContainer(
+                                cornerRadius = 24.dp,
+                                elevation = 0.dp,
+                                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
+                            )
                     ) {
                         Column(modifier = Modifier.padding(20.dp)) {
                             DiaItemDetail(dia = dia, diaIndex = diaIndexOriginal, rutinaId = rutina.id, rutinaViewModel = rutinaViewModel, isReadOnly = isReadOnly)
@@ -565,13 +568,15 @@ fun DiaItemDetail(dia: Dia, diaIndex: Int, rutinaId: String, rutinaViewModel: Ru
             
             var localWeight by remember(savedWeight) { mutableStateOf(savedWeight ?: "") }
 
-            Card(
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 4.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                    .padding(vertical = 4.dp)
+                    .adaptiveContainer(
+                        cornerRadius = 12.dp,
+                        elevation = 0.dp,
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                    )
             ) {
                 Column(modifier = Modifier.padding(12.dp)) {
                     Row(

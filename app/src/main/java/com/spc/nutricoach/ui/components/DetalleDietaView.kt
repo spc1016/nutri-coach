@@ -61,6 +61,7 @@ import androidx.navigation.NavController
 import androidx.compose.material3.MaterialTheme
 import com.spc.nutricoach.model.Comida
 import com.spc.nutricoach.ui.theme.AppBrushes
+import com.spc.nutricoach.ui.theme.adaptiveContainer
 import com.spc.nutricoach.ui.viewmodel.DietaViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -323,14 +324,14 @@ fun DetalleDietaView(
                     val mealKey = "${clientId}_${dietaId}_${comida.nombre}"
                     val isCompleted = completedMeals.contains(mealKey)
 
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = if (isCompleted) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
-                        ),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .adaptiveContainer(
+                                cornerRadius = 16.dp,
+                                elevation = 0.dp,
+                                containerColor = if (isCompleted) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
+                            )
                     ) {
                         Column(modifier = Modifier.padding(20.dp)) {
                             ComidaItemDetail(
@@ -514,13 +515,15 @@ fun ComidaItemDetail(
         Spacer(modifier = Modifier.height(8.dp))
 
         comida.alimentos.forEachIndexed { alimentoIndex, alimento ->
-            Card(
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 4.dp),
-                shape = RoundedCornerShape(8.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                    .padding(vertical = 4.dp)
+                    .adaptiveContainer(
+                        cornerRadius = 8.dp,
+                        elevation = 0.dp,
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                    )
             ) {
                 Column(modifier = Modifier.padding(12.dp)) {
                     val c = alimento.cantidad

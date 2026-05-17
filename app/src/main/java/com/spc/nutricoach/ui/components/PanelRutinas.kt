@@ -4,6 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -25,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.material3.MaterialTheme
 import com.spc.nutricoach.model.Rutina
 import com.spc.nutricoach.ui.theme.AppBrushes
+import com.spc.nutricoach.ui.theme.adaptiveContainer
 
 /*@OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -162,14 +164,15 @@ fun RutinasView(
 
 @Composable
 fun RutinaCard(rutina: Rutina, onClick: () -> Unit) {
-    Card(
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() },
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)),
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+            .adaptiveContainer(
+                cornerRadius = 16.dp,
+                elevation = 0.dp,
+                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
+            )
+            .clickable { onClick() }
     ) {
         Row(
             modifier = Modifier

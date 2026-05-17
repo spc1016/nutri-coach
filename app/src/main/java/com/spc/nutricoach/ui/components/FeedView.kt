@@ -24,6 +24,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.spc.nutricoach.data.SessionManager
 import com.spc.nutricoach.ui.theme.AppBrushes
+import com.spc.nutricoach.ui.theme.adaptiveContainer
 import com.spc.nutricoach.ui.viewmodel.FeedViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -217,13 +218,12 @@ fun UsuarioCard(
     onFollowClick: () -> Unit,
     onClick: () -> Unit
 ) {
-    Card(
+    Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp)
-            .clickable { onClick() },
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp)
+            .adaptiveContainer(cornerRadius = 16.dp, elevation = 2.dp)
+            .clickable { onClick() }
     ) {
         Row(
             modifier = Modifier

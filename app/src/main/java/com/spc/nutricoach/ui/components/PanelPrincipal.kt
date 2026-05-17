@@ -50,6 +50,7 @@ import androidx.compose.material3.MaterialTheme
 import com.spc.nutricoach.data.SessionManager
 import com.spc.nutricoach.model.Dieta
 import com.spc.nutricoach.ui.theme.AppBrushes
+import com.spc.nutricoach.ui.theme.adaptiveContainer
 import com.spc.nutricoach.ui.viewmodel.DietaViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -180,16 +181,15 @@ fun MainView(
 
 @Composable
 fun DietaCard(dieta: Dieta, onClick: () -> Unit) {
-    Card(
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() },
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
-        ),
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+            .adaptiveContainer(
+                cornerRadius = 16.dp,
+                elevation = 0.dp,
+                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
+            )
+            .clickable { onClick() }
     ) {
         Row(
             modifier = Modifier

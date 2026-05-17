@@ -15,47 +15,121 @@ val provider = GoogleFont.Provider(
     certificates = R.array.com_google_android_gms_fonts_certs
 )
 
-val OutfitFontName = GoogleFont("Outfit")
+val PlusJakartaSansFontName = GoogleFont("Plus Jakarta Sans")
+val SoraFontName = GoogleFont("Sora")
+val GeistFontName = GoogleFont("Geist")
 
-val OutfitFontFamily = FontFamily(
-    Font(googleFont = OutfitFontName, fontProvider = provider, weight = FontWeight.Normal),
-    Font(googleFont = OutfitFontName, fontProvider = provider, weight = FontWeight.Medium),
-    Font(googleFont = OutfitFontName, fontProvider = provider, weight = FontWeight.SemiBold),
-    Font(googleFont = OutfitFontName, fontProvider = provider, weight = FontWeight.Bold)
+val PlusJakartaSans = FontFamily(
+    Font(googleFont = PlusJakartaSansFontName, fontProvider = provider, weight = FontWeight.Normal),
+    Font(googleFont = PlusJakartaSansFontName, fontProvider = provider, weight = FontWeight.Medium),
+    Font(googleFont = PlusJakartaSansFontName, fontProvider = provider, weight = FontWeight.SemiBold),
+    Font(googleFont = PlusJakartaSansFontName, fontProvider = provider, weight = FontWeight.Bold)
 )
 
-val Typography = Typography(
+val Sora = FontFamily(
+    Font(googleFont = SoraFontName, fontProvider = provider, weight = FontWeight.Normal),
+    Font(googleFont = SoraFontName, fontProvider = provider, weight = FontWeight.Medium),
+    Font(googleFont = SoraFontName, fontProvider = provider, weight = FontWeight.SemiBold),
+    Font(googleFont = SoraFontName, fontProvider = provider, weight = FontWeight.Bold)
+)
+
+val Geist = FontFamily(
+    Font(googleFont = GeistFontName, fontProvider = provider, weight = FontWeight.Normal),
+    Font(googleFont = GeistFontName, fontProvider = provider, weight = FontWeight.Medium),
+    Font(googleFont = GeistFontName, fontProvider = provider, weight = FontWeight.SemiBold),
+    Font(googleFont = GeistFontName, fontProvider = provider, weight = FontWeight.Bold)
+)
+
+val LightTypography = Typography(
     displayLarge = TextStyle(
-        fontFamily = OutfitFontFamily,
+        fontFamily = PlusJakartaSans,
         fontWeight = FontWeight.Bold,
-        fontSize = 57.sp,
-        lineHeight = 64.sp,
-        letterSpacing = (-0.25).sp
+        fontSize = 48.sp,
+        lineHeight = 56.sp,
+        letterSpacing = (-0.02).sp
     ),
     headlineLarge = TextStyle(
-        fontFamily = OutfitFontFamily,
-        fontWeight = FontWeight.Bold,
+        fontFamily = PlusJakartaSans,
+        fontWeight = FontWeight.SemiBold,
         fontSize = 32.sp,
         lineHeight = 40.sp
     ),
-    titleLarge = TextStyle(
-        fontFamily = OutfitFontFamily,
+    headlineMedium = TextStyle(
+        fontFamily = PlusJakartaSans,
         fontWeight = FontWeight.SemiBold,
-        fontSize = 22.sp,
-        lineHeight = 28.sp
+        fontSize = 24.sp,
+        lineHeight = 32.sp
     ),
     bodyLarge = TextStyle(
-        fontFamily = OutfitFontFamily,
+        fontFamily = PlusJakartaSans,
+        fontWeight = FontWeight.Normal,
+        fontSize = 18.sp,
+        lineHeight = 28.sp
+    ),
+    bodyMedium = TextStyle(
+        fontFamily = PlusJakartaSans,
         fontWeight = FontWeight.Normal,
         fontSize = 16.sp,
-        lineHeight = 24.sp,
-        letterSpacing = 0.5.sp
+        lineHeight = 24.sp
     ),
     labelMedium = TextStyle(
-        fontFamily = OutfitFontFamily,
+        fontFamily = PlusJakartaSans,
         fontWeight = FontWeight.Medium,
+        fontSize = 14.sp,
+        lineHeight = 20.sp,
+        letterSpacing = 0.01.sp
+    ),
+    labelSmall = TextStyle(
+        fontFamily = PlusJakartaSans,
+        fontWeight = FontWeight.SemiBold,
         fontSize = 12.sp,
-        lineHeight = 16.sp,
-        letterSpacing = 0.5.sp
+        lineHeight = 16.sp
+    )
+)
+
+val DarkTypography = Typography(
+    displayLarge = TextStyle(
+        fontFamily = Sora,
+        fontWeight = FontWeight.Bold,
+        fontSize = 48.sp,
+        lineHeight = 52.8.sp,
+        letterSpacing = (-0.02).sp
+    ),
+    headlineLarge = TextStyle(
+        fontFamily = Sora,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 32.sp,
+        lineHeight = 38.4.sp
+    ),
+    headlineMedium = TextStyle(
+        fontFamily = Sora,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 24.sp,
+        lineHeight = 31.2.sp
+    ),
+    bodyLarge = TextStyle(
+        fontFamily = Geist,
+        fontWeight = FontWeight.Normal,
+        fontSize = 18.sp,
+        lineHeight = 28.8.sp
+    ),
+    bodyMedium = TextStyle(
+        fontFamily = Geist,
+        fontWeight = FontWeight.Normal,
+        fontSize = 16.sp,
+        lineHeight = 25.6.sp
+    ),
+    bodySmall = TextStyle(
+        fontFamily = Geist,
+        fontWeight = FontWeight.Normal,
+        fontSize = 14.sp,
+        lineHeight = 21.sp
+    ),
+    labelMedium = TextStyle(
+        fontFamily = Geist,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 12.sp,
+        lineHeight = 12.sp,
+        letterSpacing = 0.05.sp
     )
 )

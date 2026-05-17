@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.spc.nutricoach.data.SessionManager
 import com.spc.nutricoach.ui.theme.AppBrushes
+import com.spc.nutricoach.ui.theme.adaptiveContainer
 import com.spc.nutricoach.ui.viewmodel.FeedViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -147,14 +148,15 @@ fun DetallePostView(
                     }
 
                     items(post.comentarios) { comentario ->
-                        Card(
+                        Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(vertical = 4.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                            )
+                                .padding(vertical = 4.dp)
+                                .adaptiveContainer(
+                                    cornerRadius = 12.dp,
+                                    elevation = 0.dp,
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                                )
                         ) {
                             Column(modifier = Modifier.padding(12.dp)) {
                                 Text(
