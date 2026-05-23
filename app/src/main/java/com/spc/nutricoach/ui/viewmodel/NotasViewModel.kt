@@ -50,9 +50,10 @@ class NotasViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun agregarNota(titulo: String, contenido: String) {
-        val clienteId = currentClienteId ?: return
-        val nuevaNota = NotasEntity(clienteId = clienteId, titulo = titulo, contenido = contenido)
         viewModelScope.launch(Dispatchers.IO) {
+            val clienteId = currentClienteId ?: sessionManager.getClienteId()
+            if (clienteId.isNullOrBlank()) return@launch
+            val nuevaNota = NotasEntity(clienteId = clienteId, titulo = titulo, contenido = contenido)
             repository.insertarNota(nuevaNota)
         }
     }

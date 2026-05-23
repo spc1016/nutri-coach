@@ -1,5 +1,7 @@
 package com.spc.nutricoach.ui.components
 
+import androidx.benchmark.traceprocessor.Row
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -18,6 +20,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -58,8 +62,21 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.spc.nutricoach.data.SessionManager
 import com.spc.nutricoach.ui.theme.AppBrushes
+import com.spc.nutricoach.ui.theme.SecondaryTeal
 import com.spc.nutricoach.ui.viewmodel.DietaViewModel
 import com.spc.nutricoach.ui.viewmodel.RutinaViewModel
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.OutlinedTextFieldDefaults
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -79,10 +96,16 @@ fun PersonalView(
     val letraInicial = email?.firstOrNull()?.uppercase() ?: "U"
 
     var selectedTabIndex by rememberSaveable { mutableStateOf(0) }
-    val tabs = listOf("Dietas", "Rutinas")
+    val tabs = listOf("Dietas", "Rutinas", "Seguimiento")
 
     var showCrearRutinaDialog by remember { mutableStateOf(false) }
     var showCrearDietaDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(selectedTabIndex) {
+        if (selectedTabIndex == 2) {
+            rutinaViewModel.cargarHistorialEntrenamientos()
+        }
+    }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -183,128 +206,316 @@ fun PersonalView(
                     }
                 }
 
-                if (selectedTabIndex == 0) {
-                    // Contenido Dietas
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 20.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        item { Spacer(modifier = Modifier.height(8.dp)) }
+                when (selectedTabIndex) {
+                    0 -> {
+                        // Contenido Dietas
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 20.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            item { Spacer(modifier = Modifier.height(8.dp)) }
 
-                        if (dietaViewModel.isLoading) {
-                            item {
-                                Box(
-                                    modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                            if (dietaViewModel.isLoading) {
+                                item {
+                                    Box(
+                                        modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                                    }
                                 }
                             }
-                        }
 
-                        dietaViewModel.error?.let { errorMsg ->
-                            item {
-                                Text(
-                                    text = errorMsg,
-                                    style = TextStyle(
-                                        color = Color.Red,
-                                        fontSize = 14.sp,
-                                        fontWeight = FontWeight.Bold
-                                    ),
-                                    modifier = Modifier.padding(vertical = 16.dp)
-                                )
-                            }
-                        }
-
-                        if (!dietaViewModel.isLoading && dietaViewModel.error == null && dietaViewModel.dietas.isEmpty()) {
-                            item {
-                                Text(
-                                    text = "No tienes dietas asignadas",
-                                    style = TextStyle(
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        fontSize = 16.sp
-                                    ),
-                                    modifier = Modifier.padding(vertical = 40.dp)
-                                )
-                            }
-                        }
-
-                        items(dietaViewModel.dietas) { dieta ->
-                            DietaCard(
-                                dieta = dieta,
-                                onClick = {
-                                    navController.navigate(PantallaDetalleDieta(dietaId = dieta.id))
+                            dietaViewModel.error?.let { errorMsg ->
+                                item {
+                                    Text(
+                                        text = errorMsg,
+                                        style = TextStyle(
+                                            color = Color.Red,
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Bold
+                                        ),
+                                        modifier = Modifier.padding(vertical = 16.dp)
+                                    )
                                 }
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                        }
+                            }
 
-                        item {
-                            Spacer(modifier = Modifier.height(80.dp)) // padding for fab spacing if needed later
+                            if (!dietaViewModel.isLoading && dietaViewModel.error == null && dietaViewModel.dietas.isEmpty()) {
+                                item {
+                                    Text(
+                                        text = "No tienes dietas asignadas",
+                                        style = TextStyle(
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            fontSize = 16.sp
+                                        ),
+                                        modifier = Modifier.padding(vertical = 40.dp)
+                                    )
+                                }
+                            }
+
+                            items(dietaViewModel.dietas) { dieta ->
+                                DietaCard(
+                                    dieta = dieta,
+                                    onClick = {
+                                        navController.navigate(PantallaDetalleDieta(dietaId = dieta.id))
+                                    }
+                                )
+                                Spacer(modifier = Modifier.height(16.dp))
+                            }
+
+                            item {
+                                Spacer(modifier = Modifier.height(80.dp)) // padding for fab spacing if needed later
+                            }
                         }
                     }
-                } else {
-                    // Contenido Rutinas
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 20.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        item { Spacer(modifier = Modifier.height(8.dp)) }
+                    1 -> {
+                        // Contenido Rutinas
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 20.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            item { Spacer(modifier = Modifier.height(8.dp)) }
 
-                        if (rutinaViewModel.isLoading) {
-                            item {
-                                Box(
-                                    modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                            if (rutinaViewModel.isLoading) {
+                                item {
+                                    Box(
+                                        modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                                    }
                                 }
                             }
-                        }
 
-                        rutinaViewModel.error?.let { errorMsg ->
-                            item {
-                                Text(
-                                    text = errorMsg,
-                                    style = TextStyle(
-                                        color = Color.Red,
-                                        fontSize = 14.sp,
-                                        fontWeight = FontWeight.Bold
-                                    ),
-                                    modifier = Modifier.padding(vertical = 16.dp)
-                                )
-                            }
-                        }
-
-                        if (!rutinaViewModel.isLoading && rutinaViewModel.error == null && rutinaViewModel.rutinas.isEmpty()) {
-                            item {
-                                Text(
-                                    text = "No tienes rutinas asignadas",
-                                    style = TextStyle(
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        fontSize = 16.sp
-                                    ),
-                                    modifier = Modifier.padding(vertical = 40.dp)
-                                )
-                            }
-                        }
-
-                        items(rutinaViewModel.rutinas) { rutina ->
-                            RutinaCard(
-                                rutina = rutina,
-                                onClick = {
-                                    navController.navigate(PantallaDetalleRutina(rutinaId = rutina.id))
+                            rutinaViewModel.error?.let { errorMsg ->
+                                item {
+                                    Text(
+                                        text = errorMsg,
+                                        style = TextStyle(
+                                            color = Color.Red,
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Bold
+                                        ),
+                                        modifier = Modifier.padding(vertical = 16.dp)
+                                    )
                                 }
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
+                            }
+
+                            if (!rutinaViewModel.isLoading && rutinaViewModel.error == null && rutinaViewModel.rutinas.isEmpty()) {
+                                item {
+                                    Text(
+                                        text = "No tienes rutinas asignadas",
+                                        style = TextStyle(
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            fontSize = 16.sp
+                                        ),
+                                        modifier = Modifier.padding(vertical = 40.dp)
+                                    )
+                                }
+                            }
+
+                            items(rutinaViewModel.rutinas) { rutina ->
+                                RutinaCard(
+                                    rutina = rutina,
+                                    onClick = {
+                                        navController.navigate(PantallaDetalleRutina(rutinaId = rutina.id))
+                                    }
+                                )
+                                Spacer(modifier = Modifier.height(16.dp))
+                            }
+
+                            item {
+                                Spacer(modifier = Modifier.height(80.dp)) // padding for fab
+                            }
+                        }
+                    }
+                    2 -> {
+                        // Contenido Seguimiento
+                        val ejerciciosUnicos = remember(rutinaViewModel.historialEntrenamientos) {
+                            rutinaViewModel.historialEntrenamientos
+                                .flatMap { it.ejercicios }
+                                .map { it.nombre_snapshot }
+                                .distinct()
+                                .sorted()
+                        }
+                        var ejercicioSeleccionado by remember { mutableStateOf<String?>(null) }
+                        var searchQuery by remember { mutableStateOf("") }
+
+                        val ejerciciosFiltrados = remember(searchQuery, ejerciciosUnicos) {
+                            if (searchQuery.isBlank()) ejerciciosUnicos
+                            else ejerciciosUnicos.filter { it.contains(searchQuery, ignoreCase = true) }
                         }
 
-                        item {
-                            Spacer(modifier = Modifier.height(80.dp)) // padding for fab
+                        // Auto-seleccionar primer elemento filtrado si cambia
+                        LaunchedEffect(ejerciciosFiltrados) {
+                            if (ejercicioSeleccionado == null || !ejerciciosFiltrados.contains(ejercicioSeleccionado)) {
+                                ejercicioSeleccionado = ejerciciosFiltrados.firstOrNull()
+                            }
+                        }
+                        
+                        if (ejercicioSeleccionado == null && ejerciciosFiltrados.isNotEmpty()) {
+                            ejercicioSeleccionado = ejerciciosFiltrados.first()
+                        }
+
+                        val chartData = remember(ejercicioSeleccionado, rutinaViewModel.historialEntrenamientos) {
+                            if (ejercicioSeleccionado == null) emptyList<Pair<String, Double>>()
+                            else {
+                                rutinaViewModel.historialEntrenamientos
+                                    .filter { ent -> ent.ejercicios.any { it.nombre_snapshot == ejercicioSeleccionado } }
+                                    .map { ent ->
+                                        val ejer = ent.ejercicios.first { it.nombre_snapshot == ejercicioSeleccionado }
+                                        val maxPeso = ejer.series.map { it.peso }.maxOrNull() ?: 0.0
+                                        val fechaCorta = try {
+                                            val sdfIn = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.getDefault())
+                                            val date = sdfIn.parse(ent.fecha)
+                                            val sdfOut = java.text.SimpleDateFormat("dd/MM", java.util.Locale.getDefault())
+                                            if (date != null) sdfOut.format(date) else ""
+                                        } catch (e: Exception) {
+                                            ""
+                                        }
+                                        Pair(fechaCorta, maxPeso)
+                                    }
+                                    .reversed()
+                            }
+                        }
+
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 20.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            item { Spacer(modifier = Modifier.height(8.dp)) }
+
+                            if (rutinaViewModel.isLoadingHistorial) {
+                                item {
+                                    Box(
+                                        modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                                    }
+                                }
+                            }
+
+                            rutinaViewModel.errorHistorial?.let { errorMsg ->
+                                item {
+                                    Text(
+                                        text = errorMsg,
+                                        style = TextStyle(
+                                            color = Color.Red,
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Bold
+                                        ),
+                                        modifier = Modifier.padding(vertical = 16.dp)
+                                    )
+                                }
+                            }
+
+                            if (!rutinaViewModel.isLoadingHistorial && rutinaViewModel.errorHistorial == null && rutinaViewModel.historialEntrenamientos.isEmpty()) {
+                                item {
+                                    Text(
+                                        text = "No has completado ningún entrenamiento todavía",
+                                        style = TextStyle(
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            fontSize = 16.sp
+                                        ),
+                                        modifier = Modifier.padding(vertical = 40.dp)
+                                    )
+                                }
+                            }
+
+                            if (rutinaViewModel.historialEntrenamientos.isNotEmpty()) {
+                                item {
+                                    Text(
+                                        text = "Evolución por Ejercicio",
+                                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                                    )
+                                }
+
+                                // Buscador de ejercicio interactivo
+                                item {
+                                    OutlinedTextField(
+                                        value = searchQuery,
+                                        onValueChange = { searchQuery = it },
+                                        placeholder = { Text("Buscar ejercicio...", color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)) },
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 8.dp),
+                                        singleLine = true,
+                                        shape = RoundedCornerShape(12.dp),
+                                        colors = OutlinedTextFieldDefaults.colors(
+                                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                            unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                                        ),
+                                        leadingIcon = {
+                                            Icon(
+                                                imageVector = Icons.Default.Search,
+                                                contentDescription = "Buscar",
+                                                tint = MaterialTheme.colorScheme.primary
+                                            )
+                                        },
+                                        trailingIcon = {
+                                            if (searchQuery.isNotEmpty()) {
+                                                IconButton(onClick = { searchQuery = "" }) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.Close,
+                                                        contentDescription = "Limpiar",
+                                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    )
+                                }
+
+                                item {
+                                    LazyRow(
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 12.dp)
+                                    ) {
+                                        items(ejerciciosFiltrados) { ejer ->
+                                            CustomExerciseChip(
+                                                text = ejer,
+                                                selected = ejercicioSeleccionado == ejer,
+                                                onClick = { ejercicioSeleccionado = ejer }
+                                            )
+                                        }
+                                    }
+                                }
+
+                                item {
+                                    EvolutionChart(
+                                        points = chartData,
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                }
+
+                                item {
+                                    Text(
+                                        text = "Historial Reciente",
+                                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        modifier = Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 8.dp)
+                                    )
+                                }
+
+                                items(rutinaViewModel.historialEntrenamientos) { log ->
+                                    HistorialEntrenamientoCard(log = log)
+                                }
+                            }
+
+                            item {
+                                Spacer(modifier = Modifier.height(80.dp))
+                            }
                         }
                     }
                 }
@@ -476,6 +687,307 @@ fun PersonalView(
                     }
                 }
             )
+        }
+    }
+}
+
+@Composable
+fun CustomExerciseChip(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    val background = if (selected) AppBrushes.MainGradient else Brush.linearGradient(listOf(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.surfaceVariant))
+    val textColor = if (selected) Color.Black else MaterialTheme.colorScheme.onSurfaceVariant
+    val borderStroke = if (selected) null else androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+    
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(background)
+            .clickable { onClick() }
+            .then(if (borderStroke != null) Modifier.border(borderStroke, RoundedCornerShape(20.dp)) else Modifier)
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = text,
+            color = textColor,
+            fontSize = 14.sp,
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
+        )
+    }
+}
+
+@Composable
+fun EvolutionChart(points: List<Pair<String, Double>>, modifier: Modifier = Modifier) {
+    if (points.isEmpty()) {
+        Box(
+            modifier = modifier.fillMaxWidth().height(200.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text("No hay suficientes datos para graficar", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        return
+    }
+
+    val maxWeight = remember(points) {
+        val maxVal = points.map { it.second }.maxOrNull() ?: 10.0
+        if (maxVal <= 0.0) 10.0 else maxVal
+    }
+    val minWeight = 0.0
+    val weightRange = remember(maxWeight) { maxWeight }
+    
+    // Animar la gráfica al cargar
+    val animProgress = remember { androidx.compose.animation.core.Animatable(0f) }
+    LaunchedEffect(points) {
+        animProgress.snapTo(0f)
+        animProgress.animateTo(
+            targetValue = 1f,
+            animationSpec = androidx.compose.animation.core.tween(1000, easing = androidx.compose.animation.core.FastOutSlowInEasing)
+        )
+    }
+
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val tealColor = SecondaryTeal
+    val gridColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
+    val textPaint = remember {
+        android.graphics.Paint().apply {
+            color = android.graphics.Color.GRAY
+            textSize = 28f
+            textAlign = android.graphics.Paint.Align.CENTER
+            isAntiAlias = true
+        }
+    }
+
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(top = 20.dp, bottom = 12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f)),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.15f)),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            Text(
+                text = "Evolución de Carga Máxima (PR)",
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(modifier = Modifier.height(20.dp))
+            
+            Canvas(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(220.dp)
+                    .padding(bottom = 24.dp, start = 8.dp, end = 16.dp, top = 16.dp)
+            ) {
+                val width = size.width
+                val height = size.height
+                val paddingBottom = 55f
+                val paddingTop = 20f
+                val paddingLeft = 110f // Espacio interno para que las etiquetas no se corten
+                val chartHeight = height - paddingBottom - paddingTop
+                val chartWidth = width - paddingLeft
+                
+                val sizePoints = points.size
+                val stepX = if (sizePoints > 1) chartWidth / (sizePoints - 1) else chartWidth
+                
+                // 1. Dibujar líneas de rejilla horizontal (3 divisiones)
+                for (i in 0..2) {
+                    val y = paddingTop + (chartHeight / 2) * i
+                    drawLine(
+                        color = gridColor,
+                        start = Offset(paddingLeft, y),
+                        end = Offset(width, y),
+                        strokeWidth = 1f
+                    )
+                    
+                    // Texto del peso en el eje Y (totalmente visible)
+                    val value = maxWeight - (weightRange / 2.0) * i.toDouble()
+                    drawContext.canvas.nativeCanvas.drawText(
+                        String.format(java.util.Locale.getDefault(), "%.1f kg", value),
+                        paddingLeft - 15f,
+                        y + 8f,
+                        textPaint.apply { textAlign = android.graphics.Paint.Align.RIGHT }
+                    )
+                }
+                
+                // 2. Construir los puntos de coordenadas (X, Y)
+                val coordinates = points.mapIndexed { index, pair ->
+                    val x = paddingLeft + index * stepX
+                    val rawY = if (weightRange > 0.0) {
+                        height - paddingBottom - (((pair.second - minWeight) / weightRange) * chartHeight).toFloat()
+                    } else {
+                        height / 2f
+                    }
+                    val animatedY = height - paddingBottom - (height - paddingBottom - rawY) * animProgress.value
+                    Offset(x, animatedY)
+                }
+                
+                // 3. Dibujar la curva suave con gradiente bajo la curva
+                if (coordinates.isNotEmpty()) {
+                    val path = androidx.compose.ui.graphics.Path().apply {
+                        moveTo(coordinates.first().x, coordinates.first().y)
+                        for (i in 1 until coordinates.size) {
+                            val p1 = coordinates[i - 1]
+                            val p2 = coordinates[i]
+                            val controlPoint1 = Offset(p1.x + (p2.x - p1.x) / 2f, p1.y)
+                            val controlPoint2 = Offset(p1.x + (p2.x - p1.x) / 2f, p2.y)
+                            cubicTo(controlPoint1.x, controlPoint1.y, controlPoint2.x, controlPoint2.y, p2.x, p2.y)
+                        }
+                    }
+                    
+                    // Gradiente de fondo bajo la curva
+                    val fillPath = androidx.compose.ui.graphics.Path().apply {
+                        addPath(path)
+                        lineTo(coordinates.last().x, height - paddingBottom)
+                        lineTo(coordinates.first().x, height - paddingBottom)
+                        close()
+                    }
+                    
+                    drawPath(
+                        path = fillPath,
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                primaryColor.copy(alpha = 0.25f),
+                                Color.Transparent
+                            )
+                        )
+                    )
+                    
+                    // Línea de la gráfica
+                    drawPath(
+                        path = path,
+                        brush = Brush.horizontalGradient(
+                            colors = listOf(primaryColor, tealColor)
+                        ),
+                        style = androidx.compose.ui.graphics.drawscope.Stroke(
+                            width = 4.dp.toPx(),
+                            cap = androidx.compose.ui.graphics.StrokeCap.Round
+                        )
+                    )
+                    
+                    // 4. Dibujar puntos destacados y etiquetas de fecha
+                    var lastLabelX = -1000f
+                    coordinates.forEachIndexed { index, offset ->
+                        // Resplandor del punto
+                        drawCircle(
+                            brush = Brush.radialGradient(
+                                colors = listOf(primaryColor.copy(alpha = 0.4f), Color.Transparent),
+                                center = offset,
+                                radius = 12.dp.toPx()
+                            ),
+                            radius = 12.dp.toPx(),
+                            center = offset
+                        )
+                        
+                        // Punto central
+                        drawCircle(
+                            color = Color.White,
+                            radius = 4.dp.toPx(),
+                            center = offset
+                        )
+                        drawCircle(
+                            color = primaryColor,
+                            radius = 4.dp.toPx(),
+                            center = offset,
+                            style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.dp.toPx())
+                        )
+                        
+                        // Etiqueta de la fecha en el eje X
+                        // Filtramos inteligentemente para evitar superposición
+                        val minDistanceBetweenLabels = 145f
+                        val isLast = index == coordinates.size - 1
+                        val shouldDrawLabel = when {
+                            index == 0 -> true
+                            isLast -> (offset.x - lastLabelX) >= minDistanceBetweenLabels * 0.8f
+                            else -> (offset.x - lastLabelX) >= minDistanceBetweenLabels && (coordinates.last().x - offset.x) >= minDistanceBetweenLabels * 0.8f
+                        }
+                        
+                        if (shouldDrawLabel) {
+                            drawContext.canvas.nativeCanvas.drawText(
+                                points[index].first,
+                                offset.x,
+                                height - 12f,
+                                textPaint.apply { textAlign = android.graphics.Paint.Align.CENTER }
+                            )
+                            lastLabelX = offset.x
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun HistorialEntrenamientoCard(log: com.spc.nutricoach.data.EntrenamientoLog) {
+    val fechaFormateada = remember(log.fecha) {
+        try {
+            val sdfIn = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.getDefault())
+            val date = sdfIn.parse(log.fecha)
+            val sdfOut = java.text.SimpleDateFormat("dd MMM yyyy - HH:mm", java.util.Locale.getDefault())
+            if (date != null) sdfOut.format(date) else log.fecha
+        } catch (e: Exception) {
+            log.fecha
+        }
+    }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.4f)),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = log.rutina_nombre,
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = log.dia_nombre,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+                Text(
+                    text = fechaFormateada,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            // Listado de ejercicios realizados
+            log.ejercicios.forEach { ejer ->
+                val maxPeso = ejer.series.map { it.peso }.maxOrNull() ?: 0.0
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = ejer.nombre_snapshot,
+                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "${ejer.series.size} series • Max: $maxPeso kg",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
         }
     }
 }

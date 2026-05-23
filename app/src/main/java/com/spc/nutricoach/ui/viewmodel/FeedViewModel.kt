@@ -67,7 +67,7 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun crearPost(texto: String, rutinaId: String?, dietaId: String?, onResult: (Boolean, String?) -> Unit) {
+    fun crearPost(texto: String, rutinaId: String?, dietaId: String?, imagenUrl: String?, onResult: (Boolean, String?) -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val token = sessionManager.getToken()
@@ -75,7 +75,7 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
                     onResult(false, "No hay sesión activa")
                     return@launch
                 }
-                val request = CrearPostRequest(texto = texto, rutinaId = rutinaId, dietaId = dietaId)
+                val request = CrearPostRequest(texto = texto, rutinaId = rutinaId, dietaId = dietaId, imagenUrl = imagenUrl)
                 NutriCoachApiClient.service.crearPost("Bearer $token", request)
                 cargarPosts(force = true) // Recargar feed
                 withContext(Dispatchers.Main) {

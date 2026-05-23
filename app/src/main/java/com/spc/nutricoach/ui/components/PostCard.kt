@@ -89,6 +89,20 @@ fun PostCard(
                 color = MaterialTheme.colorScheme.onSurface
             )
 
+            // Optional: Image
+            if (!post.imagenUrl.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(12.dp))
+                coil.compose.AsyncImage(
+                    model = post.imagenUrl,
+                    contentDescription = "Imagen de la publicación",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 260.dp)
+                        .clip(RoundedCornerShape(12.dp)),
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                )
+            }
+
             // Optional: Routine Link (just visual for now)
             if (!post.rutinaId.isNullOrBlank()) {
                 Spacer(modifier = Modifier.height(8.dp))

@@ -4,6 +4,7 @@ import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFact
 import com.spc.nutricoach.model.Dieta
 import com.spc.nutricoach.model.LoginApiResponse
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import retrofit2.Retrofit
@@ -17,6 +18,8 @@ import com.spc.nutricoach.model.Post
 import com.spc.nutricoach.model.CrearPostRequest
 import com.spc.nutricoach.model.ComentarioRequest
 import com.spc.nutricoach.model.ToggleLikeResponse
+import okhttp3.OkHttpClient
+import java.util.concurrent.TimeUnit
 
 @Serializable
 data class LoginRequest(
@@ -40,6 +43,29 @@ data class RegistroClienteRequest(
 @Serializable
 data class RegistroApiResponse(
     val id: String
+)
+
+@Serializable
+data class SendCodeRequest(
+    val nombre: String,
+    val email: String,
+    val password: String
+)
+
+@Serializable
+data class VerifyCodeRequest(
+    val email: String,
+    val code: String
+)
+
+@Serializable
+data class ResendCodeRequest(
+    val email: String
+)
+
+@Serializable
+data class MessageResponse(
+    val message: String
 )
 
 @Serializable
@@ -126,12 +152,44 @@ data class ModificarDietaRequest(
     val publica: Boolean? = null
 )
 
+@Serializable
+data class SerieCompletada(
+    val repeticiones: String,
+    val peso: Double,
+    val descanso_segundos: Int
+)
+
+@Serializable
+data class EjercicioCompletado(
+    val ejercicio_id: String? = null,
+    val nombre_snapshot: String,
+    val series: List<SerieCompletada>
+)
+
+@Serializable
+data class EntrenamientoLog(
+    @SerialName("_id") val id: String? = null,
+    val rutina_nombre: String,
+    val dia_nombre: String,
+    val fecha: String,
+    val ejercicios: List<EjercicioCompletado>
+)
+
 interface NutricionApiService {
     @POST("login")
     suspend fun login(@Body request: LoginRequest): LoginApiResponse
 
     @POST("clientes")
     suspend fun crearCliente(@Body request: RegistroClienteRequest): RegistroApiResponse
+
+    @POST("register/send-code")
+    suspend fun sendVerificationCode(@Body request: SendCodeRequest): MessageResponse
+
+    @POST("register/verify-code")
+    suspend fun verifyCode(@Body request: VerifyCodeRequest): RegistroApiResponse
+
+    @POST("register/resend-code")
+    suspend fun resendCode(@Body request: ResendCodeRequest): MessageResponse
 
     @GET("clientes/{id}")
     suspend fun obtenerCliente(
@@ -157,6 +215,20 @@ interface NutricionApiService {
         @Path("id") clienteId: String,
         @Header("Authorization") token: String
     ): List<com.spc.nutricoach.model.Rutina>
+
+    @POST("clientes/{id}/historial-entrenamientos")
+    suspend fun registrarEntrenamiento(
+        @Path("id") clienteId: String,
+        @Header("Authorization") token: String,
+        @Body request: EntrenamientoLog
+    ): RegistroApiResponse
+
+    @GET("clientes/{id}/historial-entrenamientos")
+    suspend fun obtenerHistorialEntrenamientos(
+        @Path("id") clienteId: String,
+        @Header("Authorization") token: String
+    ): List<EntrenamientoLog>
+
 
     @GET("rutinas/publicas")
     suspend fun obtenerRutinasPublicas(
@@ -334,8 +406,15 @@ object NutriCoachApiClient {
 
     private val json = Json { ignoreUnknownKeys = true }
 
+    private val okHttpClient = OkHttpClient.Builder()
+        .connectTimeout(30, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
+        .writeTimeout(30, TimeUnit.SECONDS)
+        .build()
+
     private val retrofit = Retrofit.Builder()
         .baseUrl(BASE_URL)
+        .client(okHttpClient)
         .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
         .build()
 

@@ -218,6 +218,21 @@ class RutinaViewModel(application: Application) : AndroidViewModel(application) 
     ) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
+                // Comprobación de duplicados local (sin espacios ni mayúsculas)
+                val normalizeRegex = "\\s".toRegex()
+                val normalizedNewName = nombre.lowercase().replace(normalizeRegex, "")
+                
+                val rutina = rutinas.find { it.id == rutinaId }
+                val dia = rutina?.dias?.getOrNull(diaIndex)
+                val yaExiste = dia?.ejercicios?.any { 
+                    it.nombreSnapshot.lowercase().replace(normalizeRegex, "") == normalizedNewName 
+                } ?: false
+                
+                if (yaExiste) {
+                    onResult(false, "El ejercicio '$nombre' ya está registrado en este día")
+                    return@launch
+                }
+
                 val token = sessionManager.getToken()
                 if (token.isNullOrBlank()) {
                     onResult(false, "No hay sesión activa")
@@ -244,7 +259,20 @@ class RutinaViewModel(application: Application) : AndroidViewModel(application) 
                 loadRutinas(clienteId)
                 onResult(true, null)
             } catch (e: Exception) {
-                onResult(false, "Error: ${e.message}")
+                val errorMsg = if (e is retrofit2.HttpException) {
+                    try {
+                        val body = e.response()?.errorBody()?.string()
+                        if (body != null && body.contains("error")) {
+                            val json = kotlinx.serialization.json.Json.parseToJsonElement(body)
+                            json.let { it as? kotlinx.serialization.json.JsonObject }?.get("error")?.let { it as? kotlinx.serialization.json.JsonPrimitive }?.content
+                        } else null
+                    } catch (ex: Exception) {
+                        null
+                    } ?: "Error del servidor (${e.code()})"
+                } else {
+                    e.message
+                }
+                onResult(false, errorMsg ?: "Error desconocido")
             }
         }
     }
@@ -375,4 +403,37 @@ class RutinaViewModel(application: Application) : AndroidViewModel(application) 
             onResult(result.first, result.second)
         }
     }
+
+    var historialEntrenamientos by mutableStateOf<List<com.spc.nutricoach.data.EntrenamientoLog>>(emptyList())
+        private set
+
+    var isLoadingHistorial by mutableStateOf(false)
+        private set
+
+    var errorHistorial by mutableStateOf<String?>(null)
+        private set
+
+    fun cargarHistorialEntrenamientos() {
+        viewModelScope.launch(Dispatchers.IO) {
+            isLoadingHistorial = true
+            errorHistorial = null
+            try {
+                val token = sessionManager.getToken()
+                val clienteId = sessionManager.getClienteId()
+                if (token.isNullOrBlank() || clienteId.isNullOrBlank()) {
+                    errorHistorial = "No se encontró sesión o ID de cliente"
+                    return@launch
+                }
+                
+                val resultado = NutriCoachApiClient.service.obtenerHistorialEntrenamientos(clienteId, "Bearer $token")
+                Log.d("HISTORIAL", "Historial obtenido: ${resultado.size}")
+                historialEntrenamientos = resultado
+            } catch (e: Exception) {
+                Log.e("HISTORIAL_ERROR", "Error al cargar historial", e)
+                errorHistorial = e.message ?: "Error al recuperar el historial"
+            } finally {
+                isLoadingHistorial = false
+            }
+        }
     }
+}

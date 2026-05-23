@@ -707,6 +707,7 @@ fun DiaItemDetail(dia: Dia, diaIndex: Int, rutinaId: String, rutinaViewModel: Ru
                 var repsEj by remember { mutableStateOf("") }
                 var descansoEj by remember { mutableStateOf("") }
                 var isSubmitting by remember { mutableStateOf(false) }
+                var errorText by remember { mutableStateOf<String?>(null) }
 
                 AlertDialog(
                     onDismissRequest = { if (!isSubmitting) showAddEjercicioDialog = false },
@@ -715,7 +716,10 @@ fun DiaItemDetail(dia: Dia, diaIndex: Int, rutinaId: String, rutinaViewModel: Ru
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             OutlinedTextField(
                                 value = nombreEj,
-                                onValueChange = { nombreEj = it },
+                                onValueChange = { 
+                                    nombreEj = it 
+                                    errorText = null
+                                },
                                 label = { Text("Nombre del Ejercicio") },
                                 singleLine = true,
                                 modifier = Modifier.fillMaxWidth(),
@@ -724,7 +728,10 @@ fun DiaItemDetail(dia: Dia, diaIndex: Int, rutinaId: String, rutinaViewModel: Ru
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 OutlinedTextField(
                                     value = seriesEj,
-                                    onValueChange = { seriesEj = it },
+                                    onValueChange = { 
+                                        seriesEj = it 
+                                        errorText = null
+                                    },
                                     label = { Text("Series") },
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                     singleLine = true,
@@ -733,7 +740,10 @@ fun DiaItemDetail(dia: Dia, diaIndex: Int, rutinaId: String, rutinaViewModel: Ru
                                 )
                                 OutlinedTextField(
                                     value = repsEj,
-                                    onValueChange = { repsEj = it },
+                                    onValueChange = { 
+                                        repsEj = it 
+                                        errorText = null
+                                    },
                                     label = { Text("Reps") },
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                     singleLine = true,
@@ -743,13 +753,24 @@ fun DiaItemDetail(dia: Dia, diaIndex: Int, rutinaId: String, rutinaViewModel: Ru
                             }
                             OutlinedTextField(
                                 value = descansoEj,
-                                onValueChange = { descansoEj = it },
+                                onValueChange = { 
+                                    descansoEj = it 
+                                    errorText = null
+                                },
                                 label = { Text("Descanso (s)") },
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                 singleLine = true,
                                 modifier = Modifier.fillMaxWidth(),
                                 enabled = !isSubmitting
                             )
+                            if (errorText != null) {
+                                Text(
+                                    text = errorText!!,
+                                    color = MaterialTheme.colorScheme.error,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    modifier = Modifier.padding(top = 4.dp)
+                                )
+                            }
                         }
                     },
                     confirmButton = {
@@ -757,6 +778,7 @@ fun DiaItemDetail(dia: Dia, diaIndex: Int, rutinaId: String, rutinaViewModel: Ru
                             onClick = {
                                 if (nombreEj.isNotBlank() && seriesEj.isNotBlank() && repsEj.isNotBlank()) {
                                     isSubmitting = true
+                                    errorText = null
                                     rutinaViewModel.agregarEjercicio(
                                         rutinaId = rutinaId,
                                         diaIndex = diaIndex,
@@ -764,10 +786,16 @@ fun DiaItemDetail(dia: Dia, diaIndex: Int, rutinaId: String, rutinaViewModel: Ru
                                         series = seriesEj.toIntOrNull() ?: 0,
                                         repeticiones = repsEj.toIntOrNull() ?: 0,
                                         descanso = descansoEj.toIntOrNull() ?: 0
-                                    ) { _, _ ->
+                                    ) { success, msg ->
                                         isSubmitting = false
-                                        showAddEjercicioDialog = false
+                                        if (success) {
+                                            showAddEjercicioDialog = false
+                                        } else {
+                                            errorText = msg ?: "Error al agregar el ejercicio"
+                                        }
                                     }
+                                } else {
+                                    errorText = "Por favor, completa los campos obligatorios"
                                 }
                             },
                             enabled = !isSubmitting

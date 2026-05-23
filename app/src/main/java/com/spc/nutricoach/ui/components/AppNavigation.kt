@@ -23,6 +23,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -87,11 +88,7 @@ fun AppNavigation() {
     val context = LocalContext.current
     val sessionManager = remember { SessionManager(context) }
 
-    var isLoggedIn by remember { mutableStateOf<Boolean?>(null) }
-
-    LaunchedEffect(Unit) {
-        isLoggedIn = sessionManager.isLoggedIn.first()
-    }
+    val isLoggedIn by sessionManager.isLoggedIn.collectAsState(initial = null)
 
     if (isLoggedIn == null) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
