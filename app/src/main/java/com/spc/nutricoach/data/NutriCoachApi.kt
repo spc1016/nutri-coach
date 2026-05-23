@@ -1,3 +1,5 @@
+@file:Suppress("unused", "RedundantQualifierName", "PropertyName")
+
 package com.spc.nutricoach.data
 
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
