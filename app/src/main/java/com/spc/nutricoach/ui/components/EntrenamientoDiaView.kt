@@ -90,7 +90,10 @@ fun EntrenamientoDiaView(
         }
     }
 
-    LaunchedEffect(rutinaId, diaNombre) {
+    var isInitialized by remember { mutableStateOf(false) }
+
+    LaunchedEffect(rutinaId, diaNombre, rutinaViewModel.rutinas) {
+        if (isInitialized) return@LaunchedEffect
         val rutina = rutinaViewModel.rutinas.find { it.id == rutinaId }
         if (rutina != null) {
             val dia = rutina.dias.find { it.nombre == diaNombre }
@@ -100,6 +103,7 @@ fun EntrenamientoDiaView(
                     action = WorkoutService.ACTION_START
                 }
                 context.startForegroundService(intent)
+                isInitialized = true
             }
         }
     }
@@ -147,6 +151,11 @@ fun EntrenamientoDiaView(
                 .padding(horizontal = 24.dp),
             contentAlignment = Alignment.Center
         ) {
+            if (!isInitialized) {
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                return@Scaffold
+            }
+
             if (diaActual == null) {
                 if (isFinished) {
                     Text("Error al cargar el entrenamiento.")
