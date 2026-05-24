@@ -1,26 +1,24 @@
 package com.spc.nutricoach.ui.viewmodel
 
-import android.app.Application
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.spc.nutricoach.data.NutriCoachApiClient
-import com.spc.nutricoach.data.SessionManager
+import com.spc.nutricoach.data.*
+import com.spc.nutricoach.data.repository.RutinaRepository
 import com.spc.nutricoach.model.Rutina
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.Flow
-import com.spc.nutricoach.data.RoutineTrackerManager
-import retrofit2.HttpException
-import java.io.IOException
+import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class RutinaViewModel(application: Application) : AndroidViewModel(application) {
-
-    private val sessionManager = SessionManager(application)
-    private val routineTrackerManager = RoutineTrackerManager(application)
+@HiltViewModel
+class RutinaViewModel @Inject constructor(
+    private val rutinaRepository: RutinaRepository
+) : ViewModel() {
 
     var rutinas by mutableStateOf<List<Rutina>>(emptyList())
         private set
@@ -39,7 +37,7 @@ class RutinaViewModel(application: Application) : AndroidViewModel(application) 
 
     fun cargarRutinas(force: Boolean = false) {
         viewModelScope.launch(Dispatchers.IO) {
-            val clienteId = sessionManager.getClienteId()
+            val clienteId = rutinaRepository.session.getClienteId()
             if (!force && rutinas.isNotEmpty() && lastLoadedClientId == clienteId && !clienteId.isNullOrBlank()) {
                 return@launch
             }
@@ -59,23 +57,29 @@ class RutinaViewModel(application: Application) : AndroidViewModel(application) 
                 isLoading = false
                 return
             }
-            val token = sessionManager.getToken()
+            val token = rutinaRepository.session.getToken()
             if (token.isNullOrBlank()) {
                 error = "No hay sesión activa"
                 isLoading = false
                 return
             }
-            val resultado =
-                NutriCoachApiClient.service.obtenerRutinasCliente(clienteId, "Bearer $token")
-            Log.d("RUTINAS", "Rutinas obtenidas: ${resultado.size}")
-            rutinas = resultado
-            lastLoadedClientId = clienteId
-        } catch (e: HttpException) {
-            Log.e("RUTINAS_ERROR", "HTTP ${e.code()}: ${e.message()}")
-            error = "Error del servidor (${e.code()})"
-        } catch (e: IOException) {
-            Log.e("RUTINAS_ERROR", "Error de red: ${e.message}", e)
-            error = "Error de conexión"
+            
+            when (val response = rutinaRepository.obtenerRutinasCliente(clienteId, "Bearer $token")) {
+                is ApiResponse.Success -> {
+                    Log.d("RUTINAS", "Rutinas obtenidas: ${response.data.size}")
+                    rutinas = response.data
+                    lastLoadedClientId = clienteId
+                    error = null
+                }
+                is ApiResponse.Error -> {
+                    Log.e("RUTINAS_ERROR", "Error HTTP ${response.code}: ${response.message}")
+                    error = "Error del servidor (${response.code})"
+                }
+                is ApiResponse.Exception -> {
+                    Log.e("RUTINAS_ERROR", "Excepción de red", response.throwable)
+                    error = "Error de conexión"
+                }
+            }
         } catch (e: Exception) {
             Log.e("RUTINAS_ERROR", "Error inesperado: ${e.message}", e)
             error = "Error inesperado: ${e.message}"
@@ -92,20 +96,27 @@ class RutinaViewModel(application: Application) : AndroidViewModel(application) 
             isLoading = true
             error = null
             try {
-                val token = sessionManager.getToken()
+                val token = rutinaRepository.session.getToken()
                 if (token.isNullOrBlank()) {
                     error = "No hay sesión activa"
                     return@launch
                 }
-                val resultado = NutriCoachApiClient.service.obtenerRutinasPublicas("Bearer $token")
-                Log.d("RUTINAS_PUBLICAS", "Rutinas públicas obtenidas: ${resultado.size}")
-                rutinasPublicas = resultado
-            } catch (e: HttpException) {
-                Log.e("RUTINAS_PUB_ERROR", "HTTP ${e.code()}: ${e.message()}")
-                error = "Error del servidor (${e.code()})"
-            } catch (e: IOException) {
-                Log.e("RUTINAS_PUB_ERROR", "Error de red: ${e.message}", e)
-                error = "Error de conexión"
+                
+                when (val response = rutinaRepository.obtenerRutinasPublicas("Bearer $token")) {
+                    is ApiResponse.Success -> {
+                        Log.d("RUTINAS_PUBLICAS", "Rutinas públicas obtenidas: ${response.data.size}")
+                        rutinasPublicas = response.data
+                        error = null
+                    }
+                    is ApiResponse.Error -> {
+                        Log.e("RUTINAS_PUB_ERROR", "Error HTTP ${response.code}: ${response.message}")
+                        error = "Error del servidor (${response.code})"
+                    }
+                    is ApiResponse.Exception -> {
+                        Log.e("RUTINAS_PUB_ERROR", "Excepción de red", response.throwable)
+                        error = "Error de conexión"
+                    }
+                }
             } catch (e: Exception) {
                 Log.e("RUTINAS_PUB_ERROR", "Error inesperado: ${e.message}", e)
                 error = "Error inesperado: ${e.message}"
@@ -118,19 +129,20 @@ class RutinaViewModel(application: Application) : AndroidViewModel(application) 
     fun cargarRutinaPorId(rutinaId: String) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                // If it's already in the lists, no need to fetch
                 if (rutinas.any { it.id == rutinaId } || rutinasPublicas.any { it.id == rutinaId }) {
                     return@launch
                 }
                 
-                val token = sessionManager.getToken()
+                val token = rutinaRepository.session.getToken()
                 if (token.isNullOrBlank()) return@launch
                 
                 isLoading = true
-                val rutina = NutriCoachApiClient.service.obtenerRutinaPorId(rutinaId, "Bearer $token")
-                
-                // Add it to rutinasPublicas so it can be viewed
-                rutinasPublicas = rutinasPublicas + rutina
+                when (val response = rutinaRepository.obtenerRutinaPorId(rutinaId, "Bearer $token")) {
+                    is ApiResponse.Success -> {
+                        rutinasPublicas = rutinasPublicas + response.data
+                    }
+                    else -> {}
+                }
             } catch (e: Exception) {
                 Log.e("RUTINAS_API", "Error al cargar rutina por ID", e)
             } finally {
@@ -138,47 +150,51 @@ class RutinaViewModel(application: Application) : AndroidViewModel(application) 
             }
         }
     }
+
     fun getExerciseWeightFlow(rutinaId: String, exerciseKey: String): Flow<String?> {
         val clienteId = lastLoadedClientId ?: return kotlinx.coroutines.flow.flowOf(null)
-        return routineTrackerManager.getExerciseWeightFlow(clienteId, rutinaId, exerciseKey)
+        return rutinaRepository.getExerciseWeightFlow(clienteId, rutinaId, exerciseKey)
     }
 
     fun saveExerciseWeight(rutinaId: String, exerciseKey: String, weight: String) {
         viewModelScope.launch {
-            val clienteId = sessionManager.getClienteId() ?: return@launch
-            routineTrackerManager.saveExerciseWeight(clienteId, rutinaId, exerciseKey, weight)
+            val clienteId = rutinaRepository.session.getClienteId() ?: return@launch
+            rutinaRepository.saveExerciseWeight(clienteId, rutinaId, exerciseKey, weight)
         }
     }
 
     fun crearRutina(nombre: String, onResult: (Boolean, String?) -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val clienteId = sessionManager.getClienteId()
+                val clienteId = rutinaRepository.session.getClienteId()
                 if (clienteId.isNullOrBlank()) {
                     onResult(false, "No se encontró el ID del cliente")
                     return@launch
                 }
 
-                val token = sessionManager.getToken()
+                val token = rutinaRepository.session.getToken()
                 if (token.isNullOrBlank()) {
                     onResult(false, "No hay sesión activa")
                     return@launch
                 }
 
-                val request = com.spc.nutricoach.data.CrearRutinaRequest(
+                val request = CrearRutinaRequest(
                     nombre = nombre,
                     cliente_id = clienteId
                 )
 
-                NutriCoachApiClient.service.crearRutina("Bearer $token", request)
-
-                // Recargar rutinas para mostrar la nueva
-                loadRutinas(clienteId)
-                onResult(true, null)
-            } catch (e: HttpException) {
-                onResult(false, "Error del servidor (${e.code()})")
-            } catch (e: IOException) {
-                onResult(false, "Error de conexión")
+                when (val response = rutinaRepository.crearRutina("Bearer $token", request)) {
+                    is ApiResponse.Success -> {
+                        loadRutinas(clienteId)
+                        onResult(true, null)
+                    }
+                    is ApiResponse.Error -> {
+                        onResult(false, "Error del servidor (${response.code}): ${response.message}")
+                    }
+                    is ApiResponse.Exception -> {
+                        onResult(false, "Error de conexión")
+                    }
+                }
             } catch (e: Exception) {
                 onResult(false, "Error inesperado: ${e.message}")
             }
@@ -188,19 +204,26 @@ class RutinaViewModel(application: Application) : AndroidViewModel(application) 
     fun agregarDia(rutinaId: String, nombre: String, onResult: (Boolean, String?) -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val token = sessionManager.getToken()
+                val token = rutinaRepository.session.getToken()
                 if (token.isNullOrBlank()) {
                     onResult(false, "No hay sesión activa")
                     return@launch
                 }
 
-                val request = com.spc.nutricoach.data.AgregarDiaRequest(nombre = nombre)
-                NutriCoachApiClient.service.agregarDiaARutina(rutinaId, "Bearer $token", request)
-
-                // Recargar rutinas
-                val clienteId = sessionManager.getClienteId()
-                loadRutinas(clienteId)
-                onResult(true, null)
+                val request = AgregarDiaRequest(nombre = nombre)
+                when (val response = rutinaRepository.agregarDiaARutina(rutinaId, "Bearer $token", request)) {
+                    is ApiResponse.Success -> {
+                        val clienteId = rutinaRepository.session.getClienteId()
+                        loadRutinas(clienteId)
+                        onResult(true, null)
+                    }
+                    is ApiResponse.Error -> {
+                        onResult(false, "Error: ${response.message}")
+                    }
+                    is ApiResponse.Exception -> {
+                        onResult(false, "Error de conexión")
+                    }
+                }
             } catch (e: Exception) {
                 onResult(false, "Error: ${e.message}")
             }
@@ -218,7 +241,6 @@ class RutinaViewModel(application: Application) : AndroidViewModel(application) 
     ) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                // Comprobación de duplicados local (sin espacios ni mayúsculas)
                 val normalizeRegex = "\\s".toRegex()
                 val normalizedNewName = nombre.lowercase().replace(normalizeRegex, "")
                 
@@ -233,13 +255,13 @@ class RutinaViewModel(application: Application) : AndroidViewModel(application) 
                     return@launch
                 }
 
-                val token = sessionManager.getToken()
+                val token = rutinaRepository.session.getToken()
                 if (token.isNullOrBlank()) {
                     onResult(false, "No hay sesión activa")
                     return@launch
                 }
 
-                val request = com.spc.nutricoach.data.AgregarEjercicioRequest(
+                val request = AgregarEjercicioRequest(
                     ejercicio_id = "000000000000000000000000",
                     nombre_snapshot = nombre,
                     series = series,
@@ -247,32 +269,21 @@ class RutinaViewModel(application: Application) : AndroidViewModel(application) 
                     descanso_segundos = descanso
                 )
 
-                NutriCoachApiClient.service.agregarEjercicioADia(
-                    rutinaId,
-                    diaIndex,
-                    "Bearer $token",
-                    request
-                )
-
-                // Recargar rutinas
-                val clienteId = sessionManager.getClienteId()
-                loadRutinas(clienteId)
-                onResult(true, null)
-            } catch (e: Exception) {
-                val errorMsg = if (e is retrofit2.HttpException) {
-                    try {
-                        val body = e.response()?.errorBody()?.string()
-                        if (body != null && body.contains("error")) {
-                            val json = kotlinx.serialization.json.Json.parseToJsonElement(body)
-                            json.let { it as? kotlinx.serialization.json.JsonObject }?.get("error")?.let { it as? kotlinx.serialization.json.JsonPrimitive }?.content
-                        } else null
-                    } catch (ex: Exception) {
-                        null
-                    } ?: "Error del servidor (${e.code()})"
-                } else {
-                    e.message
+                when (val response = rutinaRepository.agregarEjercicioADia(rutinaId, diaIndex, "Bearer $token", request)) {
+                    is ApiResponse.Success -> {
+                        val clienteId = rutinaRepository.session.getClienteId()
+                        loadRutinas(clienteId)
+                        onResult(true, null)
+                    }
+                    is ApiResponse.Error -> {
+                        onResult(false, "Error: ${response.message}")
+                    }
+                    is ApiResponse.Exception -> {
+                        onResult(false, "Error de conexión")
+                    }
                 }
-                onResult(false, errorMsg ?: "Error desconocido")
+            } catch (e: Exception) {
+                onResult(false, e.message ?: "Error desconocido")
             }
         }
     }
@@ -284,19 +295,25 @@ class RutinaViewModel(application: Application) : AndroidViewModel(application) 
     ) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val token = sessionManager.getToken()
+                val token = rutinaRepository.session.getToken()
                 if (token.isNullOrBlank()) {
                     onResult(false, "No hay sesión activa")
                     return@launch
                 }
 
-                val request = com.spc.nutricoach.data.ModificarRutinaRequest(publica = isPublica)
-                NutriCoachApiClient.service.modificarRutina(rutinaId, "Bearer $token", request)
-
-                // Actualizar estado local para evitar parpadeos
-                rutinas =
-                    rutinas.map { if (it.id == rutinaId) it.copy(publica = isPublica) else it }
-                onResult(true, null)
+                val request = ModificarRutinaRequest(publica = isPublica)
+                when (val response = rutinaRepository.modificarRutina(rutinaId, "Bearer $token", request)) {
+                    is ApiResponse.Success -> {
+                        rutinas = rutinas.map { if (it.id == rutinaId) it.copy(publica = isPublica) else it }
+                        onResult(true, null)
+                    }
+                    is ApiResponse.Error -> {
+                        onResult(false, "Error: ${response.message}")
+                    }
+                    is ApiResponse.Exception -> {
+                        onResult(false, "Error de conexión")
+                    }
+                }
             } catch (e: Exception) {
                 onResult(false, "Error: ${e.message}")
             }
@@ -306,12 +323,20 @@ class RutinaViewModel(application: Application) : AndroidViewModel(application) 
     fun modificarNombreRutina(rutinaId: String, nombre: String, onResult: (Boolean, String?) -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val token = sessionManager.getToken()
-                if (token.isNullOrBlank()) return@launch
-                val request = com.spc.nutricoach.data.ModificarRutinaRequest(nombre = nombre)
-                NutriCoachApiClient.service.modificarRutina(rutinaId, "Bearer $token", request)
-                rutinas = rutinas.map { if (it.id == rutinaId) it.copy(nombre = nombre) else it }
-                onResult(true, null)
+                val token = rutinaRepository.session.getToken() ?: return@launch
+                val request = ModificarRutinaRequest(nombre = nombre)
+                when (val response = rutinaRepository.modificarRutina(rutinaId, "Bearer $token", request)) {
+                    is ApiResponse.Success -> {
+                        rutinas = rutinas.map { if (it.id == rutinaId) it.copy(nombre = nombre) else it }
+                        onResult(true, null)
+                    }
+                    is ApiResponse.Error -> {
+                        onResult(false, "Error: ${response.message}")
+                    }
+                    is ApiResponse.Exception -> {
+                        onResult(false, "Error de conexión")
+                    }
+                }
             } catch (e: Exception) {
                 onResult(false, "Error: ${e.message}")
             }
@@ -321,11 +346,19 @@ class RutinaViewModel(application: Application) : AndroidViewModel(application) 
     fun eliminarRutina(rutinaId: String, onResult: (Boolean, String?) -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val token = sessionManager.getToken()
-                if (token.isNullOrBlank()) return@launch
-                NutriCoachApiClient.service.eliminarRutina(rutinaId, "Bearer $token")
-                rutinas = rutinas.filterNot { it.id == rutinaId }
-                onResult(true, null)
+                val token = rutinaRepository.session.getToken() ?: return@launch
+                when (val response = rutinaRepository.eliminarRutina(rutinaId, "Bearer $token")) {
+                    is ApiResponse.Success -> {
+                        rutinas = rutinas.filterNot { it.id == rutinaId }
+                        onResult(true, null)
+                    }
+                    is ApiResponse.Error -> {
+                        onResult(false, "Error: ${response.message}")
+                    }
+                    is ApiResponse.Exception -> {
+                        onResult(false, "Error de conexión")
+                    }
+                }
             } catch (e: Exception) {
                 onResult(false, "Error: ${e.message}")
             }
@@ -335,12 +368,20 @@ class RutinaViewModel(application: Application) : AndroidViewModel(application) 
     fun eliminarDia(rutinaId: String, diaIndex: Int, onResult: (Boolean, String?) -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val token = sessionManager.getToken()
-                if (token.isNullOrBlank()) return@launch
-                NutriCoachApiClient.service.eliminarDia(rutinaId, diaIndex, "Bearer $token")
-                val clienteId = sessionManager.getClienteId()
-                loadRutinas(clienteId)
-                onResult(true, null)
+                val token = rutinaRepository.session.getToken() ?: return@launch
+                when (val response = rutinaRepository.eliminarDia(rutinaId, diaIndex, "Bearer $token")) {
+                    is ApiResponse.Success -> {
+                        val clienteId = rutinaRepository.session.getClienteId()
+                        loadRutinas(clienteId)
+                        onResult(true, null)
+                    }
+                    is ApiResponse.Error -> {
+                        onResult(false, "Error: ${response.message}")
+                    }
+                    is ApiResponse.Exception -> {
+                        onResult(false, "Error de conexión")
+                    }
+                }
             } catch (e: Exception) {
                 onResult(false, "Error: ${e.message}")
             }
@@ -350,12 +391,20 @@ class RutinaViewModel(application: Application) : AndroidViewModel(application) 
     fun eliminarEjercicio(rutinaId: String, diaIndex: Int, ejercicioIndex: Int, onResult: (Boolean, String?) -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val token = sessionManager.getToken()
-                if (token.isNullOrBlank()) return@launch
-                NutriCoachApiClient.service.eliminarEjercicio(rutinaId, diaIndex, ejercicioIndex, "Bearer $token")
-                val clienteId = sessionManager.getClienteId()
-                loadRutinas(clienteId)
-                onResult(true, null)
+                val token = rutinaRepository.session.getToken() ?: return@launch
+                when (val response = rutinaRepository.eliminarEjercicio(rutinaId, diaIndex, ejercicioIndex, "Bearer $token")) {
+                    is ApiResponse.Success -> {
+                        val clienteId = rutinaRepository.session.getClienteId()
+                        loadRutinas(clienteId)
+                        onResult(true, null)
+                    }
+                    is ApiResponse.Error -> {
+                        onResult(false, "Error: ${response.message}")
+                    }
+                    is ApiResponse.Exception -> {
+                        onResult(false, "Error de conexión")
+                    }
+                }
             } catch (e: Exception) {
                 onResult(false, "Error: ${e.message}")
             }
@@ -366,36 +415,36 @@ class RutinaViewModel(application: Application) : AndroidViewModel(application) 
         viewModelScope.launch(Dispatchers.Main) {
             val result = kotlinx.coroutines.withContext(Dispatchers.IO) {
                 try {
-                    val clienteId = sessionManager.getClienteId()
+                    val clienteId = rutinaRepository.session.getClienteId()
                     if (clienteId.isNullOrBlank()) {
                         return@withContext Pair(false, "No se encontró el ID del cliente")
                     }
-                    val token = sessionManager.getToken()
+                    val token = rutinaRepository.session.getToken()
                     if (token.isNullOrBlank()) {
                         return@withContext Pair(false, "No hay sesión activa")
                     }
 
-                    // 1. Obtener la rutina original
-                    val original =
-                        NutriCoachApiClient.service.obtenerRutinaPorId(rutinaId, "Bearer $token")
-
-                    // 2. Crear una copia para el usuario actual
-                    val request = com.spc.nutricoach.data.CrearRutinaRequest(
-                        nombre = original.nombre,
-                        cliente_id = clienteId,
-                        dias = original.dias,
-                        activa = true,
-                        publica = false
-                    )
-                    NutriCoachApiClient.service.crearRutina("Bearer $token", request)
-
-                    // 3. Recargar rutinas del usuario
-                    loadRutinas(clienteId)
-                    Pair(true, null)
-                } catch (e: HttpException) {
-                    Pair(false, "Error del servidor (${e.code()})")
-                } catch (e: IOException) {
-                    Pair(false, "Error de conexión")
+                    when (val response = rutinaRepository.obtenerRutinaPorId(rutinaId, "Bearer $token")) {
+                        is ApiResponse.Success -> {
+                            val request = CrearRutinaRequest(
+                                nombre = response.data.nombre,
+                                cliente_id = clienteId,
+                                dias = response.data.dias,
+                                activa = true,
+                                publica = false
+                            )
+                            when (val cloneResponse = rutinaRepository.crearRutina("Bearer $token", request)) {
+                                is ApiResponse.Success -> {
+                                    loadRutinas(clienteId)
+                                    Pair(true, null)
+                                }
+                                is ApiResponse.Error -> Pair(false, "Error al clonar (${cloneResponse.code}): ${cloneResponse.message}")
+                                is ApiResponse.Exception -> Pair(false, "Error de red al clonar")
+                            }
+                        }
+                        is ApiResponse.Error -> Pair(false, "Error del servidor (${response.code}): ${response.message}")
+                        is ApiResponse.Exception -> Pair(false, "Error de red")
+                    }
                 } catch (e: Exception) {
                     Pair(false, "Error: ${e.message}")
                 }
@@ -404,7 +453,7 @@ class RutinaViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
-    var historialEntrenamientos by mutableStateOf<List<com.spc.nutricoach.data.EntrenamientoLog>>(emptyList())
+    var historialEntrenamientos by mutableStateOf<List<EntrenamientoLog>>(emptyList())
         private set
 
     var isLoadingHistorial by mutableStateOf(false)
@@ -418,16 +467,26 @@ class RutinaViewModel(application: Application) : AndroidViewModel(application) 
             isLoadingHistorial = true
             errorHistorial = null
             try {
-                val token = sessionManager.getToken()
-                val clienteId = sessionManager.getClienteId()
+                val token = rutinaRepository.session.getToken()
+                val clienteId = rutinaRepository.session.getClienteId()
                 if (token.isNullOrBlank() || clienteId.isNullOrBlank()) {
                     errorHistorial = "No se encontró sesión o ID de cliente"
                     return@launch
                 }
                 
-                val resultado = NutriCoachApiClient.service.obtenerHistorialEntrenamientos(clienteId, "Bearer $token")
-                Log.d("HISTORIAL", "Historial obtenido: ${resultado.size}")
-                historialEntrenamientos = resultado
+                when (val response = rutinaRepository.obtenerHistorialEntrenamientos(clienteId, "Bearer $token")) {
+                    is ApiResponse.Success -> {
+                        Log.d("HISTORIAL", "Historial obtenido: ${response.data.size}")
+                        historialEntrenamientos = response.data
+                        errorHistorial = null
+                    }
+                    is ApiResponse.Error -> {
+                        errorHistorial = "Error del servidor (${response.code})"
+                    }
+                    is ApiResponse.Exception -> {
+                        errorHistorial = "Error de conexión"
+                    }
+                }
             } catch (e: Exception) {
                 Log.e("HISTORIAL_ERROR", "Error al cargar historial", e)
                 errorHistorial = e.message ?: "Error al recuperar el historial"

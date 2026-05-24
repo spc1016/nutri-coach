@@ -1,25 +1,25 @@
 package com.spc.nutricoach.ui.viewmodel
 
-import android.app.Application
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.spc.nutricoach.data.NutriCoachApiClient
-import com.spc.nutricoach.data.SendCodeRequest
-import com.spc.nutricoach.data.VerifyCodeRequest
-import com.spc.nutricoach.data.ResendCodeRequest
+import com.spc.nutricoach.data.*
+import com.spc.nutricoach.data.repository.AuthRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import retrofit2.HttpException
-import java.io.IOException
+import javax.inject.Inject
 
 enum class RegistroStep { FORM, VERIFICATION }
 
-class RegistroViewModel(application: Application) : AndroidViewModel(application) {
+@HiltViewModel
+class RegistroViewModel @Inject constructor(
+    private val authRepository: AuthRepository
+) : ViewModel() {
 
     // Form fields (step 1)
     var nombre by mutableStateOf("")
@@ -78,27 +78,32 @@ class RegistroViewModel(application: Application) : AndroidViewModel(application
                     email = email.trim().lowercase(),
                     password = password
                 )
-                val response = NutriCoachApiClient.service.sendVerificationCode(request)
-                Log.d("REGISTRO", "Código enviado: ${response.message}")
-                statusMessage = "Código enviado a ${email.trim()}"
-                isError = false
-                currentStep = RegistroStep.VERIFICATION
-                startResendCooldown()
-            } catch (e: HttpException) {
-                val errorBody = e.response()?.errorBody()?.string() ?: ""
-                Log.e("REGISTRO_ERROR", "HTTP ${e.code()}: $errorBody")
-                statusMessage = when (e.code()) {
-                    400 -> if (errorBody.contains("registrado")) "Este email ya está registrado"
-                           else if (errorBody.contains("gmail")) "Introduce un email de Gmail válido"
-                           else "Datos inválidos"
-                    500 -> "Error al enviar el correo. Inténtalo de nuevo."
-                    else -> "Error del servidor (${e.code()})"
+                
+                when (val response = authRepository.sendVerificationCode(request)) {
+                    is ApiResponse.Success -> {
+                        Log.d("REGISTRO", "Código enviado: ${response.data.message}")
+                        statusMessage = "Código enviado a ${email.trim()}"
+                        isError = false
+                        currentStep = RegistroStep.VERIFICATION
+                        startResendCooldown()
+                    }
+                    is ApiResponse.Error -> {
+                        Log.e("REGISTRO_ERROR", "Error HTTP ${response.code}: ${response.message}")
+                        statusMessage = when (response.code) {
+                            400 -> if (response.message.contains("registrado")) "Este email ya está registrado"
+                                   else if (response.message.contains("gmail")) "Introduce un email de Gmail válido"
+                                   else "Datos inválidos"
+                            500 -> "Error al enviar el correo. Inténtalo de nuevo."
+                            else -> "Error del servidor (${response.code})"
+                        }
+                        isError = true
+                    }
+                    is ApiResponse.Exception -> {
+                        Log.e("REGISTRO_ERROR", "Excepción de red", response.throwable)
+                        statusMessage = "Error de conexión: Comprueba tu red"
+                        isError = true
+                    }
                 }
-                isError = true
-            } catch (e: IOException) {
-                Log.e("REGISTRO_ERROR", "Error de conexión/red en sendCode", e)
-                statusMessage = "Error de conexión: ${e.localizedMessage ?: "Comprueba tu red"}"
-                isError = true
             } catch (e: Exception) {
                 Log.e("REGISTRO_ERROR", "Error inesperado en sendCode", e)
                 statusMessage = "Error inesperado: ${e.message}"
@@ -125,24 +130,29 @@ class RegistroViewModel(application: Application) : AndroidViewModel(application
                     email = email.trim().lowercase(),
                     code = verificationCode.trim()
                 )
-                val response = NutriCoachApiClient.service.verifyCode(request)
-                Log.d("REGISTRO", "Registro OK - id: ${response.id}")
-                statusMessage = "¡Registro exitoso! Ya puedes iniciar sesión."
-                isError = false
-                registroSuccess = true
-            } catch (e: HttpException) {
-                val errorBody = e.response()?.errorBody()?.string() ?: ""
-                Log.e("REGISTRO_ERROR", "HTTP ${e.code()}: $errorBody")
-                statusMessage = when {
-                    errorBody.contains("expirado") -> "El código ha expirado. Solicita uno nuevo."
-                    errorBody.contains("incorrecto") || errorBody.contains("inválido") -> "Código incorrecto. Inténtalo de nuevo."
-                    else -> "Error del servidor (${e.code()})"
+                
+                when (val response = authRepository.verifyCode(request)) {
+                    is ApiResponse.Success -> {
+                        Log.d("REGISTRO", "Registro OK - id: ${response.data.id}")
+                        statusMessage = "¡Registro exitoso! Ya puedes iniciar sesión."
+                        isError = false
+                        registroSuccess = true
+                    }
+                    is ApiResponse.Error -> {
+                        Log.e("REGISTRO_ERROR", "Error HTTP ${response.code}: ${response.message}")
+                        statusMessage = when {
+                            response.message.contains("expirado") -> "El código ha expirado. Solicita uno nuevo."
+                            response.message.contains("incorrecto") || response.message.contains("inválido") -> "Código incorrecto. Inténtalo de nuevo."
+                            else -> "Error del servidor (${response.code})"
+                        }
+                        isError = true
+                    }
+                    is ApiResponse.Exception -> {
+                        Log.e("REGISTRO_ERROR", "Excepción de red", response.throwable)
+                        statusMessage = "Error de conexión: Comprueba tu red"
+                        isError = true
+                    }
                 }
-                isError = true
-            } catch (e: IOException) {
-                Log.e("REGISTRO_ERROR", "Error de conexión/red en verifyCode", e)
-                statusMessage = "Error de conexión: ${e.localizedMessage ?: "Comprueba tu red"}"
-                isError = true
             } catch (e: Exception) {
                 Log.e("REGISTRO_ERROR", "Error inesperado en verifyCode", e)
                 statusMessage = "Error inesperado: ${e.message}"
@@ -162,21 +172,26 @@ class RegistroViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val request = ResendCodeRequest(email = email.trim().lowercase())
-                val response = NutriCoachApiClient.service.resendCode(request)
-                Log.d("REGISTRO", "Código reenviado: ${response.message}")
-                statusMessage = "Nuevo código enviado a ${email.trim()}"
-                isError = false
-                verificationCode = ""
-                startResendCooldown()
-            } catch (e: HttpException) {
-                val errorBody = e.response()?.errorBody()?.string() ?: ""
-                Log.e("REGISTRO_ERROR", "HTTP ${e.code()}: $errorBody")
-                statusMessage = "Error al reenviar código (${e.code()})"
-                isError = true
-            } catch (e: IOException) {
-                Log.e("REGISTRO_ERROR", "Error de conexión/red en resendCode", e)
-                statusMessage = "Error de conexión: ${e.localizedMessage ?: "Comprueba tu red"}"
-                isError = true
+                
+                when (val response = authRepository.resendCode(request)) {
+                    is ApiResponse.Success -> {
+                        Log.d("REGISTRO", "Código reenviado: ${response.data.message}")
+                        statusMessage = "Nuevo código enviado a ${email.trim()}"
+                        isError = false
+                        verificationCode = ""
+                        startResendCooldown()
+                    }
+                    is ApiResponse.Error -> {
+                        Log.e("REGISTRO_ERROR", "Error HTTP ${response.code}: ${response.message}")
+                        statusMessage = "Error al reenviar código (${response.code})"
+                        isError = true
+                    }
+                    is ApiResponse.Exception -> {
+                        Log.e("REGISTRO_ERROR", "Excepción de red", response.throwable)
+                        statusMessage = "Error de conexión: Comprueba tu red"
+                        isError = true
+                    }
+                }
             } catch (e: Exception) {
                 Log.e("REGISTRO_ERROR", "Error inesperado en resendCode", e)
                 statusMessage = "Error inesperado: ${e.message}"

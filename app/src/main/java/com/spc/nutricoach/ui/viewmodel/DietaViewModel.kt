@@ -1,26 +1,25 @@
 package com.spc.nutricoach.ui.viewmodel
 
-import android.app.Application
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.spc.nutricoach.data.DietTrackerManager
-import com.spc.nutricoach.data.NutriCoachApiClient
-import com.spc.nutricoach.data.SessionManager
+import com.spc.nutricoach.data.*
+import com.spc.nutricoach.data.repository.DietaRepository
 import com.spc.nutricoach.model.Comida
 import com.spc.nutricoach.model.Dieta
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import retrofit2.HttpException
-import java.io.IOException
+import javax.inject.Inject
 
-class DietaViewModel(application: Application) : AndroidViewModel(application) {
-
-    private val sessionManager = SessionManager(application)
-    private val dietTrackerManager = DietTrackerManager(application)
+@HiltViewModel
+class DietaViewModel @Inject constructor(
+    private val dietaRepository: DietaRepository,
+    private val dietTrackerManager: DietTrackerManager
+) : ViewModel() {
 
     val completedMealsFlow = dietTrackerManager.completedMealsFlow
 
@@ -41,7 +40,7 @@ class DietaViewModel(application: Application) : AndroidViewModel(application) {
 
     fun cargarDietas(force: Boolean = false) {
         viewModelScope.launch(Dispatchers.IO) {
-            val clienteId = sessionManager.getClienteId()
+            val clienteId = dietaRepository.session.getClienteId()
             if (!force && dietas.isNotEmpty() && lastLoadedClientId == clienteId && !clienteId.isNullOrBlank()) {
                 return@launch
             }
@@ -53,29 +52,37 @@ class DietaViewModel(application: Application) : AndroidViewModel(application) {
             loadDietas(clienteId)
         }
     }
-    suspend fun loadDietas(clienteId: String?){
+
+    suspend fun loadDietas(clienteId: String?) {
         try {
             if (clienteId.isNullOrBlank()) {
                 error = "No se encontró el ID del cliente"
                 isLoading = false
                 return
             }
-            val token = sessionManager.getToken()
+            val token = dietaRepository.session.getToken()
             if (token.isNullOrBlank()) {
                 error = "No hay sesión activa"
                 isLoading = false
                 return
             }
-            val resultado = NutriCoachApiClient.service.obtenerDietasCliente(clienteId, "Bearer $token")
-            Log.d("DIETAS", "Dietas obtenidas: ${resultado.size}")
-            dietas = resultado
-            lastLoadedClientId = clienteId
-        } catch (e: HttpException) {
-            Log.e("DIETAS_ERROR", "HTTP ${e.code()}: ${e.message()}")
-            error = "Error del servidor (${e.code()})"
-        } catch (e: IOException) {
-            Log.e("DIETAS_ERROR", "Error de red: ${e.message}", e)
-            error = "Error de conexión"
+            
+            when (val response = dietaRepository.obtenerDietasCliente(clienteId, "Bearer $token")) {
+                is ApiResponse.Success -> {
+                    Log.d("DIETAS", "Dietas obtenidas: ${response.data.size}")
+                    dietas = response.data
+                    lastLoadedClientId = clienteId
+                    error = null
+                }
+                is ApiResponse.Error -> {
+                    Log.e("DIETAS_ERROR", "Error HTTP ${response.code}: ${response.message}")
+                    error = "Error del servidor (${response.code})"
+                }
+                is ApiResponse.Exception -> {
+                    Log.e("DIETAS_ERROR", "Excepción de red", response.throwable)
+                    error = "Error de conexión"
+                }
+            }
         } catch (e: Exception) {
             Log.e("DIETAS_ERROR", "Error inesperado: ${e.message}", e)
             error = "Error inesperado: ${e.message}"
@@ -86,7 +93,7 @@ class DietaViewModel(application: Application) : AndroidViewModel(application) {
 
     fun toggleMeal(dietaId: String, comidaNombre: String, isCompleted: Boolean) {
         viewModelScope.launch {
-            val clienteId = sessionManager.getClienteId() ?: return@launch
+            val clienteId = dietaRepository.session.getClienteId() ?: return@launch
             val key = "${clienteId}_${dietaId}_${comidaNombre}"
             if (isCompleted) {
                 dietTrackerManager.markMealCompleted(key)
@@ -98,7 +105,7 @@ class DietaViewModel(application: Application) : AndroidViewModel(application) {
 
     fun clearDietMeals(dietaId: String, comidas: List<Comida>) {
         viewModelScope.launch {
-            val clienteId = sessionManager.getClienteId() ?: return@launch
+            val clienteId = dietaRepository.session.getClienteId() ?: return@launch
             comidas.forEach { comida ->
                 val key = "${clienteId}_${dietaId}_${comida.nombre}"
                 dietTrackerManager.unmarkMealCompleted(key)
@@ -114,20 +121,27 @@ class DietaViewModel(application: Application) : AndroidViewModel(application) {
             isLoading = true
             error = null
             try {
-                val token = sessionManager.getToken()
+                val token = dietaRepository.session.getToken()
                 if (token.isNullOrBlank()) {
                     error = "No hay sesión activa"
                     return@launch
                 }
-                val resultado = NutriCoachApiClient.service.obtenerDietasPublicas("Bearer $token")
-                Log.d("DIETAS_PUBLICAS", "Dietas públicas obtenidas: ${resultado.size}")
-                dietasPublicas = resultado
-            } catch (e: HttpException) {
-                Log.e("DIETAS_PUB_ERROR", "HTTP ${e.code()}: ${e.message()}")
-                error = "Error del servidor (${e.code()})"
-            } catch (e: IOException) {
-                Log.e("DIETAS_PUB_ERROR", "Error de red: ${e.message}", e)
-                error = "Error de conexión"
+                
+                when (val response = dietaRepository.obtenerDietasPublicas("Bearer $token")) {
+                    is ApiResponse.Success -> {
+                        Log.d("DIETAS_PUBLICAS", "Dietas públicas obtenidas: ${response.data.size}")
+                        dietasPublicas = response.data
+                        error = null
+                    }
+                    is ApiResponse.Error -> {
+                        Log.e("DIETAS_PUB_ERROR", "Error HTTP ${response.code}: ${response.message}")
+                        error = "Error del servidor (${response.code})"
+                    }
+                    is ApiResponse.Exception -> {
+                        Log.e("DIETAS_PUB_ERROR", "Excepción de red", response.throwable)
+                        error = "Error de conexión"
+                    }
+                }
             } catch (e: Exception) {
                 Log.e("DIETAS_PUB_ERROR", "Error inesperado: ${e.message}", e)
                 error = "Error inesperado: ${e.message}"
@@ -138,9 +152,6 @@ class DietaViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun cargarDietaPorId(dietaId: String) {
-        // Dummy implementation since backend missing endpoint for single dieta.
-        // We'll skip for now if backend doesn't have it, but wait! The plan didn't add it.
-        // I will add a dummy or try to get it from lists.
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 if (dietas.any { it.id == dietaId } || dietasPublicas.any { it.id == dietaId }) {
@@ -155,31 +166,35 @@ class DietaViewModel(application: Application) : AndroidViewModel(application) {
     fun crearDieta(nombre: String, onResult: (Boolean, String?) -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val clienteId = sessionManager.getClienteId()
+                val clienteId = dietaRepository.session.getClienteId()
                 if (clienteId.isNullOrBlank()) {
                     onResult(false, "No se encontró el ID del cliente")
                     return@launch
                 }
 
-                val token = sessionManager.getToken()
+                val token = dietaRepository.session.getToken()
                 if (token.isNullOrBlank()) {
                     onResult(false, "No hay sesión activa")
                     return@launch
                 }
 
-                val request = com.spc.nutricoach.data.CrearDietaRequest(
+                val request = CrearDietaRequest(
                     nombre = nombre,
                     cliente_id = clienteId
                 )
 
-                NutriCoachApiClient.service.crearDieta("Bearer $token", request)
-
-                loadDietas(clienteId)
-                onResult(true, null)
-            } catch (e: HttpException) {
-                onResult(false, "Error del servidor (${e.code()})")
-            } catch (e: IOException) {
-                onResult(false, "Error de conexión")
+                when (val response = dietaRepository.crearDieta("Bearer $token", request)) {
+                    is ApiResponse.Success -> {
+                        loadDietas(clienteId)
+                        onResult(true, null)
+                    }
+                    is ApiResponse.Error -> {
+                        onResult(false, "Error del servidor (${response.code})")
+                    }
+                    is ApiResponse.Exception -> {
+                        onResult(false, "Error de conexión")
+                    }
+                }
             } catch (e: Exception) {
                 onResult(false, "Error inesperado: ${e.message}")
             }
@@ -189,18 +204,26 @@ class DietaViewModel(application: Application) : AndroidViewModel(application) {
     fun agregarComida(dietaId: String, nombre: String, onResult: (Boolean, String?) -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val token = sessionManager.getToken()
+                val token = dietaRepository.session.getToken()
                 if (token.isNullOrBlank()) {
                     onResult(false, "No hay sesión activa")
                     return@launch
                 }
 
-                val request = com.spc.nutricoach.data.AgregarComidaRequest(nombre = nombre)
-                NutriCoachApiClient.service.agregarComidaADieta(dietaId, "Bearer $token", request)
-
-                val clienteId = sessionManager.getClienteId()
-                loadDietas(clienteId)
-                onResult(true, null)
+                val request = AgregarComidaRequest(nombre = nombre)
+                when (val response = dietaRepository.agregarComidaADieta(dietaId, "Bearer $token", request)) {
+                    is ApiResponse.Success -> {
+                        val clienteId = dietaRepository.session.getClienteId()
+                        loadDietas(clienteId)
+                        onResult(true, null)
+                    }
+                    is ApiResponse.Error -> {
+                        onResult(false, "Error del servidor (${response.code}): ${response.message}")
+                    }
+                    is ApiResponse.Exception -> {
+                        onResult(false, "Error de conexión: ${response.throwable.message}")
+                    }
+                }
             } catch (e: Exception) {
                 onResult(false, "Error: ${e.message}")
             }
@@ -217,29 +240,32 @@ class DietaViewModel(application: Application) : AndroidViewModel(application) {
     ) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val token = sessionManager.getToken()
+                val token = dietaRepository.session.getToken()
                 if (token.isNullOrBlank()) {
                     onResult(false, "No hay sesión activa")
                     return@launch
                 }
 
-                val request = com.spc.nutricoach.data.AgregarAlimentoRequest(
+                val request = AgregarAlimentoRequest(
                     alimento_id = "000000000000000000000000",
                     nombre_snapshot = nombre,
                     cantidad = cantidad,
                     unidad = unidad
                 )
 
-                NutriCoachApiClient.service.agregarAlimentoAComida(
-                    dietaId,
-                    comidaIndex,
-                    "Bearer $token",
-                    request
-                )
-
-                val clienteId = sessionManager.getClienteId()
-                loadDietas(clienteId)
-                onResult(true, null)
+                when (val response = dietaRepository.agregarAlimentoAComida(dietaId, comidaIndex, "Bearer $token", request)) {
+                    is ApiResponse.Success -> {
+                        val clienteId = dietaRepository.session.getClienteId()
+                        loadDietas(clienteId)
+                        onResult(true, null)
+                    }
+                    is ApiResponse.Error -> {
+                        onResult(false, "Error: ${response.message}")
+                    }
+                    is ApiResponse.Exception -> {
+                        onResult(false, "Error de conexión")
+                    }
+                }
             } catch (e: Exception) {
                 onResult(false, "Error: ${e.message}")
             }
@@ -253,17 +279,25 @@ class DietaViewModel(application: Application) : AndroidViewModel(application) {
     ) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val token = sessionManager.getToken()
+                val token = dietaRepository.session.getToken()
                 if (token.isNullOrBlank()) {
                     onResult(false, "No hay sesión activa")
                     return@launch
                 }
 
-                val request = com.spc.nutricoach.data.ModificarDietaRequest(publica = isPublica)
-                NutriCoachApiClient.service.modificarDieta(dietaId, "Bearer $token", request)
-
-                dietas = dietas.map { if (it.id == dietaId) it.copy(publica = isPublica) else it }
-                onResult(true, null)
+                val request = ModificarDietaRequest(publica = isPublica)
+                when (val response = dietaRepository.modificarDieta(dietaId, "Bearer $token", request)) {
+                    is ApiResponse.Success -> {
+                        dietas = dietas.map { if (it.id == dietaId) it.copy(publica = isPublica) else it }
+                        onResult(true, null)
+                    }
+                    is ApiResponse.Error -> {
+                        onResult(false, "Error: ${response.message}")
+                    }
+                    is ApiResponse.Exception -> {
+                        onResult(false, "Error de conexión")
+                    }
+                }
             } catch (e: Exception) {
                 onResult(false, "Error: ${e.message}")
             }
@@ -273,12 +307,20 @@ class DietaViewModel(application: Application) : AndroidViewModel(application) {
     fun modificarNombreDieta(dietaId: String, nombre: String, onResult: (Boolean, String?) -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val token = sessionManager.getToken()
-                if (token.isNullOrBlank()) return@launch
-                val request = com.spc.nutricoach.data.ModificarDietaRequest(nombre = nombre)
-                NutriCoachApiClient.service.modificarDieta(dietaId, "Bearer $token", request)
-                dietas = dietas.map { if (it.id == dietaId) it.copy(nombre = nombre) else it }
-                onResult(true, null)
+                val token = dietaRepository.session.getToken() ?: return@launch
+                val request = ModificarDietaRequest(nombre = nombre)
+                when (val response = dietaRepository.modificarDieta(dietaId, "Bearer $token", request)) {
+                    is ApiResponse.Success -> {
+                        dietas = dietas.map { if (it.id == dietaId) it.copy(nombre = nombre) else it }
+                        onResult(true, null)
+                    }
+                    is ApiResponse.Error -> {
+                        onResult(false, "Error: ${response.message}")
+                    }
+                    is ApiResponse.Exception -> {
+                        onResult(false, "Error de conexión")
+                    }
+                }
             } catch (e: Exception) {
                 onResult(false, "Error: ${e.message}")
             }
@@ -288,11 +330,19 @@ class DietaViewModel(application: Application) : AndroidViewModel(application) {
     fun eliminarDieta(dietaId: String, onResult: (Boolean, String?) -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val token = sessionManager.getToken()
-                if (token.isNullOrBlank()) return@launch
-                NutriCoachApiClient.service.eliminarDieta(dietaId, "Bearer $token")
-                dietas = dietas.filterNot { it.id == dietaId }
-                onResult(true, null)
+                val token = dietaRepository.session.getToken() ?: return@launch
+                when (val response = dietaRepository.eliminarDieta(dietaId, "Bearer $token")) {
+                    is ApiResponse.Success -> {
+                        dietas = dietas.filterNot { it.id == dietaId }
+                        onResult(true, null)
+                    }
+                    is ApiResponse.Error -> {
+                        onResult(false, "Error: ${response.message}")
+                    }
+                    is ApiResponse.Exception -> {
+                        onResult(false, "Error de conexión")
+                    }
+                }
             } catch (e: Exception) {
                 onResult(false, "Error: ${e.message}")
             }
@@ -302,12 +352,20 @@ class DietaViewModel(application: Application) : AndroidViewModel(application) {
     fun eliminarComida(dietaId: String, comidaIndex: Int, onResult: (Boolean, String?) -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val token = sessionManager.getToken()
-                if (token.isNullOrBlank()) return@launch
-                NutriCoachApiClient.service.eliminarComida(dietaId, comidaIndex, "Bearer $token")
-                val clienteId = sessionManager.getClienteId()
-                loadDietas(clienteId)
-                onResult(true, null)
+                val token = dietaRepository.session.getToken() ?: return@launch
+                when (val response = dietaRepository.eliminarComida(dietaId, comidaIndex, "Bearer $token")) {
+                    is ApiResponse.Success -> {
+                        val clienteId = dietaRepository.session.getClienteId()
+                        loadDietas(clienteId)
+                        onResult(true, null)
+                    }
+                    is ApiResponse.Error -> {
+                        onResult(false, "Error: ${response.message}")
+                    }
+                    is ApiResponse.Exception -> {
+                        onResult(false, "Error de conexión")
+                    }
+                }
             } catch (e: Exception) {
                 onResult(false, "Error: ${e.message}")
             }
@@ -317,12 +375,20 @@ class DietaViewModel(application: Application) : AndroidViewModel(application) {
     fun eliminarAlimento(dietaId: String, comidaIndex: Int, alimentoIndex: Int, onResult: (Boolean, String?) -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val token = sessionManager.getToken()
-                if (token.isNullOrBlank()) return@launch
-                NutriCoachApiClient.service.eliminarAlimento(dietaId, comidaIndex, alimentoIndex, "Bearer $token")
-                val clienteId = sessionManager.getClienteId()
-                loadDietas(clienteId)
-                onResult(true, null)
+                val token = dietaRepository.session.getToken() ?: return@launch
+                when (val response = dietaRepository.eliminarAlimento(dietaId, comidaIndex, alimentoIndex, "Bearer $token")) {
+                    is ApiResponse.Success -> {
+                        val clienteId = dietaRepository.session.getClienteId()
+                        loadDietas(clienteId)
+                        onResult(true, null)
+                    }
+                    is ApiResponse.Error -> {
+                        onResult(false, "Error: ${response.message}")
+                    }
+                    is ApiResponse.Exception -> {
+                        onResult(false, "Error de conexión")
+                    }
+                }
             } catch (e: Exception) {
                 onResult(false, "Error: ${e.message}")
             }

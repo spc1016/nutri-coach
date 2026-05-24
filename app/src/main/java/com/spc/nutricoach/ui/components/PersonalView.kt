@@ -1,6 +1,5 @@
 package com.spc.nutricoach.ui.components
 
-import androidx.benchmark.traceprocessor.Row
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -71,12 +70,17 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import java.time.LocalDate
+import java.time.YearMonth
+import java.time.format.DateTimeFormatter
+import java.util.Locale
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -245,7 +249,7 @@ fun PersonalView(
                             if (!dietaViewModel.isLoading && dietaViewModel.error == null && dietaViewModel.dietas.isEmpty()) {
                                 item {
                                     Text(
-                                        text = "No tienes dietas asignadas",
+                                        text = "No tienes dietas",
                                         style = TextStyle(
                                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                                             fontSize = 16.sp
@@ -308,7 +312,7 @@ fun PersonalView(
                             if (!rutinaViewModel.isLoading && rutinaViewModel.error == null && rutinaViewModel.rutinas.isEmpty()) {
                                 item {
                                     Text(
-                                        text = "No tienes rutinas asignadas",
+                                        text = "No tienes rutinas",
                                         style = TextStyle(
                                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                                             fontSize = 16.sp
@@ -344,6 +348,47 @@ fun PersonalView(
                         }
                         var ejercicioSeleccionado by remember { mutableStateOf<String?>(null) }
                         var searchQuery by remember { mutableStateOf("") }
+
+                        // Parsear el historial de entrenamientos agrupándolo por LocalDate localmente
+                        val completedDatesMap = remember(rutinaViewModel.historialEntrenamientos) {
+                            rutinaViewModel.historialEntrenamientos.groupBy { log ->
+                                try {
+                                    val dateStr = log.fecha.substringBefore("T")
+                                    LocalDate.parse(dateStr)
+                                } catch (e: Exception) {
+                                    null
+                                }
+                            }.filterKeys { it != null } as Map<LocalDate, List<com.spc.nutricoach.data.EntrenamientoLog>>
+                        }
+
+                        var activeYearMonth by remember { mutableStateOf(YearMonth.now()) }
+                        var selectedDate by remember { mutableStateOf<LocalDate?>(LocalDate.now()) }
+
+                        val calendarDays = remember(activeYearMonth) {
+                            val firstDayOfMonth = activeYearMonth.atDay(1)
+                            val dayOfWeekVal = firstDayOfMonth.dayOfWeek.value // 1 (Mon) to 7 (Sun)
+                            
+                            // Espacios en blanco al inicio del mes (si no empieza el lunes)
+                            val leadingEmptySpaces = dayOfWeekVal - 1
+                            val totalDaysInMonth = activeYearMonth.lengthOfMonth()
+                            
+                            val daysList = mutableListOf<LocalDate?>()
+                            repeat(leadingEmptySpaces) {
+                                daysList.add(null)
+                            }
+                            for (day in 1..totalDaysInMonth) {
+                                daysList.add(activeYearMonth.atDay(day))
+                            }
+                            
+                            val remaining = daysList.size % 7
+                            if (remaining > 0) {
+                                repeat(7 - remaining) {
+                                    daysList.add(null)
+                                }
+                            }
+                            
+                            daysList.chunked(7)
+                        }
 
                         val ejerciciosFiltrados = remember(searchQuery, ejerciciosUnicos) {
                             if (searchQuery.isBlank()) ejerciciosUnicos
@@ -381,6 +426,22 @@ fun PersonalView(
                                     }
                                     .reversed()
                             }
+                        }
+
+                        val mesNombre = remember(activeYearMonth) {
+                            val format = DateTimeFormatter.ofPattern("MMMM yyyy", Locale("es", "ES"))
+                            activeYearMonth.format(format).replaceFirstChar { it.uppercase() }
+                        }
+
+                        val fechaFormateada = remember(selectedDate) {
+                            if (selectedDate == null) "" else {
+                                val format = DateTimeFormatter.ofPattern("dd 'de' MMMM, yyyy", Locale("es", "ES"))
+                                selectedDate!!.format(format)
+                            }
+                        }
+
+                        val entrenamientosDelDiaSeleccionado = remember(selectedDate, completedDatesMap) {
+                            if (selectedDate == null) emptyList() else completedDatesMap[selectedDate] ?: emptyList()
                         }
 
                         LazyColumn(
@@ -499,17 +560,172 @@ fun PersonalView(
                                     )
                                 }
 
+                                // --- SECCIÓN DE CALENDARIO ---
                                 item {
                                     Text(
-                                        text = "Historial Reciente",
+                                        text = "Calendario de Entrenamientos",
                                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                                         color = MaterialTheme.colorScheme.onSurface,
                                         modifier = Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 8.dp)
                                     )
                                 }
 
-                                items(rutinaViewModel.historialEntrenamientos) { log ->
-                                    HistorialEntrenamientoCard(log = log)
+                                item {
+                                    Card(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 8.dp),
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+                                        ),
+                                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.15f)),
+                                        shape = RoundedCornerShape(16.dp)
+                                    ) {
+                                        Column(
+                                            modifier = Modifier.padding(16.dp),
+                                            horizontalAlignment = Alignment.CenterHorizontally
+                                        ) {
+                                            // Cabecera: Mes, Año y Botones de Navegación
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                IconButton(
+                                                    onClick = { activeYearMonth = activeYearMonth.minusMonths(1) }
+                                                ) {
+                                                    Icon(
+                                                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                                        contentDescription = "Mes anterior",
+                                                        tint = MaterialTheme.colorScheme.primary
+                                                    )
+                                                }
+
+                                                Text(
+                                                    text = mesNombre,
+                                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                                    color = MaterialTheme.colorScheme.onSurface
+                                                )
+
+                                                IconButton(
+                                                    onClick = { activeYearMonth = activeYearMonth.plusMonths(1) }
+                                                ) {
+                                                    Icon(
+                                                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                                                        contentDescription = "Mes siguiente",
+                                                        tint = MaterialTheme.colorScheme.primary
+                                                    )
+                                                }
+                                            }
+
+                                            Spacer(modifier = Modifier.height(12.dp))
+
+                                            // Fila de Días de la Semana
+                                            val diasSemana = listOf("L", "M", "X", "J", "V", "S", "D")
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween
+                                            ) {
+                                                diasSemana.forEach { diaS ->
+                                                    Text(
+                                                        text = diaS,
+                                                        modifier = Modifier.width(36.dp),
+                                                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                                                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+                                                    )
+                                                }
+                                            }
+
+                                            Spacer(modifier = Modifier.height(8.dp))
+
+                                            // Cuadrícula del Calendario
+                                            calendarDays.forEach { semana ->
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                                    horizontalArrangement = Arrangement.SpaceBetween
+                                                ) {
+                                                    semana.forEach { dia ->
+                                                        if (dia == null) {
+                                                            Spacer(modifier = Modifier.width(36.dp))
+                                                        } else {
+                                                            val entrenamientosDia = completedDatesMap[dia] ?: emptyList()
+                                                            val haEntrenado = entrenamientosDia.isNotEmpty()
+                                                            val esSeleccionado = selectedDate == dia
+                                                            val esHoy = dia == LocalDate.now()
+
+                                                            Box(
+                                                                modifier = Modifier
+                                                                    .size(36.dp)
+                                                                    .clip(CircleShape)
+                                                                    .then(
+                                                                        if (haEntrenado) Modifier.background(AppBrushes.MainGradient)
+                                                                        else if (esHoy) Modifier.border(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.6f), CircleShape)
+                                                                        else Modifier
+                                                                    )
+                                                                    .then(
+                                                                        if (esSeleccionado) Modifier.border(2.dp, if (haEntrenado) Color.White else MaterialTheme.colorScheme.primary, CircleShape)
+                                                                        else Modifier
+                                                                    )
+                                                                    .clickable { selectedDate = dia },
+                                                                contentAlignment = Alignment.Center
+                                                            ) {
+                                                                Text(
+                                                                    text = "${dia.dayOfMonth}",
+                                                                    color = if (haEntrenado) Color.Black else MaterialTheme.colorScheme.onSurface,
+                                                                    fontSize = 13.sp,
+                                                                    fontWeight = if (haEntrenado || esHoy || esSeleccionado) FontWeight.Bold else FontWeight.Normal
+                                                                )
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // --- SECCIÓN DE DETALLE DE ENTRENAMIENTOS PARA EL DÍA SELECCIONADO ---
+                                item {
+                                    Text(
+                                        text = "Entrenamientos del $fechaFormateada",
+                                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        modifier = Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 8.dp)
+                                    )
+                                }
+
+                                if (entrenamientosDelDiaSeleccionado.isEmpty()) {
+                                    item {
+                                        Card(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(vertical = 8.dp),
+                                            colors = CardDefaults.cardColors(
+                                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)
+                                            ),
+                                            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.08f)),
+                                            shape = RoundedCornerShape(12.dp)
+                                        ) {
+                                            Box(
+                                                modifier = Modifier.fillMaxWidth().padding(24.dp),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Text(
+                                                    text = "No realizaste entrenamientos este día.\n¡Toca un día destacado en el calendario para ver detalles!",
+                                                    style = TextStyle(
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                        fontSize = 14.sp,
+                                                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                                    )
+                                                )
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    items(entrenamientosDelDiaSeleccionado) { log ->
+                                        HistorialEntrenamientoCard(log = log)
+                                    }
                                 }
                             }
 

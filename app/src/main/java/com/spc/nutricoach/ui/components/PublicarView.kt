@@ -1,6 +1,7 @@
 package com.spc.nutricoach.ui.components
 
 import android.net.Uri
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -57,15 +58,20 @@ fun PublicarView(
     val letraInicial = email?.firstOrNull()?.uppercase() ?: "U"
 
     var textoPost by remember { mutableStateOf("") }
-    var imagenSeleccionadaUri by remember { mutableStateOf<Uri?>(null) }
-    var estaSubiendoImagen by remember { mutableStateOf(false) }
+    var imagenesSeleccionadasUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
     var cameraPhotoUri by remember { mutableStateOf<Uri?>(null) }
+    var showAddMediaDialog by remember { mutableStateOf(false) }
 
     val galleryLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent(),
-        onResult = { uri ->
-            if (uri != null) {
-                imagenSeleccionadaUri = uri
+        contract = ActivityResultContracts.GetMultipleContents(),
+        onResult = { uris ->
+            if (uris.isNotEmpty()) {
+                val currentCount = imagenesSeleccionadasUris.size
+                val allowedNew = 10 - currentCount
+                if (uris.size > allowedNew) {
+                    android.widget.Toast.makeText(context, "Solo puedes subir hasta 10 fotos. Se agregaron las primeras $allowedNew.", android.widget.Toast.LENGTH_LONG).show()
+                }
+                imagenesSeleccionadasUris = (imagenesSeleccionadasUris + uris).take(10)
             }
         }
     )
@@ -74,7 +80,11 @@ fun PublicarView(
         contract = ActivityResultContracts.TakePicture(),
         onResult = { success ->
             if (success && cameraPhotoUri != null) {
-                imagenSeleccionadaUri = cameraPhotoUri
+                if (imagenesSeleccionadasUris.size < 10) {
+                    imagenesSeleccionadasUris = imagenesSeleccionadasUris + cameraPhotoUri!!
+                } else {
+                    android.widget.Toast.makeText(context, "Ya has alcanzado el límite de 10 fotos", android.widget.Toast.LENGTH_SHORT).show()
+                }
             }
         }
     )
@@ -204,8 +214,27 @@ fun PublicarView(
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // Botones para adjuntar imagen (Cámara o Galería)
-                if (imagenSeleccionadaUri == null) {
+                // Muestra un contador de fotos estilo premium
+                if (imagenesSeleccionadasUris.isNotEmpty()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Fotos seleccionadas",
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "${imagenesSeleccionadasUris.size} / 10",
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                            color = if (imagenesSeleccionadasUris.size == 10) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                if (imagenesSeleccionadasUris.isEmpty()) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -253,41 +282,85 @@ fun PublicarView(
                         }
                     }
                 } else {
-                    // Vista previa de la imagen seleccionada
-                    Box(
+                    // Vista previa de las imágenes seleccionadas en scroll horizontal
+                    androidx.compose.foundation.lazy.LazyRow(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(180.dp)
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                            .height(130.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        contentPadding = PaddingValues(end = 16.dp)
                     ) {
-                        AsyncImage(
-                            model = imagenSeleccionadaUri,
-                            contentDescription = "Vista previa de imagen",
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
-                        )
-                        
-                        // Botón de eliminar superpuesto en la esquina superior derecha
-                        FilledIconButton(
-                            onClick = {
-                                imagenSeleccionadaUri = null
-                                cameraPhotoUri = null
-                            },
-                            modifier = Modifier
-                                .padding(8.dp)
-                                .size(36.dp)
-                                .align(Alignment.TopEnd),
-                            colors = IconButtonDefaults.filledIconButtonColors(
-                                containerColor = Color.Black.copy(alpha = 0.6f),
-                                contentColor = Color.White
-                            )
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Close,
-                                contentDescription = "Eliminar imagen",
-                                modifier = Modifier.size(18.dp)
-                            )
+                        items(imagenesSeleccionadasUris.size) { index ->
+                            val uri = imagenesSeleccionadasUris[index]
+                            Box(
+                                modifier = Modifier
+                                    .size(120.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                            ) {
+                                AsyncImage(
+                                    model = uri,
+                                    contentDescription = "Miniatura de foto",
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop
+                                )
+                                
+                                // Botón de eliminar superpuesto en la esquina superior derecha
+                                FilledIconButton(
+                                    onClick = {
+                                        imagenesSeleccionadasUris = imagenesSeleccionadasUris.toMutableList().apply { removeAt(index) }
+                                    },
+                                    modifier = Modifier
+                                        .padding(4.dp)
+                                        .size(28.dp)
+                                        .align(Alignment.TopEnd),
+                                    colors = IconButtonDefaults.filledIconButtonColors(
+                                        containerColor = Color.Black.copy(alpha = 0.6f),
+                                        contentColor = Color.White
+                                    )
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Close,
+                                        contentDescription = "Eliminar imagen",
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                }
+                            }
+                        }
+
+                        // Agregar botón de "+ añadir más" al final si aún queda cupo
+                        if (imagenesSeleccionadasUris.size < 10) {
+                            item {
+                                Box(
+                                    modifier = Modifier
+                                        .size(120.dp)
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                                        .clickable {
+                                            showAddMediaDialog = true
+                                        },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.PhotoLibrary,
+                                            contentDescription = "Añadir más fotos",
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(32.dp)
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = "Añadir más",
+                                            fontSize = 12.sp,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -409,49 +482,28 @@ fun PublicarView(
                 Spacer(modifier = Modifier.height(30.dp))
 
                 // Submit Button
-                val isPublishEnabled = textoPost.isNotBlank() && !estaSubiendoImagen
+                val isPublishEnabled = textoPost.isNotBlank()
 
                 Button(
                     onClick = {
                         if (textoPost.isNotBlank()) {
-                            coroutineScope.launch {
-                                estaSubiendoImagen = true
-                                var finalImageUrl: String? = null
-
-                                val uriToUpload = imagenSeleccionadaUri
-                                if (uriToUpload != null) {
-                                    finalImageUrl = CloudinaryUploader.uploadImage(
-                                        context = context,
-                                        imageUri = uriToUpload,
-                                        cloudName = CLOUDINARY_CLOUD_NAME,
-                                        uploadPreset = CLOUDINARY_UPLOAD_PRESET
-                                    )
-                                    if (finalImageUrl == null) {
-                                        estaSubiendoImagen = false
-                                        android.widget.Toast.makeText(context, "Error al subir la imagen a Cloudinary", android.widget.Toast.LENGTH_LONG).show()
-                                        return@launch
-                                    }
-                                }
-
-                                feedViewModel.crearPost(
-                                    texto = textoPost,
-                                    rutinaId = rutinaSeleccionadaId,
-                                    dietaId = dietaSeleccionadaId,
-                                    imagenUrl = finalImageUrl
-                                ) { success, _ ->
-                                    estaSubiendoImagen = false
-                                    if (success) {
-                                        textoPost = ""
-                                        imagenSeleccionadaUri = null
-                                        cameraPhotoUri = null
-                                        rutinaSeleccionadaId = null
-                                        rutinaSeleccionadaNombre = "Ninguna"
-                                        dietaSeleccionadaId = null
-                                        dietaSeleccionadaNombre = "Ninguna"
-                                        navController.navigate(PantallaFeed)
-                                    } else {
-                                        android.widget.Toast.makeText(context, "Error al crear la publicación", android.widget.Toast.LENGTH_SHORT).show()
-                                    }
+                            feedViewModel.publicarPostConImagenes(
+                                context = context,
+                                texto = textoPost,
+                                rutinaId = rutinaSeleccionadaId,
+                                dietaId = dietaSeleccionadaId,
+                                uris = imagenesSeleccionadasUris
+                            ) {
+                                // onInicio lambda: Ejecutado inmediatamente al iniciar la subida
+                                textoPost = ""
+                                imagenesSeleccionadasUris = emptyList()
+                                cameraPhotoUri = null
+                                rutinaSeleccionadaId = null
+                                rutinaSeleccionadaNombre = "Ninguna"
+                                dietaSeleccionadaId = null
+                                dietaSeleccionadaNombre = "Ninguna"
+                                navController.navigate(PantallaFeed) {
+                                    popUpTo(PantallaFeed) { inclusive = false }
                                 }
                             }
                         }
@@ -462,17 +514,87 @@ fun PublicarView(
                     shape = RoundedCornerShape(16.dp),
                     enabled = isPublishEnabled
                 ) {
-                    if (estaSubiendoImagen) {
-                        CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(24.dp))
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text("Subiendo imagen...", fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                    } else {
-                        Text("Publicar", fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                    }
+                    Text("Publicar", fontSize = 18.sp, fontWeight = FontWeight.Bold)
                 }
                 
                 Spacer(modifier = Modifier.height(80.dp))
             }
+        }
+        
+        if (showAddMediaDialog) {
+            AlertDialog(
+                onDismissRequest = { showAddMediaDialog = false },
+                title = { 
+                    Text(
+                        text = "Añadir Foto", 
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    ) 
+                },
+                text = { 
+                    Text(
+                        text = "Selecciona una opción para añadir una foto a tu publicación.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    ) 
+                },
+                confirmButton = {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = {
+                                showAddMediaDialog = false
+                                val hasPermission = androidx.core.content.ContextCompat.checkSelfPermission(
+                                    context,
+                                    android.Manifest.permission.CAMERA
+                                ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+
+                                if (hasPermission) {
+                                    try {
+                                        val uri = crearUriParaFotoCamara(context)
+                                        cameraPhotoUri = uri
+                                        cameraLauncher.launch(uri)
+                                    } catch (e: Exception) {
+                                        android.util.Log.e("PublicarView", "Error al iniciar cámara", e)
+                                        android.widget.Toast.makeText(context, "Error al iniciar cámara: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+                                    }
+                                } else {
+                                    cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                        ) {
+                            Icon(imageVector = Icons.Default.PhotoCamera, contentDescription = "Cámara")
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Usar Cámara")
+                        }
+
+                        Button(
+                            onClick = {
+                                showAddMediaDialog = false
+                                galleryLauncher.launch("image/*")
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
+                        ) {
+                            Icon(imageVector = Icons.Default.PhotoLibrary, contentDescription = "Galería")
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Elegir de Galería")
+                        }
+
+                        TextButton(
+                            onClick = { showAddMediaDialog = false },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Cancelar", fontWeight = FontWeight.SemiBold)
+                        }
+                    }
+                }
+            )
         }
     }
 }

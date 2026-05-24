@@ -20,15 +20,13 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -38,7 +36,6 @@ import androidx.navigation.toRoute
 import androidx.compose.material3.MaterialTheme
 import com.spc.nutricoach.data.SessionManager
 import com.spc.nutricoach.ui.viewmodel.DietaViewModel
-import kotlinx.coroutines.flow.first
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -138,11 +135,11 @@ fun AppNavigation() {
         }
     }
 
-    val dietaViewModel: DietaViewModel = viewModel()
-    val rutinaViewModel: com.spc.nutricoach.ui.viewmodel.RutinaViewModel = viewModel()
-    val entrenamientoViewModel: com.spc.nutricoach.ui.viewmodel.EntrenamientoViewModel = viewModel()
-    val notasViewModel: com.spc.nutricoach.ui.viewmodel.NotasViewModel = viewModel()
-    val feedViewModel: com.spc.nutricoach.ui.viewmodel.FeedViewModel = viewModel()
+    val dietaViewModel: DietaViewModel = hiltViewModel()
+    val rutinaViewModel: com.spc.nutricoach.ui.viewmodel.RutinaViewModel = hiltViewModel()
+    val entrenamientoViewModel: com.spc.nutricoach.ui.viewmodel.EntrenamientoViewModel = hiltViewModel()
+    val notasViewModel: com.spc.nutricoach.ui.viewmodel.NotasViewModel = hiltViewModel()
+    val feedViewModel: com.spc.nutricoach.ui.viewmodel.FeedViewModel = hiltViewModel()
 
     val showNavBar = navBarRoutes.any { navRoute ->
         currentDestination?.hasRoute(navRoute.routeObject::class) == true
@@ -186,7 +183,7 @@ fun AppNavigation() {
             startDestination = if (isLoggedIn == true) PantallaFeed else PantallaLogin
         ) {
             composable<PantallaFeed> {
-                FeedView(navController = navController)
+                FeedView(navController = navController, feedViewModel = feedViewModel)
             }
             composable<PantallaPublicar> {
                 PublicarView(
@@ -204,10 +201,10 @@ fun AppNavigation() {
                 )
             }
             composable<PantallaLogin> {
-                LoginView(navController)
+                LoginView(navController = navController, loginViewModel = hiltViewModel())
             }
             composable<PantallaRegistro> {
-                RegistroView(navController)
+                RegistroView(navController = navController, registroViewModel = hiltViewModel())
             }
             composable<PantallaDetalleDieta> { backStackEntry ->
                 val detalle = backStackEntry.toRoute<PantallaDetalleDieta>()
@@ -244,7 +241,11 @@ fun AppNavigation() {
                 )
             }
             composable<PantallaPerfil> {
-                PerfilUsuarioView(navController)
+                PerfilUsuarioView(
+                    navController = navController,
+                    loginViewModel = hiltViewModel(),
+                    perfilViewModel = hiltViewModel()
+                )
             }
             composable<PantallaPerfilPublico> { backStackEntry ->
                 val args = backStackEntry.toRoute<PantallaPerfilPublico>()

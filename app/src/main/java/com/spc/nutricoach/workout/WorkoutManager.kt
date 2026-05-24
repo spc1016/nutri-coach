@@ -50,7 +50,11 @@ object WorkoutManager {
     }
 
     fun iniciarOReanudar(rutinaId: String, dia: Dia) {
-        if (_rutinaIdActual.value != rutinaId || _diaActual.value?.nombre != dia.nombre) {
+        val esMismoDia = _rutinaIdActual.value == rutinaId && _diaActual.value?.nombre == dia.nombre
+        val exercisesChanged = _diaActual.value?.ejercicios != dia.ejercicios
+        val isFinishedOrStopped = _isFinished.value || _isStopped.value
+
+        if (!esMismoDia || exercisesChanged || isFinishedOrStopped) {
             _rutinaIdActual.value = rutinaId
             _diaActual.value = dia
             _currentExerciseIndex.value = 0

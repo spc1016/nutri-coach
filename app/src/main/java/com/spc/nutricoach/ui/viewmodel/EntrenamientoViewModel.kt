@@ -1,23 +1,26 @@
 package com.spc.nutricoach.ui.viewmodel
 
-import android.app.Application
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.spc.nutricoach.data.SessionManager
+import com.spc.nutricoach.data.ApiResponse
+import com.spc.nutricoach.data.repository.RutinaRepository
 import com.spc.nutricoach.model.Dia
 import com.spc.nutricoach.workout.WorkoutManager
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class EntrenamientoViewModel(application: Application) : AndroidViewModel(application) {
-
-    private val sessionManager = SessionManager(application)
+@HiltViewModel
+class EntrenamientoViewModel @Inject constructor(
+    private val rutinaRepository: RutinaRepository
+) : ViewModel() {
 
     var isSavingLog by mutableStateOf(false)
         private set
@@ -67,8 +70,8 @@ class EntrenamientoViewModel(application: Application) : AndroidViewModel(applic
             isSavingLog = true
             saveLogError = null
             try {
-                val token = sessionManager.getToken()
-                val clienteId = sessionManager.getClienteId()
+                val token = rutinaRepository.session.getToken()
+                val clienteId = rutinaRepository.session.getClienteId()
                 if (token.isNullOrBlank() || clienteId.isNullOrBlank()) {
                     saveLogError = "No se encontró sesión o ID de cliente"
                     onComplete(false)
@@ -76,12 +79,20 @@ class EntrenamientoViewModel(application: Application) : AndroidViewModel(applic
                 }
                 
                 val log = WorkoutManager.getEntrenamientoLog(rutinaNombre, diaNombre)
-                com.spc.nutricoach.data.NutriCoachApiClient.service.registrarEntrenamiento(
-                    clienteId = clienteId,
-                    token = "Bearer $token",
-                    request = log
-                )
-                onComplete(true)
+                
+                when (val response = rutinaRepository.registrarEntrenamiento(clienteId, "Bearer $token", log)) {
+                    is ApiResponse.Success -> {
+                        onComplete(true)
+                    }
+                    is ApiResponse.Error -> {
+                        saveLogError = "Error del servidor (${response.code})"
+                        onComplete(false)
+                    }
+                    is ApiResponse.Exception -> {
+                        saveLogError = "Error de conexión"
+                        onComplete(false)
+                    }
+                }
             } catch (e: Exception) {
                 android.util.Log.e("WORKOUT_LOG", "Error al registrar entrenamiento", e)
                 saveLogError = e.message ?: "Error de red"

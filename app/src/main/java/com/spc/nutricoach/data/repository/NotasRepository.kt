@@ -3,8 +3,13 @@ package com.spc.nutricoach.data.repository
 import com.spc.nutricoach.data.local.dao.NotasDao
 import com.spc.nutricoach.data.local.entity.NotasEntity
 import kotlinx.coroutines.flow.Flow
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class NotasRepository(private val notasDao: NotasDao) {
+@Singleton
+class NotasRepository @Inject constructor(
+    private val notasDao: NotasDao
+) {
 
     fun obtenerNotasPorCliente(clienteId: String): Flow<List<NotasEntity>> {
         return notasDao.obtenerNotasPorCliente(clienteId)

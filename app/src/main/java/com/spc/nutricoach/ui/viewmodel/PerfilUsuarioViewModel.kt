@@ -1,24 +1,24 @@
 package com.spc.nutricoach.ui.viewmodel
 
-import android.app.Application
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.spc.nutricoach.data.ApiResponse
 import com.spc.nutricoach.data.ModificarClienteRequest
-import com.spc.nutricoach.data.NutriCoachApiClient
-import com.spc.nutricoach.data.SessionManager
+import com.spc.nutricoach.data.repository.AuthRepository
+import com.spc.nutricoach.model.Cliente
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import retrofit2.HttpException
-import java.io.IOException
-import com.spc.nutricoach.model.Cliente
+import javax.inject.Inject
 
-class PerfilUsuarioViewModel(application: Application) : AndroidViewModel(application) {
-
-    private val sessionManager = SessionManager(application)
+@HiltViewModel
+class PerfilUsuarioViewModel @Inject constructor(
+    private val authRepository: AuthRepository
+) : ViewModel() {
 
     var nombre by mutableStateOf("")
     var email by mutableStateOf("")
@@ -52,29 +52,36 @@ class PerfilUsuarioViewModel(application: Application) : AndroidViewModel(applic
         statusMessage = ""
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val clienteId = sessionManager.getClienteId()
-                val token = sessionManager.getToken()
+                val clienteId = authRepository.session.getClienteId()
+                val token = authRepository.session.getToken()
                 
                 if (clienteId != null && token != null) {
-                    val cliente = NutriCoachApiClient.service.obtenerCliente(clienteId, "Bearer $token")
-                    nombre = cliente.nombre
-                    email = cliente.email
-                    telefono = cliente.telefono ?: ""
-                    edad = cliente.edad?.toString() ?: ""
-                    peso = cliente.peso?.toString() ?: ""
-                    altura = cliente.altura?.toString() ?: ""
-                    objetivo = cliente.objetivo ?: ""
-                    seguidoresCount = cliente.seguidores_count
-                    seguidosCount = cliente.seguidos_count
+                    when (val response = authRepository.obtenerCliente(clienteId, "Bearer $token")) {
+                        is ApiResponse.Success -> {
+                            val cliente = response.data
+                            nombre = cliente.nombre
+                            email = cliente.email
+                            telefono = cliente.telefono ?: ""
+                            edad = cliente.edad?.toString() ?: ""
+                            peso = cliente.peso?.toString() ?: ""
+                            altura = cliente.altura?.toString() ?: ""
+                            objetivo = cliente.objetivo ?: ""
+                            seguidoresCount = cliente.seguidores_count
+                            seguidosCount = cliente.seguidos_count
+                            statusMessage = ""
+                        }
+                        is ApiResponse.Error -> {
+                            Log.e("PERFIL_API", "Error HTTP ${response.code}: ${response.message}")
+                            statusMessage = "Error del servidor al cargar el perfil"
+                        }
+                        is ApiResponse.Exception -> {
+                            Log.e("PERFIL_API", "Error de red al cargar perfil", response.throwable)
+                            statusMessage = "Error de conexión. Comprueba tu red."
+                        }
+                    }
                 } else {
                     statusMessage = "No se pudo obtener el ID del cliente o el token."
                 }
-            } catch (e: HttpException) {
-                Log.e("PERFIL_API", "Error al cargar perfil HTTP ${e.code()}: ${e.message()}")
-                statusMessage = "Error del servidor al cargar el perfil"
-            } catch (e: IOException) {
-                Log.e("PERFIL_API", "Error de red al cargar perfil: ${e.message}", e)
-                statusMessage = "Error de conexión. Comprueba tu red."
             } catch (e: Exception) {
                 Log.e("PERFIL_API", "Error inesperado al cargar perfil: ${e.message}", e)
                 statusMessage = "Error inesperado al cargar perfil"
@@ -95,8 +102,8 @@ class PerfilUsuarioViewModel(application: Application) : AndroidViewModel(applic
         
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val clienteId = sessionManager.getClienteId() ?: throw Exception("ID de cliente no encontrado")
-                val token = sessionManager.getToken() ?: throw Exception("Token de autenticación no encontrado")
+                val clienteId = authRepository.session.getClienteId() ?: throw Exception("ID de cliente no encontrado")
+                val token = authRepository.session.getToken() ?: throw Exception("Token de autenticación no encontrado")
 
                 val request = ModificarClienteRequest(
                     nombre = nombre,
@@ -109,20 +116,23 @@ class PerfilUsuarioViewModel(application: Application) : AndroidViewModel(applic
                     genero = null // No editamos el genero en este perfil pero mandamos null
                 )
 
-                NutriCoachApiClient.service.modificarCliente(clienteId, "Bearer $token", request)
-                
-                // Actualizar el correo electrónico en SessionManager si fue cambiado
-                val currentRole = sessionManager.getRole() ?: "cliente"
-                val currentToken = sessionManager.getToken() ?: ""
-                sessionManager.saveSession(currentToken, currentRole, clienteId, email)
-
-                statusMessage = "Perfil actualizado correctamente"
-            } catch (e: HttpException) {
-                Log.e("PERFIL_API", "Error al guardar perfil HTTP ${e.code()}: ${e.message()}")
-                statusMessage = "Error del servidor al guardar"
-            } catch (e: IOException) {
-                Log.e("PERFIL_API", "Error de red al guardar perfil: ${e.message}", e)
-                statusMessage = "Error de conexión. Comprueba tu red."
+                when (val response = authRepository.modificarCliente(clienteId, "Bearer $token", request)) {
+                    is ApiResponse.Success -> {
+                        // Actualizar el correo electrónico en SessionManager si fue cambiado
+                        val currentRole = authRepository.session.getRole() ?: "cliente"
+                        val currentToken = authRepository.session.getToken() ?: ""
+                        authRepository.session.saveSession(currentToken, currentRole, clienteId, email)
+                        statusMessage = "Perfil actualizado correctamente"
+                    }
+                    is ApiResponse.Error -> {
+                        Log.e("PERFIL_API", "Error al guardar perfil HTTP ${response.code}: ${response.message}")
+                        statusMessage = "Error del servidor al guardar: ${response.message}"
+                    }
+                    is ApiResponse.Exception -> {
+                        Log.e("PERFIL_API", "Error de red al guardar perfil", response.throwable)
+                        statusMessage = "Error de conexión. Comprueba tu red."
+                    }
+                }
             } catch (e: Exception) {
                 Log.e("PERFIL_API", "Error inesperado al guardar perfil: ${e.message}", e)
                 statusMessage = "Error inesperado: ${e.message}"
@@ -136,12 +146,14 @@ class PerfilUsuarioViewModel(application: Application) : AndroidViewModel(applic
         viewModelScope.launch(Dispatchers.IO) {
             isLoadingListas = true
             try {
-                val clienteId = sessionManager.getClienteId()
+                val clienteId = authRepository.session.getClienteId()
                 if (clienteId != null) {
-                    val followers = NutriCoachApiClient.service.obtenerSeguidores(clienteId)
-                    val following = NutriCoachApiClient.service.obtenerSeguidos(clienteId)
-                    seguidoresList = followers
-                    seguidosList = following
+                    val followersResponse = authRepository.obtenerSeguidores(clienteId)
+                    val followingResponse = authRepository.obtenerSeguidos(clienteId)
+                    if (followersResponse is ApiResponse.Success && followingResponse is ApiResponse.Success) {
+                        seguidoresList = followersResponse.data
+                        seguidosList = followingResponse.data
+                    }
                 }
             } catch (e: Exception) {
                 Log.e("PERFIL_API", "Error al cargar listas: ${e.message}")
@@ -154,12 +166,16 @@ class PerfilUsuarioViewModel(application: Application) : AndroidViewModel(applic
     fun dejarDeSeguir(usuarioId: String) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val token = sessionManager.getToken()
+                val token = authRepository.session.getToken()
                 if (token != null) {
-                    NutriCoachApiClient.service.dejarDeSeguirUsuario(usuarioId, "Bearer $token")
-                    // Update lists locally
-                    seguidosList = seguidosList.filter { it.id != usuarioId }
-                    seguidosCount = seguidosList.size
+                    when (authRepository.dejarDeSeguirUsuario(usuarioId, "Bearer $token")) {
+                        is ApiResponse.Success -> {
+                            // Update lists locally
+                            seguidosList = seguidosList.filter { it.id != usuarioId }
+                            seguidosCount = seguidosList.size
+                        }
+                        else -> {}
+                    }
                 }
             } catch (e: Exception) {
                 Log.e("PERFIL_API", "Error al dejar de seguir: ${e.message}")

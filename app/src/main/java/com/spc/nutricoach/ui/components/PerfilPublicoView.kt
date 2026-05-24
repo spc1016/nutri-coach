@@ -20,8 +20,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.spc.nutricoach.data.NutriCoachApiClient
 import com.spc.nutricoach.data.SessionManager
 import com.spc.nutricoach.model.Cliente
 import com.spc.nutricoach.model.Rutina
@@ -43,7 +43,7 @@ fun PerfilPublicoView(
     val sessionManager = remember { SessionManager(context) }
     
     // We can reuse UsuariosViewModel to handle follow toggle or do it locally
-    val usuariosViewModel: UsuariosViewModel = viewModel()
+    val usuariosViewModel: UsuariosViewModel = hiltViewModel()
     
     var cliente by remember { mutableStateOf<Cliente?>(null) }
     var rutinas by remember { mutableStateOf<List<Rutina>>(emptyList()) }
@@ -51,15 +51,9 @@ fun PerfilPublicoView(
 
     LaunchedEffect(clienteId) {
         isLoading = true
-        val token = sessionManager.getToken() ?: ""
-        try {
-            // Load client details
-            cliente = NutriCoachApiClient.service.obtenerCliente(clienteId, "Bearer $token")
-            // Load public routines (the API already filters them for non-owners)
-            rutinas = NutriCoachApiClient.service.obtenerRutinasCliente(clienteId, "Bearer $token")
-        } catch (e: Exception) {
-            e.printStackTrace()
-        } finally {
+        usuariosViewModel.cargarDetallesUsuario(clienteId) { c, r ->
+            cliente = c
+            rutinas = r ?: emptyList()
             isLoading = false
         }
     }
