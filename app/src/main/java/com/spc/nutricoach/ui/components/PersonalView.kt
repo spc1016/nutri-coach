@@ -845,6 +845,29 @@ fun PersonalView(
                 title = { Text("Nueva Dieta") },
                 text = {
                     Column {
+                        Button(
+                            onClick = { 
+                                showCrearDietaDialog = false
+                                navController.navigate(PantallaQrScanner) 
+                            },
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer, 
+                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                        ) {
+                            Icon(imageVector = Icons.Default.QrCodeScanner, contentDescription = null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Escanear código QR", fontWeight = FontWeight.Bold)
+                        }
+                        
+                        Text(
+                            text = "O crear manualmente:", 
+                            style = MaterialTheme.typography.bodyMedium, 
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+
                         OutlinedTextField(
                             value = nombreDieta,
                             onValueChange = { nombreDieta = it },

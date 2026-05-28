@@ -26,10 +26,18 @@ import androidx.navigation.NavController
 import com.spc.nutricoach.data.SessionManager
 import com.spc.nutricoach.ui.theme.AppBrushes
 import com.spc.nutricoach.ui.viewmodel.FeedViewModel
+import com.spc.nutricoach.ui.viewmodel.RutinaViewModel
+import com.spc.nutricoach.ui.viewmodel.DietaViewModel
+import android.widget.Toast
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FeedView(navController: NavController, feedViewModel: FeedViewModel = viewModel()) {
+fun FeedView(
+    navController: NavController,
+    feedViewModel: FeedViewModel,
+    rutinaViewModel: RutinaViewModel,
+    dietaViewModel: DietaViewModel
+) {
     LaunchedEffect(Unit) {
         feedViewModel.cargarPosts()
         feedViewModel.cargarUsuarios()
@@ -184,6 +192,24 @@ fun FeedView(navController: NavController, feedViewModel: FeedViewModel = viewMo
                                 },
                                 onDietaClick = { dietaId ->
                                     navController.navigate(PantallaDetalleDieta(dietaId))
+                                },
+                                onReplicateRoutineClick = { rutinaId ->
+                                    rutinaViewModel.clonarRutinaPorId(rutinaId) { success, error ->
+                                        if (success) {
+                                            Toast.makeText(context, "¡Rutina replicada exitosamente!", Toast.LENGTH_SHORT).show()
+                                        } else {
+                                            Toast.makeText(context, error ?: "Error al replicar la rutina", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                },
+                                onReplicateDietaClick = { dietaId ->
+                                    dietaViewModel.clonarDietaPorId(dietaId) { success, error ->
+                                        if (success) {
+                                            Toast.makeText(context, "¡Dieta replicada exitosamente!", Toast.LENGTH_SHORT).show()
+                                        } else {
+                                            Toast.makeText(context, error ?: "Error al replicar la dieta", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
                                 },
                                 onClick = {
                                     navController.navigate(PantallaDetallePost(post.id))

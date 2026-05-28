@@ -183,7 +183,12 @@ fun AppNavigation() {
             startDestination = if (isLoggedIn == true) PantallaFeed else PantallaLogin
         ) {
             composable<PantallaFeed> {
-                FeedView(navController = navController, feedViewModel = feedViewModel)
+                FeedView(
+                    navController = navController,
+                    feedViewModel = feedViewModel,
+                    rutinaViewModel = rutinaViewModel,
+                    dietaViewModel = dietaViewModel
+                )
             }
             composable<PantallaPublicar> {
                 PublicarView(
@@ -219,7 +224,9 @@ fun AppNavigation() {
                 DetallePostView(
                     navController = navController,
                     postId = args.postId,
-                    feedViewModel = feedViewModel
+                    feedViewModel = feedViewModel,
+                    rutinaViewModel = rutinaViewModel,
+                    dietaViewModel = dietaViewModel
                 )
             }
             composable<PantallaDetalleRutina> { backStackEntry ->
@@ -269,7 +276,8 @@ fun AppNavigation() {
             composable<PantallaQrScanner> {
                 QrScannerView(
                     navController = navController,
-                    rutinaViewModel = rutinaViewModel
+                    rutinaViewModel = rutinaViewModel,
+                    dietaViewModel = dietaViewModel
                 )
             }
         }

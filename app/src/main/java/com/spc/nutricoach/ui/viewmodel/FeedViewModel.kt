@@ -86,7 +86,12 @@ class FeedViewModel @Inject constructor(
                     onResult(false, "No hay sesión activa")
                     return@launch
                 }
-                val request = CrearPostRequest(texto = texto, rutina_id = rutinaId) // Wait, CrearPostRequest has texto and optional routine
+                val request = CrearPostRequest(
+                    texto = texto,
+                    rutinaId = rutinaId,
+                    dietaId = dietaId,
+                    imagenUrl = imagenUrl
+                ) // Wait, CrearPostRequest has texto and optional routine
                 when (val response = comunidadRepository.crearPost("Bearer $token", request)) {
                     is ApiResponse.Success -> {
                         cargarPosts(force = true)
@@ -181,7 +186,9 @@ class FeedViewModel @Inject constructor(
                 
                 val request = CrearPostRequest(
                     texto = texto,
-                    rutina_id = rutinaId
+                    rutinaId = rutinaId,
+                    dietaId = dietaId,
+                    imagenUrl = finalImageUrl
                 )
                 
                 when (val response = comunidadRepository.crearPost("Bearer $token", request)) {

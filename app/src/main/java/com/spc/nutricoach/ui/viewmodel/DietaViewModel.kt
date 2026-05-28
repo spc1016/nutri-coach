@@ -157,9 +157,65 @@ class DietaViewModel @Inject constructor(
                 if (dietas.any { it.id == dietaId } || dietasPublicas.any { it.id == dietaId }) {
                     return@launch
                 }
+
+                val token = dietaRepository.session.getToken()
+                if (token.isNullOrBlank()) return@launch
+
+                isLoading = true
+                when (val response = dietaRepository.obtenerDietaPorId(dietaId, "Bearer $token")) {
+                    is ApiResponse.Success -> {
+                        dietasPublicas = dietasPublicas + response.data
+                    }
+                    else -> {}
+                }
             } catch (e: Exception) {
                 Log.e("DIETAS_API", "Error al cargar dieta por ID", e)
+            } finally {
+                isLoading = false
             }
+        }
+    }
+
+    fun clonarDietaPorId(dietaId: String, onResult: (Boolean, String?) -> Unit) {
+        viewModelScope.launch(Dispatchers.Main) {
+            val result = kotlinx.coroutines.withContext(Dispatchers.IO) {
+                try {
+                    val clienteId = dietaRepository.session.getClienteId()
+                    if (clienteId.isNullOrBlank()) {
+                        return@withContext Pair(false, "No se encontró el ID del cliente")
+                    }
+                    val token = dietaRepository.session.getToken()
+                    if (token.isNullOrBlank()) {
+                        return@withContext Pair(false, "No hay sesión activa")
+                    }
+
+                    when (val response = dietaRepository.obtenerDietaPorId(dietaId, "Bearer $token")) {
+                        is ApiResponse.Success -> {
+                            val request = CrearDietaRequest(
+                                nombre = response.data.nombre,
+                                cliente_id = clienteId,
+                                kcal_objetivo = response.data.kcalObjetivo ?: 0,
+                                comidas = response.data.comidas,
+                                activa = true,
+                                publica = false
+                            )
+                            when (val cloneResponse = dietaRepository.crearDieta("Bearer $token", request)) {
+                                is ApiResponse.Success -> {
+                                    loadDietas(clienteId)
+                                    Pair(true, null)
+                                }
+                                is ApiResponse.Error -> Pair(false, "Error al clonar (${cloneResponse.code}): ${cloneResponse.message}")
+                                is ApiResponse.Exception -> Pair(false, "Error de red al clonar")
+                            }
+                        }
+                        is ApiResponse.Error -> Pair(false, "Error del servidor (${response.code}): ${response.message}")
+                        is ApiResponse.Exception -> Pair(false, "Error de red")
+                    }
+                } catch (e: Exception) {
+                    Pair(false, "Error: ${e.message}")
+                }
+            }
+            onResult(result.first, result.second)
         }
     }
 

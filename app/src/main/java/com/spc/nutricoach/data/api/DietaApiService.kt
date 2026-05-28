@@ -26,6 +26,12 @@ interface DietaApiService {
         @Header("Authorization") token: String
     ): List<Dieta>
 
+    @GET("dietas/{id}")
+    suspend fun obtenerDietaPorId(
+        @Path("id") dietaId: String,
+        @Header("Authorization") token: String
+    ): Dieta
+
     @POST("dietas")
     suspend fun crearDieta(
         @Header("Authorization") token: String,

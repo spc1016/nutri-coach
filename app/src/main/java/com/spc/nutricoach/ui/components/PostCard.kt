@@ -36,6 +36,8 @@ fun PostCard(
     onCommentClick: () -> Unit,
     onRoutineClick: (String) -> Unit,
     onDietaClick: (String) -> Unit,
+    onReplicateRoutineClick: ((String) -> Unit)? = null,
+    onReplicateDietaClick: ((String) -> Unit)? = null,
     onClick: (() -> Unit)? = null
 ) {
     val isLiked = post.likedBy.contains(currentUserId)
@@ -297,28 +299,50 @@ fun PostCard(
                 }
             }
 
-            // Optional: Routine Link (just visual for now)
+            // Optional: Routine Link and Replicate option
             if (!post.rutinaId.isNullOrBlank()) {
                 Spacer(modifier = Modifier.height(8.dp))
-                SuggestionChip(
-                    onClick = { post.rutinaId?.let { onRoutineClick(it) } },
-                    label = { Text("Ver Rutina Asociada") },
-                    colors = SuggestionChipDefaults.suggestionChipColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    SuggestionChip(
+                        onClick = { post.rutinaId?.let { onRoutineClick(it) } },
+                        label = { Text("Ver Rutina") },
+                        colors = SuggestionChipDefaults.suggestionChipColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                        )
                     )
-                )
+                    if (onReplicateRoutineClick != null) {
+                        SuggestionChip(
+                            onClick = { onReplicateRoutineClick(post.rutinaId) },
+                            label = { Text("Replicar Rutina") },
+                            colors = SuggestionChipDefaults.suggestionChipColors(
+                                containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                            )
+                        )
+                    }
+                }
             }
 
-            // Optional: Diet Link
+            // Optional: Diet Link and Replicate option
             if (!post.dietaId.isNullOrBlank()) {
                 Spacer(modifier = Modifier.height(8.dp))
-                SuggestionChip(
-                    onClick = { post.dietaId?.let { onDietaClick(it) } },
-                    label = { Text("Ver Dieta Asociada") },
-                    colors = SuggestionChipDefaults.suggestionChipColors(
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    SuggestionChip(
+                        onClick = { post.dietaId?.let { onDietaClick(it) } },
+                        label = { Text("Ver Dieta") },
+                        colors = SuggestionChipDefaults.suggestionChipColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f)
+                        )
                     )
-                )
+                    if (onReplicateDietaClick != null) {
+                        SuggestionChip(
+                            onClick = { onReplicateDietaClick(post.dietaId) },
+                            label = { Text("Replicar Dieta") },
+                            colors = SuggestionChipDefaults.suggestionChipColors(
+                                containerColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.15f)
+                            )
+                        )
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(12.dp))

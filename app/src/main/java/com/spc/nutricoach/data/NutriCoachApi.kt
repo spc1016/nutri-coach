@@ -168,7 +168,9 @@ data class EntrenamientoLog(
 @Serializable
 data class CrearPostRequest(
     val texto: String,
-    val rutina_id: String? = null
+    @SerialName("rutina_id") val rutinaId: String? = null,
+    @SerialName("dieta_id") val dietaId: String? = null,
+    @SerialName("imagen_url") val imagenUrl: String? = null
 )
 
 @Serializable

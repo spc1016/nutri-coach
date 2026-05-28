@@ -19,6 +19,10 @@ class DietaRepository @Inject constructor(
         dietaApiService.obtenerDietasPublicas(token)
     }
 
+    suspend fun obtenerDietaPorId(dietaId: String, token: String): ApiResponse<Dieta> = safeApiCall {
+        dietaApiService.obtenerDietaPorId(dietaId, token)
+    }
+
     suspend fun crearDieta(token: String, request: CrearDietaRequest): ApiResponse<CrearDietaResponse> = safeApiCall {
         dietaApiService.crearDieta(token, request)
     }

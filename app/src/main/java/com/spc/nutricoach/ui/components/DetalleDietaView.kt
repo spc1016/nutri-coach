@@ -1,5 +1,6 @@
 package com.spc.nutricoach.ui.components
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -18,10 +20,12 @@ import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.outlined.RadioButtonUnchecked
-import androidx.compose.material.icons.outlined.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.QrCode2
+import androidx.compose.ui.graphics.asImageBitmap
+import com.spc.nutricoach.util.QrUtils
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Button
@@ -59,6 +63,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.text.style.TextAlign
 import com.spc.nutricoach.model.Comida
 import com.spc.nutricoach.ui.theme.AppBrushes
 import com.spc.nutricoach.ui.viewmodel.DietaViewModel
@@ -260,6 +265,72 @@ fun DetalleDietaView(
                             )
                         )
                     }
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Botón Compartir QR
+                    var showQrDialog by remember { mutableStateOf(false) }
+                    Button(
+                        onClick = { showQrDialog = true },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.QrCode2,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Compartir QR", fontWeight = FontWeight.Bold)
+                    }
+
+                    if (showQrDialog) {
+                        val qrBitmap = remember(dieta.id) {
+                            QrUtils.generateDietaQrBitmap(dieta.id)
+                        }
+                        AlertDialog(
+                            onDismissRequest = { showQrDialog = false },
+                            title = {
+                                Text(
+                                    text = "QR de Dieta",
+                                    style = MaterialTheme.typography.titleLarge.copy(
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                )
+                            },
+                            text = {
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Image(
+                                        bitmap = qrBitmap.asImageBitmap(),
+                                        contentDescription = "QR de la dieta",
+                                        modifier = Modifier.size(250.dp)
+                                    )
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    Text(
+                                        text = "Escanea este código desde otra cuenta para copiar la dieta",
+                                        style = MaterialTheme.typography.bodyMedium.copy(
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        ),
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+                            },
+                            confirmButton = {
+                                TextButton(onClick = { showQrDialog = false }) {
+                                    Text("Cerrar")
+                                }
+                            }
+                        )
+                    }
+
                     Spacer(modifier = Modifier.height(12.dp))
                 }
 

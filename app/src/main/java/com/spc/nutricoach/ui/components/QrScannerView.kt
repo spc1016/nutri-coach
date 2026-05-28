@@ -54,6 +54,7 @@ import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
 import com.spc.nutricoach.ui.viewmodel.RutinaViewModel
+import com.spc.nutricoach.ui.viewmodel.DietaViewModel
 import com.spc.nutricoach.util.QrUtils
 import java.util.concurrent.Executors
 
@@ -62,7 +63,8 @@ import java.util.concurrent.Executors
 @Composable
 fun QrScannerView(
     navController: NavController,
-    rutinaViewModel: RutinaViewModel
+    rutinaViewModel: RutinaViewModel,
+    dietaViewModel: DietaViewModel
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -116,7 +118,7 @@ fun QrScannerView(
                 ) {
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = "Apunta la cámara al código QR de la rutina",
+                        text = "Apunta la cámara al código QR de la rutina o dieta",
                         style = MaterialTheme.typography.bodyLarge.copy(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         ),
@@ -167,6 +169,7 @@ fun QrScannerView(
                                                     for (barcode in barcodes) {
                                                         val rawValue = barcode.rawValue ?: continue
                                                         val rutinaId = QrUtils.parseRutinaId(rawValue)
+                                                        val dietaId = QrUtils.parseDietaId(rawValue)
                                                         if (rutinaId != null && !isProcessing) {
                                                             isProcessing = true
                                                             statusMessage = "Clonando rutina..."
@@ -175,6 +178,21 @@ fun QrScannerView(
                                                                 if (success) {
                                                                     statusMessage = "¡Rutina clonada exitosamente!"
                                                                     Toast.makeText(ctx, "¡Rutina clonada exitosamente!", Toast.LENGTH_SHORT).show()
+                                                                    navController.popBackStack()
+                                                                } else {
+                                                                    statusMessage = error ?: "Error desconocido"
+                                                                    isProcessing = false
+                                                                }
+                                                            }
+                                                            break
+                                                        } else if (dietaId != null && !isProcessing) {
+                                                            isProcessing = true
+                                                            statusMessage = "Clonando dieta..."
+                                                            Log.d("QR_SCANNER", "Dieta ID detectada: $dietaId")
+                                                            dietaViewModel.clonarDietaPorId(dietaId) { success: Boolean, error: String? ->
+                                                                if (success) {
+                                                                    statusMessage = "¡Dieta clonada exitosamente!"
+                                                                    Toast.makeText(ctx, "¡Dieta clonada exitosamente!", Toast.LENGTH_SHORT).show()
                                                                     navController.popBackStack()
                                                                 } else {
                                                                     statusMessage = error ?: "Error desconocido"
