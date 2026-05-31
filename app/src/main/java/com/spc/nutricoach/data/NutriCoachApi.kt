@@ -181,5 +181,6 @@ data class ComentarioRequest(
 @Serializable
 data class ToggleLikeResponse(
     val liked: Boolean,
-    val likes_count: Int
+    val mensaje: String? = null,
+    val likes_count: Int? = null
 )
