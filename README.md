@@ -78,6 +78,9 @@ El esquema de color define una identidad visual coherente y muy deportiva:
 La app protege celosamente la sesión del usuario mediante un sistema de persistencia híbrido:
 1.  **Cifrado Criptográfico de Credenciales:** El token de autenticación (`auth_token`) se guarda en **EncryptedSharedPreferences** mediante algoritmos avanzados de cifrado de nivel militar (AES-256 GCM/SIV), gestionados por la biblioteca `androidx.security`. Esto impide que atacantes o root-kits extraigan el token de acceso del almacenamiento local.
 2.  **Persistencia Reactiva Ligera:** Los metadatos de usuario no sensibles (email, ID de cliente, rol) se almacenan en **Jetpack DataStore Preferences**, un reemplazo asíncrono y robusto de SharedPreferences construido sobre Kotlin Coroutines y Kotlin Flows.
+3.  **Interceptor Global de Autenticación:** Se ha implementado un `AuthInterceptor` en OkHttp que extrae la sesión y añade automáticamente la cabecera `Authorization: Bearer <token>` en todas las peticiones salientes. Esto elimina la gestión manual de credenciales en las capas de UI/ViewModel y asegura la red por diseño.
+4.  **Ocultación de Entornos (BuildConfig):** La URL del servidor de producción ya no reside como texto estático en el código base. Se almacena localmente en `local.properties` (excluido de git) y se inyecta en tiempo de compilación con `BuildConfig.BASE_URL`, blindando el repositorio de filtraciones de red.
+5.  **Desacoplamiento de Criptografía (SRP):** La decodificación en Base64 de las tramas de los Tokens JWT ha sido totalmente desacoplada de la interfaz gráfica y enviada a un componente utilitario nativo (`JwtUtils`), facilitando pruebas unitarias.
 
 ---
 
