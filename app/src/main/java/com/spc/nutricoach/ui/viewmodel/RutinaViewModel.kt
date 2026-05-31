@@ -64,7 +64,7 @@ class RutinaViewModel @Inject constructor(
                 return
             }
             
-            when (val response = rutinaRepository.obtenerRutinasCliente(clienteId, "Bearer $token")) {
+            when (val response = rutinaRepository.obtenerRutinasCliente(clienteId)) {
                 is ApiResponse.Success -> {
                     Log.d("RUTINAS", "Rutinas obtenidas: ${response.data.size}")
                     rutinas = response.data
@@ -102,7 +102,7 @@ class RutinaViewModel @Inject constructor(
                     return@launch
                 }
                 
-                when (val response = rutinaRepository.obtenerRutinasPublicas("Bearer $token")) {
+                when (val response = rutinaRepository.obtenerRutinasPublicas()) {
                     is ApiResponse.Success -> {
                         Log.d("RUTINAS_PUBLICAS", "Rutinas públicas obtenidas: ${response.data.size}")
                         rutinasPublicas = response.data
@@ -137,7 +137,7 @@ class RutinaViewModel @Inject constructor(
                 if (token.isNullOrBlank()) return@launch
                 
                 isLoading = true
-                when (val response = rutinaRepository.obtenerRutinaPorId(rutinaId, "Bearer $token")) {
+                when (val response = rutinaRepository.obtenerRutinaPorId(rutinaId)) {
                     is ApiResponse.Success -> {
                         rutinasPublicas = rutinasPublicas + response.data
                     }
@@ -183,7 +183,7 @@ class RutinaViewModel @Inject constructor(
                     cliente_id = clienteId
                 )
 
-                when (val response = rutinaRepository.crearRutina("Bearer $token", request)) {
+                when (val response = rutinaRepository.crearRutina(request)) {
                     is ApiResponse.Success -> {
                         loadRutinas(clienteId)
                         onResult(true, null)
@@ -211,7 +211,7 @@ class RutinaViewModel @Inject constructor(
                 }
 
                 val request = AgregarDiaRequest(nombre = nombre)
-                when (val response = rutinaRepository.agregarDiaARutina(rutinaId, "Bearer $token", request)) {
+                when (val response = rutinaRepository.agregarDiaARutina(rutinaId, request)) {
                     is ApiResponse.Success -> {
                         val clienteId = rutinaRepository.session.getClienteId()
                         loadRutinas(clienteId)
@@ -269,7 +269,7 @@ class RutinaViewModel @Inject constructor(
                     descanso_segundos = descanso
                 )
 
-                when (val response = rutinaRepository.agregarEjercicioADia(rutinaId, diaIndex, "Bearer $token", request)) {
+                when (val response = rutinaRepository.agregarEjercicioADia(rutinaId, diaIndex, request)) {
                     is ApiResponse.Success -> {
                         val clienteId = rutinaRepository.session.getClienteId()
                         loadRutinas(clienteId)
@@ -302,7 +302,7 @@ class RutinaViewModel @Inject constructor(
                 }
 
                 val request = ModificarRutinaRequest(publica = isPublica)
-                when (val response = rutinaRepository.modificarRutina(rutinaId, "Bearer $token", request)) {
+                when (val response = rutinaRepository.modificarRutina(rutinaId, request)) {
                     is ApiResponse.Success -> {
                         rutinas = rutinas.map { if (it.id == rutinaId) it.copy(publica = isPublica) else it }
                         onResult(true, null)
@@ -325,7 +325,7 @@ class RutinaViewModel @Inject constructor(
             try {
                 val token = rutinaRepository.session.getToken() ?: return@launch
                 val request = ModificarRutinaRequest(nombre = nombre)
-                when (val response = rutinaRepository.modificarRutina(rutinaId, "Bearer $token", request)) {
+                when (val response = rutinaRepository.modificarRutina(rutinaId, request)) {
                     is ApiResponse.Success -> {
                         rutinas = rutinas.map { if (it.id == rutinaId) it.copy(nombre = nombre) else it }
                         onResult(true, null)
@@ -347,7 +347,7 @@ class RutinaViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val token = rutinaRepository.session.getToken() ?: return@launch
-                when (val response = rutinaRepository.eliminarRutina(rutinaId, "Bearer $token")) {
+                when (val response = rutinaRepository.eliminarRutina(rutinaId)) {
                     is ApiResponse.Success -> {
                         rutinas = rutinas.filterNot { it.id == rutinaId }
                         onResult(true, null)
@@ -369,7 +369,7 @@ class RutinaViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val token = rutinaRepository.session.getToken() ?: return@launch
-                when (val response = rutinaRepository.eliminarDia(rutinaId, diaIndex, "Bearer $token")) {
+                when (val response = rutinaRepository.eliminarDia(rutinaId, diaIndex)) {
                     is ApiResponse.Success -> {
                         val clienteId = rutinaRepository.session.getClienteId()
                         loadRutinas(clienteId)
@@ -392,7 +392,7 @@ class RutinaViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val token = rutinaRepository.session.getToken() ?: return@launch
-                when (val response = rutinaRepository.eliminarEjercicio(rutinaId, diaIndex, ejercicioIndex, "Bearer $token")) {
+                when (val response = rutinaRepository.eliminarEjercicio(rutinaId, diaIndex, ejercicioIndex)) {
                     is ApiResponse.Success -> {
                         val clienteId = rutinaRepository.session.getClienteId()
                         loadRutinas(clienteId)
@@ -424,7 +424,7 @@ class RutinaViewModel @Inject constructor(
                         return@withContext Pair(false, "No hay sesión activa")
                     }
 
-                    when (val response = rutinaRepository.obtenerRutinaPorId(rutinaId, "Bearer $token")) {
+                    when (val response = rutinaRepository.obtenerRutinaPorId(rutinaId)) {
                         is ApiResponse.Success -> {
                             val request = CrearRutinaRequest(
                                 nombre = response.data.nombre,
@@ -433,7 +433,7 @@ class RutinaViewModel @Inject constructor(
                                 activa = true,
                                 publica = false
                             )
-                            when (val cloneResponse = rutinaRepository.crearRutina("Bearer $token", request)) {
+                            when (val cloneResponse = rutinaRepository.crearRutina(request)) {
                                 is ApiResponse.Success -> {
                                     loadRutinas(clienteId)
                                     Pair(true, null)
@@ -474,7 +474,7 @@ class RutinaViewModel @Inject constructor(
                     return@launch
                 }
                 
-                when (val response = rutinaRepository.obtenerHistorialEntrenamientos(clienteId, "Bearer $token")) {
+                when (val response = rutinaRepository.obtenerHistorialEntrenamientos(clienteId)) {
                     is ApiResponse.Success -> {
                         Log.d("HISTORIAL", "Historial obtenido: ${response.data.size}")
                         historialEntrenamientos = response.data

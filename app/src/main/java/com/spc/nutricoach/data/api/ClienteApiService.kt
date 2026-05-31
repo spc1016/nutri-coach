@@ -8,19 +8,16 @@ import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.DELETE
 import retrofit2.http.Path
-import retrofit2.http.Header
 
 interface ClienteApiService {
     @GET("clientes/{id}")
     suspend fun obtenerCliente(
-        @Path("id") clienteId: String,
-        @Header("Authorization") token: String
+        @Path("id") clienteId: String
     ): Cliente
 
     @PUT("clientes/{id}")
     suspend fun modificarCliente(
         @Path("id") clienteId: String,
-        @Header("Authorization") token: String,
         @Body request: ModificarClienteRequest
     )
 
@@ -29,14 +26,12 @@ interface ClienteApiService {
 
     @POST("clientes/{id}/seguir")
     suspend fun seguirUsuario(
-        @Path("id") userId: String,
-        @Header("Authorization") token: String
+        @Path("id") userId: String
     )
 
     @DELETE("clientes/{id}/seguir")
     suspend fun dejarDeSeguirUsuario(
-        @Path("id") userId: String,
-        @Header("Authorization") token: String
+        @Path("id") userId: String
     )
 
     @GET("clientes/{id}/seguidores")

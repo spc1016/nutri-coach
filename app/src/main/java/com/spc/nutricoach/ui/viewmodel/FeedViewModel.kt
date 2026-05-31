@@ -163,7 +163,7 @@ class FeedViewModel @Inject constructor(
                     dietaId = dietaId,
                     imagenUrl = imagenUrl
                 ) // Wait, CrearPostRequest has texto and optional routine
-                when (val response = comunidadRepository.crearPost("Bearer $token", request)) {
+                when (val response = comunidadRepository.crearPost(request)) {
                     is ApiResponse.Success -> {
                         cargarPosts(force = true)
                         withContext(Dispatchers.Main) {
@@ -262,7 +262,7 @@ class FeedViewModel @Inject constructor(
                     imagenUrl = finalImageUrl
                 )
                 
-                when (val response = comunidadRepository.crearPost("Bearer $token", request)) {
+                when (val response = comunidadRepository.crearPost(request)) {
                     is ApiResponse.Success -> {
                         cargarPosts(force = true)
                         withContext(Dispatchers.Main) {
@@ -312,7 +312,7 @@ class FeedViewModel @Inject constructor(
                 }
 
                 val result = withContext(Dispatchers.IO) {
-                    comunidadRepository.toggleLikePost(postId, "Bearer $token")
+                    comunidadRepository.toggleLikePost(postId)
                 }
 
                 if (result !is ApiResponse.Success) {
@@ -340,7 +340,7 @@ class FeedViewModel @Inject constructor(
                     return@launch
                 }
                 val request = ComentarioRequest(texto = texto)
-                when (val response = comunidadRepository.comentarPost(postId, "Bearer $token", request)) {
+                when (val response = comunidadRepository.comentarPost(postId, request)) {
                     is ApiResponse.Success -> {
                         // Pequeña pausa para asegurar la propagación de escritura en MongoDB Atlas
                         kotlinx.coroutines.delay(400)
@@ -395,14 +395,14 @@ class FeedViewModel @Inject constructor(
 
                 val isFollowing = seguidosIds.contains(userId)
                 if (isFollowing) {
-                    when (authRepository.dejarDeSeguirUsuario(userId, "Bearer $token")) {
+                    when (authRepository.dejarDeSeguirUsuario(userId)) {
                         is ApiResponse.Success -> {
                             seguidosIds = seguidosIds - userId
                         }
                         else -> {}
                     }
                 } else {
-                    when (authRepository.seguirUsuario(userId, "Bearer $token")) {
+                    when (authRepository.seguirUsuario(userId)) {
                         is ApiResponse.Success -> {
                             seguidosIds = seguidosIds + userId
                         }

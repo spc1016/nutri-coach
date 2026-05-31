@@ -29,13 +29,8 @@ class UsuariosViewModel @Inject constructor(
     ) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val token = authRepository.session.getToken()
-                if (token.isNullOrBlank()) {
-                    onResult(null, null)
-                    return@launch
-                }
-                val clientResponse = authRepository.obtenerCliente(clienteId, "Bearer $token")
-                val routinesResponse = rutinaRepository.obtenerRutinasCliente(clienteId, "Bearer $token")
+                val clientResponse = authRepository.obtenerCliente(clienteId)
+                val routinesResponse = rutinaRepository.obtenerRutinasCliente(clienteId)
                 
                 val cliente = (clientResponse as? ApiResponse.Success)?.data
                 val rutinas = (routinesResponse as? ApiResponse.Success)?.data
@@ -111,22 +106,19 @@ class UsuariosViewModel @Inject constructor(
     fun toggleFollow(usuarioId: String) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val token = authRepository.session.getToken()
-                if (token != null) {
-                    if (myFollowingIds.contains(usuarioId)) {
-                        when (authRepository.dejarDeSeguirUsuario(usuarioId, "Bearer $token")) {
-                            is ApiResponse.Success -> {
-                                myFollowingIds = myFollowingIds - usuarioId
-                            }
-                            else -> {}
+                if (myFollowingIds.contains(usuarioId)) {
+                    when (authRepository.dejarDeSeguirUsuario(usuarioId)) {
+                        is ApiResponse.Success -> {
+                            myFollowingIds = myFollowingIds - usuarioId
                         }
-                    } else {
-                        when (authRepository.seguirUsuario(usuarioId, "Bearer $token")) {
-                            is ApiResponse.Success -> {
-                                myFollowingIds = myFollowingIds + usuarioId
-                            }
-                            else -> {}
+                        else -> {}
+                    }
+                } else {
+                    when (authRepository.seguirUsuario(usuarioId)) {
+                        is ApiResponse.Success -> {
+                            myFollowingIds = myFollowingIds + usuarioId
                         }
+                        else -> {}
                     }
                 }
             } catch (e: Exception) {

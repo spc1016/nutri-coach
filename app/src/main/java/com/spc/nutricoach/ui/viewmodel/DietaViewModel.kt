@@ -67,7 +67,7 @@ class DietaViewModel @Inject constructor(
                 return
             }
             
-            when (val response = dietaRepository.obtenerDietasCliente(clienteId, "Bearer $token")) {
+            when (val response = dietaRepository.obtenerDietasCliente(clienteId)) {
                 is ApiResponse.Success -> {
                     Log.d("DIETAS", "Dietas obtenidas: ${response.data.size}")
                     dietas = response.data
@@ -127,7 +127,7 @@ class DietaViewModel @Inject constructor(
                     return@launch
                 }
                 
-                when (val response = dietaRepository.obtenerDietasPublicas("Bearer $token")) {
+                when (val response = dietaRepository.obtenerDietasPublicas()) {
                     is ApiResponse.Success -> {
                         Log.d("DIETAS_PUBLICAS", "Dietas públicas obtenidas: ${response.data.size}")
                         dietasPublicas = response.data
@@ -162,7 +162,7 @@ class DietaViewModel @Inject constructor(
                 if (token.isNullOrBlank()) return@launch
 
                 isLoading = true
-                when (val response = dietaRepository.obtenerDietaPorId(dietaId, "Bearer $token")) {
+                when (val response = dietaRepository.obtenerDietaPorId(dietaId)) {
                     is ApiResponse.Success -> {
                         dietasPublicas = dietasPublicas + response.data
                     }
@@ -189,7 +189,7 @@ class DietaViewModel @Inject constructor(
                         return@withContext Pair(false, "No hay sesión activa")
                     }
 
-                    when (val response = dietaRepository.obtenerDietaPorId(dietaId, "Bearer $token")) {
+                    when (val response = dietaRepository.obtenerDietaPorId(dietaId)) {
                         is ApiResponse.Success -> {
                             val request = CrearDietaRequest(
                                 nombre = response.data.nombre,
@@ -199,7 +199,7 @@ class DietaViewModel @Inject constructor(
                                 activa = true,
                                 publica = false
                             )
-                            when (val cloneResponse = dietaRepository.crearDieta("Bearer $token", request)) {
+                            when (val cloneResponse = dietaRepository.crearDieta(request)) {
                                 is ApiResponse.Success -> {
                                     loadDietas(clienteId)
                                     Pair(true, null)
@@ -239,7 +239,7 @@ class DietaViewModel @Inject constructor(
                     cliente_id = clienteId
                 )
 
-                when (val response = dietaRepository.crearDieta("Bearer $token", request)) {
+                when (val response = dietaRepository.crearDieta(request)) {
                     is ApiResponse.Success -> {
                         loadDietas(clienteId)
                         onResult(true, null)
@@ -267,7 +267,7 @@ class DietaViewModel @Inject constructor(
                 }
 
                 val request = AgregarComidaRequest(nombre = nombre)
-                when (val response = dietaRepository.agregarComidaADieta(dietaId, "Bearer $token", request)) {
+                when (val response = dietaRepository.agregarComidaADieta(dietaId, request)) {
                     is ApiResponse.Success -> {
                         val clienteId = dietaRepository.session.getClienteId()
                         loadDietas(clienteId)
@@ -309,7 +309,7 @@ class DietaViewModel @Inject constructor(
                     unidad = unidad
                 )
 
-                when (val response = dietaRepository.agregarAlimentoAComida(dietaId, comidaIndex, "Bearer $token", request)) {
+                when (val response = dietaRepository.agregarAlimentoAComida(dietaId, comidaIndex, request)) {
                     is ApiResponse.Success -> {
                         val clienteId = dietaRepository.session.getClienteId()
                         loadDietas(clienteId)
@@ -342,7 +342,7 @@ class DietaViewModel @Inject constructor(
                 }
 
                 val request = ModificarDietaRequest(publica = isPublica)
-                when (val response = dietaRepository.modificarDieta(dietaId, "Bearer $token", request)) {
+                when (val response = dietaRepository.modificarDieta(dietaId, request)) {
                     is ApiResponse.Success -> {
                         dietas = dietas.map { if (it.id == dietaId) it.copy(publica = isPublica) else it }
                         onResult(true, null)
@@ -365,7 +365,7 @@ class DietaViewModel @Inject constructor(
             try {
                 val token = dietaRepository.session.getToken() ?: return@launch
                 val request = ModificarDietaRequest(nombre = nombre)
-                when (val response = dietaRepository.modificarDieta(dietaId, "Bearer $token", request)) {
+                when (val response = dietaRepository.modificarDieta(dietaId, request)) {
                     is ApiResponse.Success -> {
                         dietas = dietas.map { if (it.id == dietaId) it.copy(nombre = nombre) else it }
                         onResult(true, null)
@@ -387,7 +387,7 @@ class DietaViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val token = dietaRepository.session.getToken() ?: return@launch
-                when (val response = dietaRepository.eliminarDieta(dietaId, "Bearer $token")) {
+                when (val response = dietaRepository.eliminarDieta(dietaId)) {
                     is ApiResponse.Success -> {
                         dietas = dietas.filterNot { it.id == dietaId }
                         onResult(true, null)
@@ -409,7 +409,7 @@ class DietaViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val token = dietaRepository.session.getToken() ?: return@launch
-                when (val response = dietaRepository.eliminarComida(dietaId, comidaIndex, "Bearer $token")) {
+                when (val response = dietaRepository.eliminarComida(dietaId, comidaIndex)) {
                     is ApiResponse.Success -> {
                         val clienteId = dietaRepository.session.getClienteId()
                         loadDietas(clienteId)
@@ -432,7 +432,7 @@ class DietaViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val token = dietaRepository.session.getToken() ?: return@launch
-                when (val response = dietaRepository.eliminarAlimento(dietaId, comidaIndex, alimentoIndex, "Bearer $token")) {
+                when (val response = dietaRepository.eliminarAlimento(dietaId, comidaIndex, alimentoIndex)) {
                     is ApiResponse.Success -> {
                         val clienteId = dietaRepository.session.getClienteId()
                         loadDietas(clienteId)

@@ -10,7 +10,6 @@ import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.DELETE
 import retrofit2.http.Path
-import retrofit2.http.Header
 import retrofit2.http.Query
 
 interface ComunidadApiService {
@@ -27,27 +26,23 @@ interface ComunidadApiService {
 
     @POST("posts")
     suspend fun crearPost(
-        @Header("Authorization") token: String,
         @Body request: CrearPostRequest
     ): RegistroApiResponse
 
     @POST("posts/{id}/like")
     suspend fun toggleLikePost(
-        @Path("id") postId: String,
-        @Header("Authorization") token: String
+        @Path("id") postId: String
     ): ToggleLikeResponse
 
     @POST("posts/{id}/comentarios")
     suspend fun comentarPost(
         @Path("id") postId: String,
-        @Header("Authorization") token: String,
         @Body request: ComentarioRequest
     )
 
     @DELETE("posts/{id}/comentarios/{comentario_index}")
     suspend fun eliminarComentario(
         @Path("id") postId: String,
-        @Path("comentario_index") comentarioIndex: Int,
-        @Header("Authorization") token: String
+        @Path("comentario_index") comentarioIndex: Int
     )
 }

@@ -70,17 +70,16 @@ class EntrenamientoViewModel @Inject constructor(
             isSavingLog = true
             saveLogError = null
             try {
-                val token = rutinaRepository.session.getToken()
                 val clienteId = rutinaRepository.session.getClienteId()
-                if (token.isNullOrBlank() || clienteId.isNullOrBlank()) {
-                    saveLogError = "No se encontró sesión o ID de cliente"
+                if (clienteId.isNullOrBlank()) {
+                    saveLogError = "No se encontró ID de cliente"
                     onComplete(false)
                     return@launch
                 }
                 
                 val log = WorkoutManager.getEntrenamientoLog(rutinaNombre, diaNombre)
                 
-                when (val response = rutinaRepository.registrarEntrenamiento(clienteId, "Bearer $token", log)) {
+                when (val response = rutinaRepository.registrarEntrenamiento(clienteId, log)) {
                     is ApiResponse.Success -> {
                         onComplete(true)
                     }

@@ -53,10 +53,9 @@ class PerfilUsuarioViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val clienteId = authRepository.session.getClienteId()
-                val token = authRepository.session.getToken()
                 
-                if (clienteId != null && token != null) {
-                    when (val response = authRepository.obtenerCliente(clienteId, "Bearer $token")) {
+                if (clienteId != null) {
+                    when (val response = authRepository.obtenerCliente(clienteId)) {
                         is ApiResponse.Success -> {
                             val cliente = response.data
                             nombre = cliente.nombre
@@ -103,7 +102,6 @@ class PerfilUsuarioViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val clienteId = authRepository.session.getClienteId() ?: throw Exception("ID de cliente no encontrado")
-                val token = authRepository.session.getToken() ?: throw Exception("Token de autenticación no encontrado")
 
                 val request = ModificarClienteRequest(
                     nombre = nombre,
@@ -116,7 +114,7 @@ class PerfilUsuarioViewModel @Inject constructor(
                     genero = null // No editamos el genero en este perfil pero mandamos null
                 )
 
-                when (val response = authRepository.modificarCliente(clienteId, "Bearer $token", request)) {
+                when (val response = authRepository.modificarCliente(clienteId, request)) {
                     is ApiResponse.Success -> {
                         // Actualizar el correo electrónico en SessionManager si fue cambiado
                         val currentRole = authRepository.session.getRole() ?: "cliente"
@@ -166,9 +164,7 @@ class PerfilUsuarioViewModel @Inject constructor(
     fun dejarDeSeguir(usuarioId: String) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val token = authRepository.session.getToken()
-                if (token != null) {
-                    when (authRepository.dejarDeSeguirUsuario(usuarioId, "Bearer $token")) {
+                    when (authRepository.dejarDeSeguirUsuario(usuarioId)) {
                         is ApiResponse.Success -> {
                             // Update lists locally
                             seguidosList = seguidosList.filter { it.id != usuarioId }
@@ -176,7 +172,7 @@ class PerfilUsuarioViewModel @Inject constructor(
                         }
                         else -> {}
                     }
-                }
+                
             } catch (e: Exception) {
                 Log.e("PERFIL_API", "Error al dejar de seguir: ${e.message}")
             }

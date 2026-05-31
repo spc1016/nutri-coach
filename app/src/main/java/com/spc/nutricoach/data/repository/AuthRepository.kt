@@ -29,24 +29,24 @@ class AuthRepository @Inject constructor(
         authApiService.resendCode(request)
     }
 
-    suspend fun obtenerCliente(clienteId: String, token: String): ApiResponse<Cliente> = safeApiCall {
-        clienteApiService.obtenerCliente(clienteId, token)
+    suspend fun obtenerCliente(clienteId: String): ApiResponse<Cliente> = safeApiCall {
+        clienteApiService.obtenerCliente(clienteId)
     }
 
-    suspend fun modificarCliente(clienteId: String, token: String, request: ModificarClienteRequest): ApiResponse<Unit> = safeApiCall {
-        clienteApiService.modificarCliente(clienteId, token, request)
+    suspend fun modificarCliente(clienteId: String, request: ModificarClienteRequest): ApiResponse<Unit> = safeApiCall {
+        clienteApiService.modificarCliente(clienteId, request)
     }
 
     suspend fun obtenerTodosClientes(): ApiResponse<List<Cliente>> = safeApiCall {
         clienteApiService.obtenerTodosClientes()
     }
 
-    suspend fun seguirUsuario(userId: String, token: String): ApiResponse<Unit> = safeApiCall {
-        clienteApiService.seguirUsuario(userId, token)
+    suspend fun seguirUsuario(userId: String): ApiResponse<Unit> = safeApiCall {
+        clienteApiService.seguirUsuario(userId)
     }
 
-    suspend fun dejarDeSeguirUsuario(userId: String, token: String): ApiResponse<Unit> = safeApiCall {
-        clienteApiService.dejarDeSeguirUsuario(userId, token)
+    suspend fun dejarDeSeguirUsuario(userId: String): ApiResponse<Unit> = safeApiCall {
+        clienteApiService.dejarDeSeguirUsuario(userId)
     }
 
     suspend fun obtenerSeguidores(userId: String): ApiResponse<List<Cliente>> = safeApiCall {

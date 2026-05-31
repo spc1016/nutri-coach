@@ -11,44 +11,44 @@ class DietaRepository @Inject constructor(
     private val dietaApiService: DietaApiService,
     private val sessionManager: SessionManager
 ) {
-    suspend fun obtenerDietasCliente(clienteId: String, token: String): ApiResponse<List<Dieta>> = safeApiCall {
-        dietaApiService.obtenerDietasCliente(clienteId, token)
+    suspend fun obtenerDietasCliente(clienteId: String): ApiResponse<List<Dieta>> = safeApiCall {
+        dietaApiService.obtenerDietasCliente(clienteId)
     }
 
-    suspend fun obtenerDietasPublicas(token: String): ApiResponse<List<Dieta>> = safeApiCall {
-        dietaApiService.obtenerDietasPublicas(token)
+    suspend fun obtenerDietasPublicas(): ApiResponse<List<Dieta>> = safeApiCall {
+        dietaApiService.obtenerDietasPublicas()
     }
 
-    suspend fun obtenerDietaPorId(dietaId: String, token: String): ApiResponse<Dieta> = safeApiCall {
-        dietaApiService.obtenerDietaPorId(dietaId, token)
+    suspend fun obtenerDietaPorId(dietaId: String): ApiResponse<Dieta> = safeApiCall {
+        dietaApiService.obtenerDietaPorId(dietaId)
     }
 
-    suspend fun crearDieta(token: String, request: CrearDietaRequest): ApiResponse<CrearDietaResponse> = safeApiCall {
-        dietaApiService.crearDieta(token, request)
+    suspend fun crearDieta(request: CrearDietaRequest): ApiResponse<CrearDietaResponse> = safeApiCall {
+        dietaApiService.crearDieta(request)
     }
 
-    suspend fun modificarDieta(dietaId: String, token: String, request: ModificarDietaRequest): ApiResponse<Unit> = safeApiCall {
-        dietaApiService.modificarDieta(dietaId, token, request)
+    suspend fun modificarDieta(dietaId: String, request: ModificarDietaRequest): ApiResponse<Unit> = safeApiCall {
+        dietaApiService.modificarDieta(dietaId, request)
     }
 
-    suspend fun eliminarDieta(dietaId: String, token: String): ApiResponse<Unit> = safeApiCall {
-        dietaApiService.eliminarDieta(dietaId, token)
+    suspend fun eliminarDieta(dietaId: String): ApiResponse<Unit> = safeApiCall {
+        dietaApiService.eliminarDieta(dietaId)
     }
 
-    suspend fun agregarComidaADieta(dietaId: String, token: String, request: AgregarComidaRequest): ApiResponse<Unit> = safeApiCall {
-        dietaApiService.agregarComidaADieta(dietaId, token, request)
+    suspend fun agregarComidaADieta(dietaId: String, request: AgregarComidaRequest): ApiResponse<Unit> = safeApiCall {
+        dietaApiService.agregarComidaADieta(dietaId, request)
     }
 
-    suspend fun agregarAlimentoAComida(dietaId: String, comidaIndex: Int, token: String, request: AgregarAlimentoRequest): ApiResponse<Unit> = safeApiCall {
-        dietaApiService.agregarAlimentoAComida(dietaId, comidaIndex, token, request)
+    suspend fun agregarAlimentoAComida(dietaId: String, comidaIndex: Int, request: AgregarAlimentoRequest): ApiResponse<Unit> = safeApiCall {
+        dietaApiService.agregarAlimentoAComida(dietaId, comidaIndex, request)
     }
 
-    suspend fun eliminarComida(dietaId: String, comidaIndex: Int, token: String): ApiResponse<Unit> = safeApiCall {
-        dietaApiService.eliminarComida(dietaId, comidaIndex, token)
+    suspend fun eliminarComida(dietaId: String, comidaIndex: Int): ApiResponse<Unit> = safeApiCall {
+        dietaApiService.eliminarComida(dietaId, comidaIndex)
     }
 
-    suspend fun eliminarAlimento(dietaId: String, comidaIndex: Int, alimentoIndex: Int, token: String): ApiResponse<Unit> = safeApiCall {
-        dietaApiService.eliminarAlimento(dietaId, comidaIndex, alimentoIndex, token)
+    suspend fun eliminarAlimento(dietaId: String, comidaIndex: Int, alimentoIndex: Int): ApiResponse<Unit> = safeApiCall {
+        dietaApiService.eliminarAlimento(dietaId, comidaIndex, alimentoIndex)
     }
 
     val session = sessionManager

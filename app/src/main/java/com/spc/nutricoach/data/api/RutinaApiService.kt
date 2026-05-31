@@ -14,49 +14,40 @@ import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.DELETE
 import retrofit2.http.Path
-import retrofit2.http.Header
 
 interface RutinaApiService {
     @GET("clientes/{id}/rutinas-activas")
     suspend fun obtenerRutinasCliente(
-        @Path("id") clienteId: String,
-        @Header("Authorization") token: String
+        @Path("id") clienteId: String
     ): List<Rutina>
 
     @POST("clientes/{id}/historial-entrenamientos")
     suspend fun registrarEntrenamiento(
         @Path("id") clienteId: String,
-        @Header("Authorization") token: String,
         @Body request: EntrenamientoLog
     ): RegistroApiResponse
 
     @GET("clientes/{id}/historial-entrenamientos")
     suspend fun obtenerHistorialEntrenamientos(
-        @Path("id") clienteId: String,
-        @Header("Authorization") token: String
+        @Path("id") clienteId: String
     ): List<EntrenamientoLog>
 
     @GET("rutinas/publicas")
-    suspend fun obtenerRutinasPublicas(
-        @Header("Authorization") token: String
-    ): List<Rutina>
+    suspend fun obtenerRutinasPublicas(): List<Rutina>
 
     @GET("rutinas/{id}")
     suspend fun obtenerRutinaPorId(
-        @Path("id") rutinaId: String,
-        @Header("Authorization") token: String
+        @Path("id") rutinaId: String
     ): Rutina
 
     @POST("rutinas")
     suspend fun crearRutina(
-        @Header("Authorization") token: String,
         @Body request: CrearRutinaRequest
     ): CrearRutinaResponse
 
     @POST("rutinas/{id}/dias")
     suspend fun agregarDiaARutina(
         @Path("id") rutinaId: String,
-        @Header("Authorization") token: String,
         @Body request: AgregarDiaRequest
     )
 
@@ -64,35 +55,30 @@ interface RutinaApiService {
     suspend fun agregarEjercicioADia(
         @Path("id") rutinaId: String,
         @Path("dia_index") diaIndex: Int,
-        @Header("Authorization") token: String,
         @Body request: AgregarEjercicioRequest
     )
 
     @PUT("rutinas/{id}")
     suspend fun modificarRutina(
         @Path("id") rutinaId: String,
-        @Header("Authorization") token: String,
         @Body request: ModificarRutinaRequest
     )
 
     @DELETE("rutinas/{id}")
     suspend fun eliminarRutina(
-        @Path("id") rutinaId: String,
-        @Header("Authorization") token: String
+        @Path("id") rutinaId: String
     )
 
     @DELETE("rutinas/{id}/dias/{dia_index}")
     suspend fun eliminarDia(
         @Path("id") rutinaId: String,
-        @Path("dia_index") diaIndex: Int,
-        @Header("Authorization") token: String
+        @Path("dia_index") diaIndex: Int
     )
 
     @DELETE("rutinas/{id}/dias/{dia_index}/ejercicios/{ejercicio_index}")
     suspend fun eliminarEjercicio(
         @Path("id") rutinaId: String,
         @Path("dia_index") diaIndex: Int,
-        @Path("ejercicio_index") ejercicioIndex: Int,
-        @Header("Authorization") token: String
+        @Path("ejercicio_index") ejercicioIndex: Int
     )
 }

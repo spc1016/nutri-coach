@@ -12,49 +12,40 @@ import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.DELETE
 import retrofit2.http.Path
-import retrofit2.http.Header
 
 interface DietaApiService {
     @GET("clientes/{id}/dietas-activas")
     suspend fun obtenerDietasCliente(
-        @Path("id") clienteId: String,
-        @Header("Authorization") token: String
+        @Path("id") clienteId: String
     ): List<Dieta>
 
     @GET("dietas/publicas")
-    suspend fun obtenerDietasPublicas(
-        @Header("Authorization") token: String
-    ): List<Dieta>
+    suspend fun obtenerDietasPublicas(): List<Dieta>
 
     @GET("dietas/{id}")
     suspend fun obtenerDietaPorId(
-        @Path("id") dietaId: String,
-        @Header("Authorization") token: String
+        @Path("id") dietaId: String
     ): Dieta
 
     @POST("dietas")
     suspend fun crearDieta(
-        @Header("Authorization") token: String,
         @Body request: CrearDietaRequest
     ): CrearDietaResponse
 
     @PUT("dietas/{id}")
     suspend fun modificarDieta(
         @Path("id") dietaId: String,
-        @Header("Authorization") token: String,
         @Body request: ModificarDietaRequest
     )
 
     @DELETE("dietas/{id}")
     suspend fun eliminarDieta(
-        @Path("id") dietaId: String,
-        @Header("Authorization") token: String
+        @Path("id") dietaId: String
     )
 
     @POST("dietas/{id}/comidas")
     suspend fun agregarComidaADieta(
         @Path("id") dietaId: String,
-        @Header("Authorization") token: String,
         @Body request: AgregarComidaRequest
     )
 
@@ -62,22 +53,19 @@ interface DietaApiService {
     suspend fun agregarAlimentoAComida(
         @Path("id") dietaId: String,
         @Path("comida_index") comidaIndex: Int,
-        @Header("Authorization") token: String,
         @Body request: AgregarAlimentoRequest
     )
 
     @DELETE("dietas/{id}/comidas/{comida_index}")
     suspend fun eliminarComida(
         @Path("id") dietaId: String,
-        @Path("comida_index") comidaIndex: Int,
-        @Header("Authorization") token: String
+        @Path("comida_index") comidaIndex: Int
     )
 
     @DELETE("dietas/{id}/comidas/{comida_index}/alimentos/{alimento_index}")
     suspend fun eliminarAlimento(
         @Path("id") dietaId: String,
         @Path("comida_index") comidaIndex: Int,
-        @Path("alimento_index") alimentoIndex: Int,
-        @Header("Authorization") token: String
+        @Path("alimento_index") alimentoIndex: Int
     )
 }
