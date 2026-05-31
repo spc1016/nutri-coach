@@ -103,24 +103,14 @@ fun PersonalView(
     val email by sessionManager.userEmailFlow.collectAsState(initial = "")
     val letraInicial = email?.firstOrNull()?.uppercase() ?: "U"
 
-    var selectedTabIndex by rememberSaveable { mutableStateOf(0) }
     val tabs = listOf("Dietas", "Rutinas", "Seguimiento")
 
     val pagerState = rememberPagerState(
-        initialPage = selectedTabIndex,
+        initialPage = 0,
         pageCount = { tabs.size }
     )
     val coroutineScope = rememberCoroutineScope()
-
-    LaunchedEffect(pagerState.currentPage) {
-        selectedTabIndex = pagerState.currentPage
-    }
-
-    LaunchedEffect(selectedTabIndex) {
-        if (pagerState.currentPage != selectedTabIndex) {
-            pagerState.animateScrollToPage(selectedTabIndex)
-        }
-    }
+    val selectedTabIndex = pagerState.currentPage
 
     var showCrearRutinaDialog by remember { mutableStateOf(false) }
     var showCrearDietaDialog by remember { mutableStateOf(false) }
@@ -219,7 +209,6 @@ fun PersonalView(
                         Tab(
                             selected = selectedTabIndex == index,
                             onClick = { 
-                                selectedTabIndex = index
                                 coroutineScope.launch {
                                     pagerState.animateScrollToPage(index)
                                 }
