@@ -21,7 +21,7 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
 
-    private const val BASE_URL = "https://api-nutri-coach.onrender.com/"
+    private val BASE_URL = com.spc.nutricoach.BuildConfig.BASE_URL
 
     @Provides
     @Singleton

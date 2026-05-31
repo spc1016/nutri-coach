@@ -1,3 +1,6 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -22,6 +25,14 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        val localProperties = Properties()
+        val localPropertiesFile = rootProject.file("local.properties")
+        if (localPropertiesFile.exists()) {
+            localProperties.load(FileInputStream(localPropertiesFile))
+        }
+        val baseUrl = localProperties.getProperty("BASE_URL") ?: "\"https://api-nutri-coach.onrender.com/\""
+        buildConfigField("String", "BASE_URL", baseUrl)
     }
 
     buildTypes {
@@ -39,6 +50,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
