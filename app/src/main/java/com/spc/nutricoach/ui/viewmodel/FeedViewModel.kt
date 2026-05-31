@@ -56,45 +56,77 @@ class FeedViewModel @Inject constructor(
         private set
 
     private var ultimoCursor: String? = null
+    private var cargando = false // Flag interno para evitar cargas concurrentes
 
     fun cargarPosts(force: Boolean = false) {
-        viewModelScope.launch(Dispatchers.IO) {
-            if (!force && posts.isNotEmpty()) {
-                return@launch
-            }
+        viewModelScope.launch {
+            if (cargando) return@launch
+            if (!force && posts.isNotEmpty()) return@launch
+
+            cargando = true
             if (force) {
                 posts = emptyList()
                 ultimoCursor = null
                 hasMorePosts = true
             }
-            if (!force && (isLoading || !hasMorePosts)) {
-                return@launch
-            }
-            
             isLoading = true
             error = null
-            
+
             val limit = 10
-            when (val response = comunidadRepository.obtenerPosts(limit = limit, cursor = ultimoCursor)) {
+            val result = withContext(Dispatchers.IO) {
+                comunidadRepository.obtenerPosts(limit = limit, cursor = null)
+            }
+            when (result) {
                 is ApiResponse.Success -> {
-                    val nuevosPosts = response.data
-                    if (nuevosPosts.size < limit) {
-                        hasMorePosts = false
-                    }
-                    posts = if (force) nuevosPosts else posts + nuevosPosts
+                    val nuevosPosts = result.data
+                    posts = nuevosPosts
                     ultimoCursor = nuevosPosts.lastOrNull()?.fechaCreacion
+                    hasMorePosts = nuevosPosts.size >= limit
                     error = null
                 }
                 is ApiResponse.Error -> {
-                    error = "Error del servidor (${response.code})"
-                    Log.e("FeedViewModel", "HTTP Exception: ${response.message}")
+                    error = "Error del servidor (${result.code})"
+                    Log.e("FeedViewModel", "HTTP Exception: ${result.message}")
                 }
                 is ApiResponse.Exception -> {
                     error = "Error de conexión"
-                    Log.e("FeedViewModel", "IO Exception", response.throwable)
+                    Log.e("FeedViewModel", "IO Exception", result.throwable)
                 }
             }
             isLoading = false
+            cargando = false
+        }
+    }
+
+    fun cargarMasPosts() {
+        viewModelScope.launch {
+            if (cargando || !hasMorePosts || posts.isEmpty()) return@launch
+
+            cargando = true
+            isLoading = true
+
+            val limit = 10
+            val result = withContext(Dispatchers.IO) {
+                comunidadRepository.obtenerPosts(limit = limit, cursor = ultimoCursor)
+            }
+            when (result) {
+                is ApiResponse.Success -> {
+                    val nuevosPosts = result.data
+                    if (nuevosPosts.isNotEmpty()) {
+                        posts = posts + nuevosPosts
+                        ultimoCursor = nuevosPosts.lastOrNull()?.fechaCreacion
+                    }
+                    hasMorePosts = nuevosPosts.size >= limit
+                }
+                is ApiResponse.Error -> {
+                    Log.e("FeedViewModel", "Error loading more: ${result.message}")
+                }
+                is ApiResponse.Exception -> {
+                    Log.e("FeedViewModel", "Connection error loading more", result.throwable)
+                }
+            }
+            isLoading = false
+            cargando = false
         }
     }
 
@@ -103,7 +135,9 @@ class FeedViewModel @Inject constructor(
             when (val response = comunidadRepository.obtenerPost(postId)) {
                 is ApiResponse.Success -> {
                     val updatedPost = response.data
-                    posts = posts.map { if (it.id == postId) updatedPost else it }
+                    withContext(Dispatchers.Main) {
+                        posts = posts.map { if (it.id == postId) updatedPost else it }
+                    }
                 }
                 is ApiResponse.Error -> {
                     Log.e("FeedViewModel", "Error fetching single post: ${response.message}")
@@ -253,20 +287,46 @@ class FeedViewModel @Inject constructor(
         }
     }
 
-    fun toggleLike(postId: String) {
-        viewModelScope.launch(Dispatchers.IO) {
+    fun toggleLike(postId: String, currentUserId: String) {
+        // Actualización optimista INMEDIATA — sin suspensiones antes de mutar el estado
+        val post = posts.find { it.id == postId } ?: return
+        val likedBefore = post.likedBy.contains(currentUserId)
+        val newLikedBy = if (likedBefore) post.likedBy - currentUserId else post.likedBy + currentUserId
+        val newLikes = if (likedBefore) post.likes - 1 else post.likes + 1
+        posts = posts.map {
+            if (it.id == postId) it.copy(likes = newLikes, likedBy = newLikedBy) else it
+        }
+
+        // Llamada al servidor en background — si falla, revertimos
+        viewModelScope.launch {
             try {
-                val token = authRepository.session.getToken()
-                if (token.isNullOrBlank()) return@launch
-                
-                when (comunidadRepository.toggleLikePost(postId, "Bearer $token")) {
-                    is ApiResponse.Success -> {
-                        actualizarPostIndividual(postId)
+                val token = withContext(Dispatchers.IO) {
+                    authRepository.session.getToken()
+                }
+                if (token.isNullOrBlank()) {
+                    // Revertir si no hay token
+                    posts = posts.map {
+                        if (it.id == postId) it.copy(likes = post.likes, likedBy = post.likedBy) else it
                     }
-                    else -> {}
+                    return@launch
+                }
+
+                val result = withContext(Dispatchers.IO) {
+                    comunidadRepository.toggleLikePost(postId, "Bearer $token")
+                }
+
+                if (result !is ApiResponse.Success) {
+                    // Revertir si la API falla
+                    posts = posts.map {
+                        if (it.id == postId) it.copy(likes = post.likes, likedBy = post.likedBy) else it
+                    }
                 }
             } catch (e: Exception) {
                 Log.e("FEED", "Error toggling like", e)
+                // Revertir en caso de excepción
+                posts = posts.map {
+                    if (it.id == postId) it.copy(likes = post.likes, likedBy = post.likedBy) else it
+                }
             }
         }
     }
@@ -282,6 +342,8 @@ class FeedViewModel @Inject constructor(
                 val request = ComentarioRequest(texto = texto)
                 when (val response = comunidadRepository.comentarPost(postId, "Bearer $token", request)) {
                     is ApiResponse.Success -> {
+                        // Pequeña pausa para asegurar la propagación de escritura en MongoDB Atlas
+                        kotlinx.coroutines.delay(400)
                         actualizarPostIndividual(postId)
                         withContext(Dispatchers.Main) {
                             onResult(true, null)

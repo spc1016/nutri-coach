@@ -42,6 +42,7 @@ fun DetallePostView(
     val currentUserId by sessionManager.clienteIdFlow.collectAsState(initial = "")
 
     var nuevoComentario by remember { mutableStateOf("") }
+    var enviandoComentario by remember { mutableStateOf(false) }
     val post = feedViewModel.posts.find { it.id == postId }
 
     LaunchedEffect(Unit) {
@@ -93,23 +94,40 @@ fun DetallePostView(
                     Spacer(modifier = Modifier.width(8.dp))
                     IconButton(
                         onClick = {
-                            if (nuevoComentario.isNotBlank()) {
+                            if (nuevoComentario.isNotBlank() && !enviandoComentario) {
+                                enviandoComentario = true
                                 feedViewModel.comentarPost(postId, nuevoComentario) { success, _ ->
+                                    enviandoComentario = false
                                     if (success) {
                                         nuevoComentario = ""
                                     }
                                 }
                             }
                         },
+                        enabled = !enviandoComentario,
                         modifier = Modifier
                             .size(48.dp)
-                            .background(AppBrushes.MainGradient, shape = CircleShape)
+                            .then(
+                                if (enviandoComentario) {
+                                    Modifier.background(MaterialTheme.colorScheme.surfaceVariant, shape = CircleShape)
+                                } else {
+                                    Modifier.background(AppBrushes.MainGradient, shape = CircleShape)
+                                }
+                            )
                     ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.Send,
-                            contentDescription = "Enviar",
-                            tint = Color.White
-                        )
+                        if (enviandoComentario) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.Send,
+                                contentDescription = "Enviar",
+                                tint = Color.White
+                            )
+                        }
                     }
                 }
             }
@@ -131,7 +149,7 @@ fun DetallePostView(
                         PostCard(
                             post = post,
                             currentUserId = currentUserId ?: "",
-                            onLikeClick = { feedViewModel.toggleLike(post.id) },
+                            onLikeClick = { feedViewModel.toggleLike(post.id, currentUserId ?: "") },
                             onCommentClick = { /* Ya estamos aquí */ },
                             onRoutineClick = { rutinaId ->
                                 navController.navigate(PantallaDetalleRutina(rutinaId))

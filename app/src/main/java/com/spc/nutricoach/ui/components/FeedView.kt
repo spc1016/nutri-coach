@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.distinctUntilChanged
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -182,19 +183,20 @@ fun FeedView(
                 ) { page ->
                     if (page == 0) {
                         val listState = rememberLazyListState()
-                        val shouldLoadMore = remember {
-                            derivedStateOf {
+
+                        LaunchedEffect(listState) {
+                            snapshotFlow {
                                 val layoutInfo = listState.layoutInfo
                                 val totalItemsCount = layoutInfo.totalItemsCount
                                 val lastVisibleItemIndex = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
-                                totalItemsCount > 0 && lastVisibleItemIndex >= totalItemsCount - 2
+                                totalItemsCount > 0 && lastVisibleItemIndex >= totalItemsCount - 3
                             }
-                        }
-
-                        LaunchedEffect(shouldLoadMore.value) {
-                            if (shouldLoadMore.value) {
-                                feedViewModel.cargarPosts(force = false)
-                            }
+                                .distinctUntilChanged()
+                                .collect { shouldLoad ->
+                                    if (shouldLoad) {
+                                        feedViewModel.cargarMasPosts()
+                                    }
+                                }
                         }
 
                         LazyColumn(
@@ -230,11 +232,11 @@ fun FeedView(
                                 }
                             }
 
-                            items(feedViewModel.posts) { post ->
+                            items(feedViewModel.posts, key = { it.id }) { post ->
                                 PostCard(
                                     post = post,
                                     currentUserId = currentUserId ?: "",
-                                    onLikeClick = { feedViewModel.toggleLike(post.id) },
+                                    onLikeClick = { feedViewModel.toggleLike(post.id, currentUserId ?: "") },
                                     onCommentClick = { 
                                         navController.navigate(PantallaDetallePost(post.id))
                                     },
