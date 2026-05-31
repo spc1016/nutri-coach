@@ -5,13 +5,17 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -47,6 +51,22 @@ fun FeedView(
     val email by sessionManager.userEmailFlow.collectAsState(initial = "")
     val currentUserId by sessionManager.clienteIdFlow.collectAsState(initial = "")
     val letraInicial = email?.firstOrNull()?.uppercase() ?: "U"
+
+    val pagerState = rememberPagerState(
+        initialPage = feedViewModel.selectedTab,
+        pageCount = { 2 }
+    )
+    val coroutineScope = rememberCoroutineScope()
+
+    LaunchedEffect(pagerState.currentPage) {
+        feedViewModel.selectedTab = pagerState.currentPage
+    }
+
+    LaunchedEffect(feedViewModel.selectedTab) {
+        if (pagerState.currentPage != feedViewModel.selectedTab) {
+            pagerState.animateScrollToPage(feedViewModel.selectedTab)
+        }
+    }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -130,137 +150,184 @@ fun FeedView(
                 }
 
                 TabRow(
-                    selectedTabIndex = feedViewModel.selectedTab,
+                    selectedTabIndex = pagerState.currentPage,
                     containerColor = MaterialTheme.colorScheme.background,
                     contentColor = MaterialTheme.colorScheme.primary
                 ) {
                     Tab(
-                        selected = feedViewModel.selectedTab == 0,
-                        onClick = { feedViewModel.selectedTab = 0 },
+                        selected = pagerState.currentPage == 0,
+                        onClick = {
+                            coroutineScope.launch {
+                                pagerState.animateScrollToPage(0)
+                            }
+                        },
                         text = { Text("Posts", fontWeight = FontWeight.Bold) }
                     )
                     Tab(
-                        selected = feedViewModel.selectedTab == 1,
-                        onClick = { feedViewModel.selectedTab = 1 },
+                        selected = pagerState.currentPage == 1,
+                        onClick = {
+                            coroutineScope.launch {
+                                pagerState.animateScrollToPage(1)
+                            }
+                        },
                         text = { Text("Usuarios", fontWeight = FontWeight.Bold) }
                     )
                 }
                 
-                if (feedViewModel.selectedTab == 0) {
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 20.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        item { Spacer(modifier = Modifier.height(16.dp)) }
-
-                        if (feedViewModel.isLoading && feedViewModel.posts.isEmpty()) {
-                            item {
-                                Box(
-                                    modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                                }
+                HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .weight(1f)
+                ) { page ->
+                    if (page == 0) {
+                        val listState = rememberLazyListState()
+                        val shouldLoadMore = remember {
+                            derivedStateOf {
+                                val layoutInfo = listState.layoutInfo
+                                val totalItemsCount = layoutInfo.totalItemsCount
+                                val lastVisibleItemIndex = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+                                totalItemsCount > 0 && lastVisibleItemIndex >= totalItemsCount - 2
                             }
                         }
 
-                        if (!feedViewModel.isLoading && feedViewModel.posts.isEmpty()) {
-                            item {
-                                Text(
-                                    text = "No hay posts en la comunidad",
-                                    style = TextStyle(
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        fontSize = 16.sp
-                                    ),
-                                    modifier = Modifier.padding(vertical = 40.dp)
+                        LaunchedEffect(shouldLoadMore.value) {
+                            if (shouldLoadMore.value) {
+                                feedViewModel.cargarPosts(force = false)
+                            }
+                        }
+
+                        LazyColumn(
+                            state = listState,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 20.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            item { Spacer(modifier = Modifier.height(16.dp)) }
+
+                            if (feedViewModel.isLoading && feedViewModel.posts.isEmpty()) {
+                                item {
+                                    Box(
+                                        modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                                    }
+                                }
+                            }
+
+                            if (!feedViewModel.isLoading && feedViewModel.posts.isEmpty()) {
+                                item {
+                                    Text(
+                                        text = "No hay posts en la comunidad",
+                                        style = TextStyle(
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            fontSize = 16.sp
+                                        ),
+                                        modifier = Modifier.padding(vertical = 40.dp)
+                                    )
+                                }
+                            }
+
+                            items(feedViewModel.posts) { post ->
+                                PostCard(
+                                    post = post,
+                                    currentUserId = currentUserId ?: "",
+                                    onLikeClick = { feedViewModel.toggleLike(post.id) },
+                                    onCommentClick = { 
+                                        navController.navigate(PantallaDetallePost(post.id))
+                                    },
+                                    onRoutineClick = { rutinaId ->
+                                        navController.navigate(PantallaDetalleRutina(rutinaId))
+                                    },
+                                    onDietaClick = { dietaId ->
+                                        navController.navigate(PantallaDetalleDieta(dietaId))
+                                    },
+                                    onReplicateRoutineClick = { rutinaId ->
+                                        rutinaViewModel.clonarRutinaPorId(rutinaId) { success, error ->
+                                            if (success) {
+                                                Toast.makeText(context, "¡Rutina replicada exitosamente!", Toast.LENGTH_SHORT).show()
+                                            } else {
+                                                Toast.makeText(context, error ?: "Error al replicar la rutina", Toast.LENGTH_SHORT).show()
+                                            }
+                                        }
+                                    },
+                                    onReplicateDietaClick = { dietaId ->
+                                        dietaViewModel.clonarDietaPorId(dietaId) { success, error ->
+                                            if (success) {
+                                                Toast.makeText(context, "¡Dieta replicada exitosamente!", Toast.LENGTH_SHORT).show()
+                                            } else {
+                                                Toast.makeText(context, error ?: "Error al replicar la dieta", Toast.LENGTH_SHORT).show()
+                                            }
+                                        }
+                                    },
+                                    onClick = {
+                                        navController.navigate(PantallaDetallePost(post.id))
+                                    }
                                 )
                             }
-                        }
 
-                        items(feedViewModel.posts) { post ->
-                            PostCard(
-                                post = post,
-                                currentUserId = currentUserId ?: "",
-                                onLikeClick = { feedViewModel.toggleLike(post.id) },
-                                onCommentClick = { 
-                                    navController.navigate(PantallaDetallePost(post.id))
-                                },
-                                onRoutineClick = { rutinaId ->
-                                    navController.navigate(PantallaDetalleRutina(rutinaId))
-                                },
-                                onDietaClick = { dietaId ->
-                                    navController.navigate(PantallaDetalleDieta(dietaId))
-                                },
-                                onReplicateRoutineClick = { rutinaId ->
-                                    rutinaViewModel.clonarRutinaPorId(rutinaId) { success, error ->
-                                        if (success) {
-                                            Toast.makeText(context, "¡Rutina replicada exitosamente!", Toast.LENGTH_SHORT).show()
-                                        } else {
-                                            Toast.makeText(context, error ?: "Error al replicar la rutina", Toast.LENGTH_SHORT).show()
-                                        }
+                            if (feedViewModel.isLoading && feedViewModel.posts.isNotEmpty()) {
+                                item {
+                                    Box(
+                                        modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(24.dp),
+                                            color = MaterialTheme.colorScheme.primary,
+                                            strokeWidth = 2.dp
+                                        )
                                     }
-                                },
-                                onReplicateDietaClick = { dietaId ->
-                                    dietaViewModel.clonarDietaPorId(dietaId) { success, error ->
-                                        if (success) {
-                                            Toast.makeText(context, "¡Dieta replicada exitosamente!", Toast.LENGTH_SHORT).show()
-                                        } else {
-                                            Toast.makeText(context, error ?: "Error al replicar la dieta", Toast.LENGTH_SHORT).show()
-                                        }
-                                    }
-                                },
-                                onClick = {
-                                    navController.navigate(PantallaDetallePost(post.id))
                                 }
-                            )
-                        }
+                            }
 
-                        item {
-                            Spacer(modifier = Modifier.height(80.dp))
+                            item {
+                                Spacer(modifier = Modifier.height(80.dp))
+                            }
                         }
-                    }
-                } else {
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 20.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        item { Spacer(modifier = Modifier.height(16.dp)) }
-                        
-                        item {
-                            OutlinedTextField(
-                                value = feedViewModel.searchQuery,
-                                onValueChange = { feedViewModel.searchQuery = it },
-                                label = { Text("Buscar usuarios...") },
-                                leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Buscar") },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(bottom = 16.dp),
-                                shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
-                            )
-                        }
-                        
-                        val usuariosFiltrados = feedViewModel.clientes.filter { 
-                            it.nombre.contains(feedViewModel.searchQuery, ignoreCase = true) 
-                        }
-                        
-                        items(usuariosFiltrados) { cliente ->
-                            val isFollowing = feedViewModel.seguidosIds.contains(cliente.id)
-                            UsuarioCard(
-                                cliente = cliente,
-                                isFollowing = isFollowing,
-                                onFollowClick = { cliente.id?.let { feedViewModel.toggleFollow(it) } },
-                                onClick = { 
-                                    cliente.id?.let { navController.navigate(PantallaPerfilPublico(it)) }
-                                }
-                            )
-                        }
-                        
-                        item {
-                            Spacer(modifier = Modifier.height(80.dp))
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 20.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            item { Spacer(modifier = Modifier.height(16.dp)) }
+                            
+                            item {
+                                OutlinedTextField(
+                                    value = feedViewModel.searchQuery,
+                                    onValueChange = { feedViewModel.searchQuery = it },
+                                    label = { Text("Buscar usuarios...") },
+                                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Buscar") },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(bottom = 16.dp),
+                                    shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
+                                )
+                            }
+                            
+                            val usuariosFiltrados = feedViewModel.clientes.filter { 
+                                it.nombre.contains(feedViewModel.searchQuery, ignoreCase = true) 
+                            }
+                            
+                            items(usuariosFiltrados) { cliente ->
+                                val isFollowing = feedViewModel.seguidosIds.contains(cliente.id)
+                                UsuarioCard(
+                                    cliente = cliente,
+                                    isFollowing = isFollowing,
+                                    onFollowClick = { cliente.id?.let { feedViewModel.toggleFollow(it) } },
+                                    onClick = { 
+                                        cliente.id?.let { navController.navigate(PantallaPerfilPublico(it)) }
+                                    }
+                                )
+                            }
+                            
+                            item {
+                                Spacer(modifier = Modifier.height(80.dp))
+                            }
                         }
                     }
                 }

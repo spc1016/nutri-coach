@@ -52,17 +52,37 @@ class FeedViewModel @Inject constructor(
     var progresoPublicacion by mutableStateOf("")
         private set
 
+    var hasMorePosts by mutableStateOf(true)
+        private set
+
+    private var ultimoCursor: String? = null
+
     fun cargarPosts(force: Boolean = false) {
         viewModelScope.launch(Dispatchers.IO) {
             if (!force && posts.isNotEmpty()) {
                 return@launch
             }
+            if (force) {
+                posts = emptyList()
+                ultimoCursor = null
+                hasMorePosts = true
+            }
+            if (!force && (isLoading || !hasMorePosts)) {
+                return@launch
+            }
+            
             isLoading = true
             error = null
             
-            when (val response = comunidadRepository.obtenerPosts()) {
+            val limit = 10
+            when (val response = comunidadRepository.obtenerPosts(limit = limit, cursor = ultimoCursor)) {
                 is ApiResponse.Success -> {
-                    posts = response.data
+                    val nuevosPosts = response.data
+                    if (nuevosPosts.size < limit) {
+                        hasMorePosts = false
+                    }
+                    posts = if (force) nuevosPosts else posts + nuevosPosts
+                    ultimoCursor = nuevosPosts.lastOrNull()?.fechaCreacion
                     error = null
                 }
                 is ApiResponse.Error -> {
@@ -75,6 +95,23 @@ class FeedViewModel @Inject constructor(
                 }
             }
             isLoading = false
+        }
+    }
+
+    fun actualizarPostIndividual(postId: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            when (val response = comunidadRepository.obtenerPost(postId)) {
+                is ApiResponse.Success -> {
+                    val updatedPost = response.data
+                    posts = posts.map { if (it.id == postId) updatedPost else it }
+                }
+                is ApiResponse.Error -> {
+                    Log.e("FeedViewModel", "Error fetching single post: ${response.message}")
+                }
+                is ApiResponse.Exception -> {
+                    Log.e("FeedViewModel", "Connection error fetching single post", response.throwable)
+                }
+            }
         }
     }
 
@@ -224,7 +261,7 @@ class FeedViewModel @Inject constructor(
                 
                 when (comunidadRepository.toggleLikePost(postId, "Bearer $token")) {
                     is ApiResponse.Success -> {
-                        cargarPosts(force = true)
+                        actualizarPostIndividual(postId)
                     }
                     else -> {}
                 }
@@ -245,7 +282,7 @@ class FeedViewModel @Inject constructor(
                 val request = ComentarioRequest(texto = texto)
                 when (val response = comunidadRepository.comentarPost(postId, "Bearer $token", request)) {
                     is ApiResponse.Success -> {
-                        cargarPosts(force = true)
+                        actualizarPostIndividual(postId)
                         withContext(Dispatchers.Main) {
                             onResult(true, null)
                         }

@@ -48,6 +48,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -101,6 +105,22 @@ fun PersonalView(
 
     var selectedTabIndex by rememberSaveable { mutableStateOf(0) }
     val tabs = listOf("Dietas", "Rutinas", "Seguimiento")
+
+    val pagerState = rememberPagerState(
+        initialPage = selectedTabIndex,
+        pageCount = { tabs.size }
+    )
+    val coroutineScope = rememberCoroutineScope()
+
+    LaunchedEffect(pagerState.currentPage) {
+        selectedTabIndex = pagerState.currentPage
+    }
+
+    LaunchedEffect(selectedTabIndex) {
+        if (pagerState.currentPage != selectedTabIndex) {
+            pagerState.animateScrollToPage(selectedTabIndex)
+        }
+    }
 
     var showCrearRutinaDialog by remember { mutableStateOf(false) }
     var showCrearDietaDialog by remember { mutableStateOf(false) }
@@ -198,7 +218,12 @@ fun PersonalView(
                     tabs.forEachIndexed { index, title ->
                         Tab(
                             selected = selectedTabIndex == index,
-                            onClick = { selectedTabIndex = index },
+                            onClick = { 
+                                selectedTabIndex = index
+                                coroutineScope.launch {
+                                    pagerState.animateScrollToPage(index)
+                                }
+                            },
                             text = { 
                                 Text(
                                     text = title,
@@ -210,472 +235,479 @@ fun PersonalView(
                     }
                 }
 
-                when (selectedTabIndex) {
-                    0 -> {
-                        // Contenido Dietas
-                        LazyColumn(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(horizontal = 20.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            item { Spacer(modifier = Modifier.height(8.dp)) }
+                HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .weight(1f)
+                ) { page ->
+                    when (page) {
+                        0 -> {
+                            // Contenido Dietas
+                            LazyColumn(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(horizontal = 20.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                item { Spacer(modifier = Modifier.height(8.dp)) }
 
-                            if (dietaViewModel.isLoading) {
-                                item {
-                                    Box(
-                                        modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                                if (dietaViewModel.isLoading) {
+                                    item {
+                                        Box(
+                                            modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                                        }
                                     }
                                 }
-                            }
 
-                            dietaViewModel.error?.let { errorMsg ->
-                                item {
-                                    Text(
-                                        text = errorMsg,
-                                        style = TextStyle(
-                                            color = Color.Red,
-                                            fontSize = 14.sp,
-                                            fontWeight = FontWeight.Bold
-                                        ),
-                                        modifier = Modifier.padding(vertical = 16.dp)
-                                    )
-                                }
-                            }
-
-                            if (!dietaViewModel.isLoading && dietaViewModel.error == null && dietaViewModel.dietas.isEmpty()) {
-                                item {
-                                    Text(
-                                        text = "No tienes dietas",
-                                        style = TextStyle(
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            fontSize = 16.sp
-                                        ),
-                                        modifier = Modifier.padding(vertical = 40.dp)
-                                    )
-                                }
-                            }
-
-                            items(dietaViewModel.dietas) { dieta ->
-                                DietaCard(
-                                    dieta = dieta,
-                                    onClick = {
-                                        navController.navigate(PantallaDetalleDieta(dietaId = dieta.id))
-                                    }
-                                )
-                                Spacer(modifier = Modifier.height(16.dp))
-                            }
-
-                            item {
-                                Spacer(modifier = Modifier.height(80.dp)) // padding for fab spacing if needed later
-                            }
-                        }
-                    }
-                    1 -> {
-                        // Contenido Rutinas
-                        LazyColumn(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(horizontal = 20.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            item { Spacer(modifier = Modifier.height(8.dp)) }
-
-                            if (rutinaViewModel.isLoading) {
-                                item {
-                                    Box(
-                                        modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                                dietaViewModel.error?.let { errorMsg ->
+                                    item {
+                                        Text(
+                                            text = errorMsg,
+                                            style = TextStyle(
+                                                color = Color.Red,
+                                                fontSize = 14.sp,
+                                                fontWeight = FontWeight.Bold
+                                            ),
+                                            modifier = Modifier.padding(vertical = 16.dp)
+                                        )
                                     }
                                 }
-                            }
 
-                            rutinaViewModel.error?.let { errorMsg ->
-                                item {
-                                    Text(
-                                        text = errorMsg,
-                                        style = TextStyle(
-                                            color = Color.Red,
-                                            fontSize = 14.sp,
-                                            fontWeight = FontWeight.Bold
-                                        ),
-                                        modifier = Modifier.padding(vertical = 16.dp)
-                                    )
-                                }
-                            }
-
-                            if (!rutinaViewModel.isLoading && rutinaViewModel.error == null && rutinaViewModel.rutinas.isEmpty()) {
-                                item {
-                                    Text(
-                                        text = "No tienes rutinas",
-                                        style = TextStyle(
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            fontSize = 16.sp
-                                        ),
-                                        modifier = Modifier.padding(vertical = 40.dp)
-                                    )
-                                }
-                            }
-
-                            items(rutinaViewModel.rutinas) { rutina ->
-                                RutinaCard(
-                                    rutina = rutina,
-                                    onClick = {
-                                        navController.navigate(PantallaDetalleRutina(rutinaId = rutina.id))
+                                if (!dietaViewModel.isLoading && dietaViewModel.error == null && dietaViewModel.dietas.isEmpty()) {
+                                    item {
+                                        Text(
+                                            text = "No tienes dietas",
+                                            style = TextStyle(
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                fontSize = 16.sp
+                                            ),
+                                            modifier = Modifier.padding(vertical = 40.dp)
+                                        )
                                     }
-                                )
-                                Spacer(modifier = Modifier.height(16.dp))
-                            }
-
-                            item {
-                                Spacer(modifier = Modifier.height(80.dp)) // padding for fab
-                            }
-                        }
-                    }
-                    2 -> {
-                        // Contenido Seguimiento
-                        val ejerciciosUnicos = remember(rutinaViewModel.historialEntrenamientos) {
-                            rutinaViewModel.historialEntrenamientos
-                                .flatMap { it.ejercicios }
-                                .map { it.nombre_snapshot }
-                                .distinct()
-                                .sorted()
-                        }
-                        var ejercicioSeleccionado by remember { mutableStateOf<String?>(null) }
-                        var searchQuery by remember { mutableStateOf("") }
-
-                        // Parsear el historial de entrenamientos agrupándolo por LocalDate localmente
-                        val completedDatesMap = remember(rutinaViewModel.historialEntrenamientos) {
-                            rutinaViewModel.historialEntrenamientos.groupBy { log ->
-                                try {
-                                    val dateStr = log.fecha.substringBefore("T")
-                                    LocalDate.parse(dateStr)
-                                } catch (e: Exception) {
-                                    null
                                 }
-                            }.filterKeys { it != null } as Map<LocalDate, List<com.spc.nutricoach.data.EntrenamientoLog>>
+
+                                items(dietaViewModel.dietas) { dieta ->
+                                    DietaCard(
+                                        dieta = dieta,
+                                        onClick = {
+                                            navController.navigate(PantallaDetalleDieta(dietaId = dieta.id))
+                                        }
+                                    )
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                }
+
+                                item {
+                                    Spacer(modifier = Modifier.height(80.dp)) // padding for fab spacing if needed later
+                                }
+                            }
                         }
+                        1 -> {
+                            // Contenido Rutinas
+                            LazyColumn(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(horizontal = 20.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                item { Spacer(modifier = Modifier.height(8.dp)) }
 
-                        var activeYearMonth by remember { mutableStateOf(YearMonth.now()) }
-                        var selectedDate by remember { mutableStateOf<LocalDate?>(LocalDate.now()) }
+                                if (rutinaViewModel.isLoading) {
+                                    item {
+                                        Box(
+                                            modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                                        }
+                                    }
+                                }
 
-                        val calendarDays = remember(activeYearMonth) {
-                            val firstDayOfMonth = activeYearMonth.atDay(1)
-                            val dayOfWeekVal = firstDayOfMonth.dayOfWeek.value // 1 (Mon) to 7 (Sun)
-                            
-                            // Espacios en blanco al inicio del mes (si no empieza el lunes)
-                            val leadingEmptySpaces = dayOfWeekVal - 1
-                            val totalDaysInMonth = activeYearMonth.lengthOfMonth()
-                            
-                            val daysList = mutableListOf<LocalDate?>()
-                            repeat(leadingEmptySpaces) {
-                                daysList.add(null)
+                                rutinaViewModel.error?.let { errorMsg ->
+                                    item {
+                                        Text(
+                                            text = errorMsg,
+                                            style = TextStyle(
+                                                color = Color.Red,
+                                                fontSize = 14.sp,
+                                                fontWeight = FontWeight.Bold
+                                            ),
+                                            modifier = Modifier.padding(vertical = 16.dp)
+                                        )
+                                    }
+                                }
+
+                                if (!rutinaViewModel.isLoading && rutinaViewModel.error == null && rutinaViewModel.rutinas.isEmpty()) {
+                                    item {
+                                        Text(
+                                            text = "No tienes rutinas",
+                                            style = TextStyle(
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                fontSize = 16.sp
+                                            ),
+                                            modifier = Modifier.padding(vertical = 40.dp)
+                                        )
+                                    }
+                                }
+
+                                items(rutinaViewModel.rutinas) { rutina ->
+                                    RutinaCard(
+                                        rutina = rutina,
+                                        onClick = {
+                                            navController.navigate(PantallaDetalleRutina(rutinaId = rutina.id))
+                                        }
+                                    )
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                }
+
+                                item {
+                                    Spacer(modifier = Modifier.height(80.dp)) // padding for fab
+                                }
                             }
-                            for (day in 1..totalDaysInMonth) {
-                                daysList.add(activeYearMonth.atDay(day))
+                        }
+                        2 -> {
+                            // Contenido Seguimiento
+                            val ejerciciosUnicos = remember(rutinaViewModel.historialEntrenamientos) {
+                                rutinaViewModel.historialEntrenamientos
+                                    .flatMap { it.ejercicios }
+                                    .map { it.nombre_snapshot }
+                                    .distinct()
+                                    .sorted()
                             }
-                            
-                            val remaining = daysList.size % 7
-                            if (remaining > 0) {
-                                repeat(7 - remaining) {
+                            var ejercicioSeleccionado by remember { mutableStateOf<String?>(null) }
+                            var searchQuery by remember { mutableStateOf("") }
+
+                            // Parsear el historial de entrenamientos agrupándolo por LocalDate localmente
+                            val completedDatesMap = remember(rutinaViewModel.historialEntrenamientos) {
+                                rutinaViewModel.historialEntrenamientos.groupBy { log ->
+                                    try {
+                                        val dateStr = log.fecha.substringBefore("T")
+                                        LocalDate.parse(dateStr)
+                                    } catch (e: Exception) {
+                                        null
+                                    }
+                                }.filterKeys { it != null } as Map<LocalDate, List<com.spc.nutricoach.data.EntrenamientoLog>>
+                            }
+
+                            var activeYearMonth by remember { mutableStateOf(YearMonth.now()) }
+                            var selectedDate by remember { mutableStateOf<LocalDate?>(LocalDate.now()) }
+
+                            val calendarDays = remember(activeYearMonth) {
+                                val firstDayOfMonth = activeYearMonth.atDay(1)
+                                val dayOfWeekVal = firstDayOfMonth.dayOfWeek.value // 1 (Mon) to 7 (Sun)
+                                
+                                // Espacios en blanco al inicio del mes (si no empieza el lunes)
+                                val leadingEmptySpaces = dayOfWeekVal - 1
+                                val totalDaysInMonth = activeYearMonth.lengthOfMonth()
+                                
+                                val daysList = mutableListOf<LocalDate?>()
+                                repeat(leadingEmptySpaces) {
                                     daysList.add(null)
                                 }
+                                for (day in 1..totalDaysInMonth) {
+                                    daysList.add(activeYearMonth.atDay(day))
+                                }
+                                
+                                val remaining = daysList.size % 7
+                                if (remaining > 0) {
+                                    repeat(7 - remaining) {
+                                        daysList.add(null)
+                                    }
+                                }
+                                
+                                daysList.chunked(7)
+                            }
+
+                            val ejerciciosFiltrados = remember(searchQuery, ejerciciosUnicos) {
+                                if (searchQuery.isBlank()) ejerciciosUnicos
+                                else ejerciciosUnicos.filter { it.contains(searchQuery, ignoreCase = true) }
+                            }
+
+                            // Auto-seleccionar primer elemento filtrado si cambia
+                            LaunchedEffect(ejerciciosFiltrados) {
+                                if (ejercicioSeleccionado == null || !ejerciciosFiltrados.contains(ejercicioSeleccionado)) {
+                                    ejercicioSeleccionado = ejerciciosFiltrados.firstOrNull()
+                                }
                             }
                             
-                            daysList.chunked(7)
-                        }
-
-                        val ejerciciosFiltrados = remember(searchQuery, ejerciciosUnicos) {
-                            if (searchQuery.isBlank()) ejerciciosUnicos
-                            else ejerciciosUnicos.filter { it.contains(searchQuery, ignoreCase = true) }
-                        }
-
-                        // Auto-seleccionar primer elemento filtrado si cambia
-                        LaunchedEffect(ejerciciosFiltrados) {
-                            if (ejercicioSeleccionado == null || !ejerciciosFiltrados.contains(ejercicioSeleccionado)) {
-                                ejercicioSeleccionado = ejerciciosFiltrados.firstOrNull()
-                            }
-                        }
-                        
-                        if (ejercicioSeleccionado == null && ejerciciosFiltrados.isNotEmpty()) {
-                            ejercicioSeleccionado = ejerciciosFiltrados.first()
-                        }
-
-                        val chartData = remember(ejercicioSeleccionado, rutinaViewModel.historialEntrenamientos) {
-                            if (ejercicioSeleccionado == null) emptyList<Pair<String, Double>>()
-                            else {
-                                rutinaViewModel.historialEntrenamientos
-                                    .filter { ent -> ent.ejercicios.any { it.nombre_snapshot == ejercicioSeleccionado } }
-                                    .map { ent ->
-                                        val ejer = ent.ejercicios.first { it.nombre_snapshot == ejercicioSeleccionado }
-                                        val maxPeso = ejer.series.map { it.peso }.maxOrNull() ?: 0.0
-                                        val fechaCorta = try {
-                                            val sdfIn = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.getDefault())
-                                            val date = sdfIn.parse(ent.fecha)
-                                            val sdfOut = java.text.SimpleDateFormat("dd/MM", java.util.Locale.getDefault())
-                                            if (date != null) sdfOut.format(date) else ""
-                                        } catch (e: Exception) {
-                                            ""
-                                        }
-                                        Pair(fechaCorta, maxPeso)
-                                    }
-                                    .reversed()
-                            }
-                        }
-
-                        val mesNombre = remember(activeYearMonth) {
-                            val format = DateTimeFormatter.ofPattern("MMMM yyyy", Locale("es", "ES"))
-                            activeYearMonth.format(format).replaceFirstChar { it.uppercase() }
-                        }
-
-                        val fechaFormateada = remember(selectedDate) {
-                            if (selectedDate == null) "" else {
-                                val format = DateTimeFormatter.ofPattern("dd 'de' MMMM, yyyy", Locale("es", "ES"))
-                                selectedDate!!.format(format)
-                            }
-                        }
-
-                        val entrenamientosDelDiaSeleccionado = remember(selectedDate, completedDatesMap) {
-                            if (selectedDate == null) emptyList() else completedDatesMap[selectedDate] ?: emptyList()
-                        }
-
-                        LazyColumn(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(horizontal = 20.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            item { Spacer(modifier = Modifier.height(8.dp)) }
-
-                            if (rutinaViewModel.isLoadingHistorial) {
-                                item {
-                                    Box(
-                                        modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                                    }
-                                }
+                            if (ejercicioSeleccionado == null && ejerciciosFiltrados.isNotEmpty()) {
+                                ejercicioSeleccionado = ejerciciosFiltrados.first()
                             }
 
-                            rutinaViewModel.errorHistorial?.let { errorMsg ->
-                                item {
-                                    Text(
-                                        text = errorMsg,
-                                        style = TextStyle(
-                                            color = Color.Red,
-                                            fontSize = 14.sp,
-                                            fontWeight = FontWeight.Bold
-                                        ),
-                                        modifier = Modifier.padding(vertical = 16.dp)
-                                    )
-                                }
-                            }
-
-                            if (!rutinaViewModel.isLoadingHistorial && rutinaViewModel.errorHistorial == null && rutinaViewModel.historialEntrenamientos.isEmpty()) {
-                                item {
-                                    Text(
-                                        text = "No has completado ningún entrenamiento todavía",
-                                        style = TextStyle(
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            fontSize = 16.sp
-                                        ),
-                                        modifier = Modifier.padding(vertical = 40.dp)
-                                    )
-                                }
-                            }
-
-                            if (rutinaViewModel.historialEntrenamientos.isNotEmpty()) {
-                                item {
-                                    Text(
-                                        text = "Evolución por Ejercicio",
-                                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                        color = MaterialTheme.colorScheme.onSurface,
-                                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
-                                    )
-                                }
-
-                                // Buscador de ejercicio interactivo
-                                item {
-                                    OutlinedTextField(
-                                        value = searchQuery,
-                                        onValueChange = { searchQuery = it },
-                                        placeholder = { Text("Buscar ejercicio...", color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)) },
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(vertical = 8.dp),
-                                        singleLine = true,
-                                        shape = RoundedCornerShape(12.dp),
-                                        colors = OutlinedTextFieldDefaults.colors(
-                                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                            unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-                                        ),
-                                        leadingIcon = {
-                                            Icon(
-                                                imageVector = Icons.Default.Search,
-                                                contentDescription = "Buscar",
-                                                tint = MaterialTheme.colorScheme.primary
-                                            )
-                                        },
-                                        trailingIcon = {
-                                            if (searchQuery.isNotEmpty()) {
-                                                IconButton(onClick = { searchQuery = "" }) {
-                                                    Icon(
-                                                        imageVector = Icons.Default.Close,
-                                                        contentDescription = "Limpiar",
-                                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                                    )
-                                                }
+                            val chartData = remember(ejercicioSeleccionado, rutinaViewModel.historialEntrenamientos) {
+                                if (ejercicioSeleccionado == null) emptyList<Pair<String, Double>>()
+                                else {
+                                    rutinaViewModel.historialEntrenamientos
+                                        .filter { ent -> ent.ejercicios.any { it.nombre_snapshot == ejercicioSeleccionado } }
+                                        .map { ent ->
+                                            val ejer = ent.ejercicios.first { it.nombre_snapshot == ejercicioSeleccionado }
+                                            val maxPeso = ejer.series.map { it.peso }.maxOrNull() ?: 0.0
+                                            val fechaCorta = try {
+                                                val sdfIn = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.getDefault())
+                                                val date = sdfIn.parse(ent.fecha)
+                                                val sdfOut = java.text.SimpleDateFormat("dd/MM", java.util.Locale.getDefault())
+                                                if (date != null) sdfOut.format(date) else ""
+                                            } catch (e: Exception) {
+                                                ""
                                             }
+                                            Pair(fechaCorta, maxPeso)
                                         }
-                                    )
+                                        .reversed()
                                 }
+                            }
 
-                                item {
-                                    LazyRow(
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(vertical = 12.dp)
-                                    ) {
-                                        items(ejerciciosFiltrados) { ejer ->
-                                            CustomExerciseChip(
-                                                text = ejer,
-                                                selected = ejercicioSeleccionado == ejer,
-                                                onClick = { ejercicioSeleccionado = ejer }
-                                            )
-                                        }
-                                    }
+                            val mesNombre = remember(activeYearMonth) {
+                                val format = DateTimeFormatter.ofPattern("MMMM yyyy", Locale("es", "ES"))
+                                activeYearMonth.format(format).replaceFirstChar { it.uppercase() }
+                            }
+
+                            val fechaFormateada = remember(selectedDate) {
+                                if (selectedDate == null) "" else {
+                                    val format = DateTimeFormatter.ofPattern("dd 'de' MMMM, yyyy", Locale("es", "ES"))
+                                    selectedDate!!.format(format)
                                 }
+                            }
 
-                                item {
-                                    EvolutionChart(
-                                        points = chartData,
-                                        modifier = Modifier.fillMaxWidth()
-                                    )
-                                }
+                            val entrenamientosDelDiaSeleccionado = remember(selectedDate, completedDatesMap) {
+                                if (selectedDate == null) emptyList() else completedDatesMap[selectedDate] ?: emptyList()
+                            }
 
-                                // --- SECCIÓN DE CALENDARIO ---
-                                item {
-                                    Text(
-                                        text = "Calendario de Entrenamientos",
-                                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                        color = MaterialTheme.colorScheme.onSurface,
-                                        modifier = Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 8.dp)
-                                    )
-                                }
+                            LazyColumn(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(horizontal = 20.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                item { Spacer(modifier = Modifier.height(8.dp)) }
 
-                                item {
-                                    Card(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(vertical = 8.dp),
-                                        colors = CardDefaults.cardColors(
-                                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-                                        ),
-                                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.15f)),
-                                        shape = RoundedCornerShape(16.dp)
-                                    ) {
-                                        Column(
-                                            modifier = Modifier.padding(16.dp),
-                                            horizontalAlignment = Alignment.CenterHorizontally
+                                if (rutinaViewModel.isLoadingHistorial) {
+                                    item {
+                                        Box(
+                                            modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp),
+                                            contentAlignment = Alignment.Center
                                         ) {
-                                            // Cabecera: Mes, Año y Botones de Navegación
-                                            Row(
-                                                modifier = Modifier.fillMaxWidth(),
-                                                horizontalArrangement = Arrangement.SpaceBetween,
-                                                verticalAlignment = Alignment.CenterVertically
-                                            ) {
-                                                IconButton(
-                                                    onClick = { activeYearMonth = activeYearMonth.minusMonths(1) }
-                                                ) {
-                                                    Icon(
-                                                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                                        contentDescription = "Mes anterior",
-                                                        tint = MaterialTheme.colorScheme.primary
-                                                    )
-                                                }
+                                            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                                        }
+                                    }
+                                }
 
-                                                Text(
-                                                    text = mesNombre,
-                                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                                    color = MaterialTheme.colorScheme.onSurface
+                                rutinaViewModel.errorHistorial?.let { errorMsg ->
+                                    item {
+                                        Text(
+                                            text = errorMsg,
+                                            style = TextStyle(
+                                                color = Color.Red,
+                                                fontSize = 14.sp,
+                                                fontWeight = FontWeight.Bold
+                                            ),
+                                            modifier = Modifier.padding(vertical = 16.dp)
+                                        )
+                                    }
+                                }
+
+                                if (!rutinaViewModel.isLoadingHistorial && rutinaViewModel.errorHistorial == null && rutinaViewModel.historialEntrenamientos.isEmpty()) {
+                                    item {
+                                        Text(
+                                            text = "No has completado ningún entrenamiento todavía",
+                                            style = TextStyle(
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                fontSize = 16.sp
+                                            ),
+                                            modifier = Modifier.padding(vertical = 40.dp)
+                                        )
+                                    }
+                                }
+
+                                if (rutinaViewModel.historialEntrenamientos.isNotEmpty()) {
+                                    item {
+                                        Text(
+                                            text = "Evolución por Ejercicio",
+                                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                                        )
+                                    }
+
+                                    // Buscador de ejercicio interactivo
+                                    item {
+                                        OutlinedTextField(
+                                            value = searchQuery,
+                                            onValueChange = { searchQuery = it },
+                                            placeholder = { Text("Buscar ejercicio...", color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)) },
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(vertical = 8.dp),
+                                            singleLine = true,
+                                            shape = RoundedCornerShape(12.dp),
+                                            colors = OutlinedTextFieldDefaults.colors(
+                                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                                            ),
+                                            leadingIcon = {
+                                                Icon(
+                                                    imageVector = Icons.Default.Search,
+                                                    contentDescription = "Buscar",
+                                                    tint = MaterialTheme.colorScheme.primary
                                                 )
-
-                                                IconButton(
-                                                    onClick = { activeYearMonth = activeYearMonth.plusMonths(1) }
-                                                ) {
-                                                    Icon(
-                                                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                                                        contentDescription = "Mes siguiente",
-                                                        tint = MaterialTheme.colorScheme.primary
-                                                    )
+                                            },
+                                            trailingIcon = {
+                                                if (searchQuery.isNotEmpty()) {
+                                                    IconButton(onClick = { searchQuery = "" }) {
+                                                        Icon(
+                                                            imageVector = Icons.Default.Close,
+                                                            contentDescription = "Limpiar",
+                                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                                        )
+                                                    }
                                                 }
                                             }
+                                        )
+                                    }
 
-                                            Spacer(modifier = Modifier.height(12.dp))
+                                    item {
+                                        LazyRow(
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(vertical = 12.dp)
+                                        ) {
+                                            items(ejerciciosFiltrados) { ejer ->
+                                                CustomExerciseChip(
+                                                    text = ejer,
+                                                    selected = ejercicioSeleccionado == ejer,
+                                                    onClick = { ejercicioSeleccionado = ejer }
+                                                )
+                                            }
+                                        }
+                                    }
 
-                                            // Fila de Días de la Semana
-                                            val diasSemana = listOf("L", "M", "X", "J", "V", "S", "D")
-                                            Row(
-                                                modifier = Modifier.fillMaxWidth(),
-                                                horizontalArrangement = Arrangement.SpaceBetween
+                                    item {
+                                        EvolutionChart(
+                                            points = chartData,
+                                            modifier = Modifier.fillMaxWidth()
+                                        )
+                                    }
+
+                                    // --- SECCIÓN DE CALENDARIO ---
+                                    item {
+                                        Text(
+                                            text = "Calendario de Entrenamientos",
+                                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            modifier = Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 8.dp)
+                                        )
+                                    }
+
+                                    item {
+                                        Card(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(vertical = 8.dp),
+                                            colors = CardDefaults.cardColors(
+                                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+                                            ),
+                                            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.15f)),
+                                            shape = RoundedCornerShape(16.dp)
+                                        ) {
+                                            Column(
+                                                modifier = Modifier.padding(16.dp),
+                                                horizontalAlignment = Alignment.CenterHorizontally
                                             ) {
-                                                diasSemana.forEach { diaS ->
-                                                    Text(
-                                                        text = diaS,
-                                                        modifier = Modifier.width(36.dp),
-                                                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                                                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
-                                                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
-                                                    )
-                                                }
-                                            }
-
-                                            Spacer(modifier = Modifier.height(8.dp))
-
-                                            // Cuadrícula del Calendario
-                                            calendarDays.forEach { semana ->
+                                                // Cabecera: Mes, Año y Botones de Navegación
                                                 Row(
-                                                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    IconButton(
+                                                        onClick = { activeYearMonth = activeYearMonth.minusMonths(1) }
+                                                    ) {
+                                                        Icon(
+                                                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                                            contentDescription = "Mes anterior",
+                                                            tint = MaterialTheme.colorScheme.primary
+                                                        )
+                                                    }
+
+                                                    Text(
+                                                        text = mesNombre,
+                                                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                                        color = MaterialTheme.colorScheme.onSurface
+                                                    )
+
+                                                    IconButton(
+                                                        onClick = { activeYearMonth = activeYearMonth.plusMonths(1) }
+                                                    ) {
+                                                        Icon(
+                                                            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                                                            contentDescription = "Mes siguiente",
+                                                            tint = MaterialTheme.colorScheme.primary
+                                                        )
+                                                    }
+                                                }
+
+                                                Spacer(modifier = Modifier.height(12.dp))
+
+                                                // Fila de Días de la Semana
+                                                val diasSemana = listOf("L", "M", "X", "J", "V", "S", "D")
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
                                                     horizontalArrangement = Arrangement.SpaceBetween
                                                 ) {
-                                                    semana.forEach { dia ->
-                                                        if (dia == null) {
-                                                            Spacer(modifier = Modifier.width(36.dp))
-                                                        } else {
-                                                            val entrenamientosDia = completedDatesMap[dia] ?: emptyList()
-                                                            val haEntrenado = entrenamientosDia.isNotEmpty()
-                                                            val esSeleccionado = selectedDate == dia
-                                                            val esHoy = dia == LocalDate.now()
+                                                    diasSemana.forEach { diaS ->
+                                                        Text(
+                                                            text = diaS,
+                                                            modifier = Modifier.width(36.dp),
+                                                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                                                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+                                                        )
+                                                    }
+                                                }
 
-                                                            Box(
-                                                                modifier = Modifier
-                                                                    .size(36.dp)
-                                                                    .clip(CircleShape)
-                                                                    .then(
-                                                                        if (haEntrenado) Modifier.background(AppBrushes.MainGradient)
-                                                                        else if (esHoy) Modifier.border(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.6f), CircleShape)
-                                                                        else Modifier
+                                                Spacer(modifier = Modifier.height(8.dp))
+
+                                                // Cuadrícula del Calendario
+                                                calendarDays.forEach { semana ->
+                                                    Row(
+                                                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                                        horizontalArrangement = Arrangement.SpaceBetween
+                                                    ) {
+                                                        semana.forEach { dia ->
+                                                            if (dia == null) {
+                                                                Spacer(modifier = Modifier.width(36.dp))
+                                                            } else {
+                                                                val entrenamientosDia = completedDatesMap[dia] ?: emptyList()
+                                                                val haEntrenado = entrenamientosDia.isNotEmpty()
+                                                                val esSeleccionado = selectedDate == dia
+                                                                val esHoy = dia == LocalDate.now()
+
+                                                                Box(
+                                                                    modifier = Modifier
+                                                                        .size(36.dp)
+                                                                        .clip(CircleShape)
+                                                                        .then(
+                                                                            if (haEntrenado) Modifier.background(AppBrushes.MainGradient)
+                                                                            else if (esHoy) Modifier.border(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.6f), CircleShape)
+                                                                            else Modifier
+                                                                        )
+                                                                        .then(
+                                                                            if (esSeleccionado) Modifier.border(2.dp, if (haEntrenado) Color.White else MaterialTheme.colorScheme.primary, CircleShape)
+                                                                            else Modifier
+                                                                        )
+                                                                        .clickable { selectedDate = dia },
+                                                                    contentAlignment = Alignment.Center
+                                                                ) {
+                                                                    Text(
+                                                                        text = "${dia.dayOfMonth}",
+                                                                        color = if (haEntrenado) Color.Black else MaterialTheme.colorScheme.onSurface,
+                                                                        fontSize = 13.sp,
+                                                                        fontWeight = if (haEntrenado || esHoy || esSeleccionado) FontWeight.Bold else FontWeight.Normal
                                                                     )
-                                                                    .then(
-                                                                        if (esSeleccionado) Modifier.border(2.dp, if (haEntrenado) Color.White else MaterialTheme.colorScheme.primary, CircleShape)
-                                                                        else Modifier
-                                                                    )
-                                                                    .clickable { selectedDate = dia },
-                                                                contentAlignment = Alignment.Center
-                                                            ) {
-                                                                Text(
-                                                                    text = "${dia.dayOfMonth}",
-                                                                    color = if (haEntrenado) Color.Black else MaterialTheme.colorScheme.onSurface,
-                                                                    fontSize = 13.sp,
-                                                                    fontWeight = if (haEntrenado || esHoy || esSeleccionado) FontWeight.Bold else FontWeight.Normal
-                                                                )
+                                                                }
                                                             }
                                                         }
                                                     }
@@ -683,54 +715,54 @@ fun PersonalView(
                                             }
                                         }
                                     }
-                                }
 
-                                // --- SECCIÓN DE DETALLE DE ENTRENAMIENTOS PARA EL DÍA SELECCIONADO ---
-                                item {
-                                    Text(
-                                        text = "Entrenamientos del $fechaFormateada",
-                                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                        color = MaterialTheme.colorScheme.onSurface,
-                                        modifier = Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 8.dp)
-                                    )
-                                }
-
-                                if (entrenamientosDelDiaSeleccionado.isEmpty()) {
+                                    // --- SECCIÓN DE DETALLE DE ENTRENAMIENTOS PARA EL DÍA SELECCIONADO ---
                                     item {
-                                        Card(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(vertical = 8.dp),
-                                            colors = CardDefaults.cardColors(
-                                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)
-                                            ),
-                                            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.08f)),
-                                            shape = RoundedCornerShape(12.dp)
-                                        ) {
-                                            Box(
-                                                modifier = Modifier.fillMaxWidth().padding(24.dp),
-                                                contentAlignment = Alignment.Center
+                                        Text(
+                                            text = "Entrenamientos del $fechaFormateada",
+                                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            modifier = Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 8.dp)
+                                        )
+                                    }
+
+                                    if (entrenamientosDelDiaSeleccionado.isEmpty()) {
+                                        item {
+                                            Card(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(vertical = 8.dp),
+                                                colors = CardDefaults.cardColors(
+                                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)
+                                                ),
+                                                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.08f)),
+                                                shape = RoundedCornerShape(12.dp)
                                             ) {
-                                                Text(
-                                                    text = "No realizaste entrenamientos este día.\n¡Toca un día destacado en el calendario para ver detalles!",
-                                                    style = TextStyle(
-                                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                        fontSize = 14.sp,
-                                                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                                Box(
+                                                    modifier = Modifier.fillMaxWidth().padding(24.dp),
+                                                    contentAlignment = Alignment.Center
+                                                ) {
+                                                    Text(
+                                                        text = "No realizaste entrenamientos este día.\n¡Toca un día destacado en el calendario para ver detalles!",
+                                                        style = TextStyle(
+                                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                            fontSize = 14.sp,
+                                                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                                        )
                                                     )
-                                                )
+                                                }
                                             }
                                         }
-                                    }
-                                } else {
-                                    items(entrenamientosDelDiaSeleccionado) { log ->
-                                        HistorialEntrenamientoCard(log = log)
+                                    } else {
+                                        items(entrenamientosDelDiaSeleccionado) { log ->
+                                            HistorialEntrenamientoCard(log = log)
+                                        }
                                     }
                                 }
-                            }
 
-                            item {
-                                Spacer(modifier = Modifier.height(80.dp))
+                                item {
+                                    Spacer(modifier = Modifier.height(80.dp))
+                                }
                             }
                         }
                     }

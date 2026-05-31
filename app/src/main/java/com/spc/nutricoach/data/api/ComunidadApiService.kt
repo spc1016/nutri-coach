@@ -11,10 +11,19 @@ import retrofit2.http.POST
 import retrofit2.http.DELETE
 import retrofit2.http.Path
 import retrofit2.http.Header
+import retrofit2.http.Query
 
 interface ComunidadApiService {
     @GET("posts")
-    suspend fun obtenerPosts(): List<Post>
+    suspend fun obtenerPosts(
+        @Query("limit") limit: Int,
+        @Query("cursor") cursor: String?
+    ): List<Post>
+
+    @GET("posts/{id}")
+    suspend fun obtenerPost(
+        @Path("id") postId: String
+    ): Post
 
     @POST("posts")
     suspend fun crearPost(

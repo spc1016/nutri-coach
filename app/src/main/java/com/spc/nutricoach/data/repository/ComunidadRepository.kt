@@ -11,8 +11,12 @@ class ComunidadRepository @Inject constructor(
     private val comunidadApiService: ComunidadApiService,
     private val sessionManager: SessionManager
 ) {
-    suspend fun obtenerPosts(): ApiResponse<List<Post>> = safeApiCall {
-        comunidadApiService.obtenerPosts()
+    suspend fun obtenerPosts(limit: Int, cursor: String?): ApiResponse<List<Post>> = safeApiCall {
+        comunidadApiService.obtenerPosts(limit, cursor)
+    }
+
+    suspend fun obtenerPost(postId: String): ApiResponse<Post> = safeApiCall {
+        comunidadApiService.obtenerPost(postId)
     }
 
     suspend fun crearPost(token: String, request: CrearPostRequest): ApiResponse<RegistroApiResponse> = safeApiCall {
