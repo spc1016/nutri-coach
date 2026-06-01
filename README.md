@@ -254,3 +254,41 @@ com.spc.nutricoach/
 5. El usuario ejecuta la serie, corrige el peso levantado o reps en los inputs interactivos de la UI, y pulsa "Serie Terminada".
 6. El `WorkoutManager` detiene la UI de ejecución, inicia la cuenta de descanso reactiva de forma simultánea en la notificación y la pantalla.
 7. Al finalizar todos los ejercicios, se muestra la pantalla de éxito, se guarda el historial local de progresos en Room y se envía a la nube a través de la API remota. El servicio se detiene limpiamente.
+
+---
+
+### 🖼️ 7. Gestión, Optimización y Persistencia de Fotos de Perfil
+
+NutriCoach cuenta con soporte completo para que los usuarios puedan personalizar su perfil mediante fotos seleccionadas desde la Galería o capturadas directamente con la Cámara del teléfono.
+
+```
+  ┌────────────────────────┐      ┌──────────────────────────┐      ┌─────────────────────────┐
+  │ PerfilUsuarioView (UI) ├─────►│ PerfilUsuarioViewModel   ├─────►│  CloudinaryUploader     │
+  │ - Picker / Cámara      │      │ - subirYActualizarFoto() │      │  - Optimiza EXIF y res  │
+  └───────────▲────────────┘      └────────────┬─────────────┘      └────────────┬────────────┘
+              │                                │                                 │
+              │ Sincroniza caché               ▼ Actualiza Flow                  ▼ Retorna URL
+  ┌───────────┴────────────┐      ┌────────────┴─────────────┐                   │
+  │   TopAppBar Avatares   │◄─────┤   SessionManager         │◄──────────────────┘
+  │   (Feed, Home, Dieta)  │      │   - userFotoPerfilFlow   │
+  └────────────────────────┘      └──────────────────────────┘
+```
+
+#### A. Carga, Optimización y Subida en Hilo Secundario
+*   **Captura Flexible:** Utiliza launchers de actividad de Jetpack Compose (`rememberLauncherForActivityResult`) para interactuar de forma nativa con los proveedores de Galería (`ActivityResultContracts.GetContent()`) y Cámara (`TakePicture()`).
+*   **Procesamiento Inteligente:** Reutiliza el motor `CloudinaryUploader` para proteger la memoria del dispositivo móvil y el ancho de banda del usuario:
+    *   Pre-calcula dimensiones óptimas con `inJustDecodeBounds` para evitar desbordes de memoria (`OutOfMemoryError`).
+    *   Comprime la imagen a formato JPEG de alta calidad con dimensiones máximas de 1280px.
+    *   **Corrección EXIF:** Corrige automáticamente la rotación según la orientación nativa del sensor físico de la cámara.
+*   **Paralelismo y Resiliencia:** La subida se procesa en el hilo de fondo de Kotlin Coroutines (`Dispatchers.IO`) con un sistema de reintentos automatizado (3 intentos en caso de fallos de conexión).
+
+#### B. Cacheo Local Reactivo (DataStore)
+Para evitar llamadas repetitivas e innecesarias al servidor remoto al navegar entre pantallas, la foto de perfil se gestiona a través de una caché reactiva:
+*   `SessionManager` expone un flujo reactivo asíncrono `userFotoPerfilFlow` respaldado por **Jetpack DataStore Preferences**.
+*   Al iniciar sesión o cargar la pantalla de perfil (`cargarPerfil()`), la app sincroniza esta caché de forma automática.
+*   Cuando el usuario cambia su foto y guarda los cambios, el flujo se actualiza y notifica instantáneamente a toda la interfaz gráfica.
+
+#### C. Renderizado Visual Consistente
+*   Todos los avatares interactivos y cabeceras de la aplicación —incluyendo **FeedView**, **PanelPrincipal**, **PersonalView**, **PublicarView**, y **PostCard**— observan este flujo y renderizan dinámicamente la imagen real del usuario mediante Coil `AsyncImage`.
+*   Siguiendo las pautas de diseño visual neón de la marca, los avatares se recortan y enmarcan con elegancia utilizando **`CircleShape`** de forma consistente.
+*   En modo edición, se superpone un badge interactivo con icono de cámara en el avatar principal para proporcionar una experiencia de usuario premium e intuitiva.
