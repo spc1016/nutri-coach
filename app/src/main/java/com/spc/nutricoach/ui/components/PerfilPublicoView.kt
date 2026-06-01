@@ -13,6 +13,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -103,14 +105,23 @@ fun PerfilPublicoView(
                                 .background(AppBrushes.MainGradient),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(
-                                text = letra,
-                                style = TextStyle(
-                                    color = Color.White,
-                                    fontSize = 32.sp,
-                                    fontWeight = FontWeight.Bold
+                            if (!cliente!!.foto_perfil.isNullOrEmpty()) {
+                                AsyncImage(
+                                    model = cliente!!.foto_perfil,
+                                    contentDescription = "Foto de perfil de ${cliente!!.nombre}",
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop
                                 )
-                            )
+                            } else {
+                                Text(
+                                    text = letra,
+                                    style = TextStyle(
+                                        color = Color.White,
+                                        fontSize = 32.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                )
+                            }
                         }
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(

@@ -55,9 +55,10 @@ class SessionManager(private val context: Context) {
         private val KEY_ROLE  = stringPreferencesKey("user_role")
         private val KEY_CLIENT_ID = stringPreferencesKey("client_id")
         private val KEY_EMAIL = stringPreferencesKey("user_email")
+        private val KEY_FOTO_PERFIL = stringPreferencesKey("user_foto_perfil")
     }
 
-    suspend fun saveSession(token: String, role: String, clienteId: String, email: String) {
+    suspend fun saveSession(token: String, role: String, clienteId: String, email: String, fotoPerfil: String? = null) {
         // Persistir el token de forma segura en EncryptedSharedPreferences
         encryptedPrefs.edit().putString("auth_token", token).apply()
 
@@ -66,6 +67,21 @@ class SessionManager(private val context: Context) {
             prefs[KEY_ROLE]  = role
             prefs[KEY_CLIENT_ID] = clienteId
             prefs[KEY_EMAIL] = email
+            if (fotoPerfil != null) {
+                prefs[KEY_FOTO_PERFIL] = fotoPerfil
+            } else {
+                prefs.remove(KEY_FOTO_PERFIL)
+            }
+        }
+    }
+
+    suspend fun updateFotoPerfil(fotoPerfil: String?) {
+        context.dataStore.edit { prefs ->
+            if (fotoPerfil != null) {
+                prefs[KEY_FOTO_PERFIL] = fotoPerfil
+            } else {
+                prefs.remove(KEY_FOTO_PERFIL)
+            }
         }
     }
 
@@ -78,6 +94,7 @@ class SessionManager(private val context: Context) {
             prefs.remove(KEY_ROLE)
             prefs.remove(KEY_CLIENT_ID)
             prefs.remove(KEY_EMAIL)
+            prefs.remove(KEY_FOTO_PERFIL)
         }
     }
 
@@ -99,5 +116,9 @@ class SessionManager(private val context: Context) {
 
     val clienteIdFlow: Flow<String?> = context.dataStore.data.map { prefs ->
         prefs[KEY_CLIENT_ID]
+    }
+
+    val userFotoPerfilFlow: Flow<String?> = context.dataStore.data.map { prefs ->
+        prefs[KEY_FOTO_PERFIL]
     }
 }

@@ -67,12 +67,21 @@ fun PostCard(
                         .background(AppBrushes.MainGradient),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = post.autorNombre.firstOrNull()?.uppercase() ?: "U",
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp
-                    )
+                    if (!post.autorFotoPerfil.isNullOrEmpty()) {
+                        AsyncImage(
+                            model = post.autorFotoPerfil,
+                            contentDescription = "Foto de perfil de ${post.autorNombre}",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Text(
+                            text = post.autorNombre.firstOrNull()?.uppercase() ?: "U",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp
+                        )
+                    }
                 }
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {

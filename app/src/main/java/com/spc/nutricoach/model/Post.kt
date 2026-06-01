@@ -24,6 +24,7 @@ data class Post(
     @SerialName("liked_by") val likedBy: List<String> = emptyList(),
     val comentarios: List<Comentario> = emptyList(),
     @SerialName("fecha_creacion") val fechaCreacion: String = "",
+    @SerialName("autor_foto_perfil") val autorFotoPerfil: String? = null,
     val activa: Boolean = true
 )
 

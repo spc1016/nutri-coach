@@ -56,6 +56,7 @@ fun PublicarView(
     val sessionManager = remember { SessionManager(context) }
     val email by sessionManager.userEmailFlow.collectAsState(initial = "")
     val letraInicial = email?.firstOrNull()?.uppercase() ?: "U"
+    val fotoPerfilUrl by sessionManager.userFotoPerfilFlow.collectAsState(initial = null)
 
     var textoPost by remember { mutableStateOf("") }
     var imagenesSeleccionadasUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
@@ -148,14 +149,23 @@ fun PublicarView(
                             .clickable { navController.navigate(PantallaPerfil) },
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            text = letraInicial,
-                            style = TextStyle(
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 18.sp
+                        if (!fotoPerfilUrl.isNullOrEmpty()) {
+                            AsyncImage(
+                                model = fotoPerfilUrl,
+                                contentDescription = "Foto de perfil",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
                             )
-                        )
+                        } else {
+                            Text(
+                                text = letraInicial,
+                                style = TextStyle(
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 18.sp
+                                )
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -180,12 +190,21 @@ fun PublicarView(
                             .background(AppBrushes.MainGradient),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            text = letraInicial,
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 20.sp
-                        )
+                        if (!fotoPerfilUrl.isNullOrEmpty()) {
+                            AsyncImage(
+                                model = fotoPerfilUrl,
+                                contentDescription = "Foto de perfil",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            Text(
+                                text = letraInicial,
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 20.sp
+                            )
+                        }
                     }
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(

@@ -68,7 +68,8 @@ data class ModificarClienteRequest(
     val peso: Double? = null,
     val altura: Double? = null,
     val objetivo: String? = null,
-    val genero: String? = null
+    val genero: String? = null,
+    val foto_perfil: String? = null
 )
 
 @Serializable

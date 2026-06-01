@@ -56,6 +56,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -121,6 +123,8 @@ fun PersonalView(
         }
     }
 
+    val fotoPerfilUrl by sessionManager.userFotoPerfilFlow.collectAsState(initial = null)
+
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         contentColor = MaterialTheme.colorScheme.onBackground,
@@ -154,14 +158,23 @@ fun PersonalView(
                             .clickable { navController.navigate(PantallaPerfil) },
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            text = letraInicial,
-                            style = TextStyle(
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 18.sp
+                        if (!fotoPerfilUrl.isNullOrEmpty()) {
+                            AsyncImage(
+                                model = fotoPerfilUrl,
+                                contentDescription = "Foto de perfil",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
                             )
-                        )
+                        } else {
+                            Text(
+                                text = letraInicial,
+                                style = TextStyle(
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 18.sp
+                                )
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
