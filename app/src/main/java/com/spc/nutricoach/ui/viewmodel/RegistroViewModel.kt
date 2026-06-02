@@ -91,7 +91,7 @@ class RegistroViewModel @Inject constructor(
                         Log.e("REGISTRO_ERROR", "Error HTTP ${response.code}: ${response.message}")
                         statusMessage = when (response.code) {
                             400 -> if (response.message.contains("registrado")) "Este email ya está registrado"
-                                   else if (response.message.contains("gmail") || response.message.contains("email")) "Introduce un email válido"
+                                   else if (response.message.contains("email")) "Introduce un email válido"
                                    else "Datos inválidos"
                             500 -> "Error al enviar el correo. Inténtalo de nuevo."
                             else -> "Error del servidor (${response.code})"
