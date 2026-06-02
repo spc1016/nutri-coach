@@ -79,7 +79,23 @@ class EntrenamientoViewModel @Inject constructor(
                 
                 val log = WorkoutManager.getEntrenamientoLog(rutinaNombre, diaNombre)
                 
-                when (val response = rutinaRepository.registrarEntrenamiento(clienteId, log)) {
+                // Cargar el historial de entrenamientos para buscar nombres de ejercicios existentes
+                val existingHistory = when (val historyResponse = rutinaRepository.obtenerHistorialEntrenamientos(clienteId)) {
+                    is ApiResponse.Success -> historyResponse.data
+                    else -> emptyList()
+                }
+                
+                val existingNames = existingHistory.flatMap { it.ejercicios }.map { it.nombre_snapshot }.distinct()
+                
+                // Normalizar/Canonizar los nombres de los ejercicios del nuevo registro
+                val canonicalizedExercises = log.ejercicios.map {
+                    val canonicalName = com.spc.nutricoach.util.ExerciseNormalizer.getCanonicalName(it.nombre_snapshot, existingNames)
+                    it.copy(nombre_snapshot = canonicalName)
+                }
+                
+                val canonicalizedLog = log.copy(ejercicios = canonicalizedExercises)
+                
+                when (val response = rutinaRepository.registrarEntrenamiento(clienteId, canonicalizedLog)) {
                     is ApiResponse.Success -> {
                         onComplete(true)
                     }

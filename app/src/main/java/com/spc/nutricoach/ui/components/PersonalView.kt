@@ -380,11 +380,10 @@ fun PersonalView(
                         2 -> {
                             // Contenido Seguimiento
                             val ejerciciosUnicos = remember(rutinaViewModel.historialEntrenamientos) {
-                                rutinaViewModel.historialEntrenamientos
+                                val allNames = rutinaViewModel.historialEntrenamientos
                                     .flatMap { it.ejercicios }
                                     .map { it.nombre_snapshot }
-                                    .distinct()
-                                    .sorted()
+                                com.spc.nutricoach.util.ExerciseNormalizer.getCanonicalList(allNames)
                             }
                             var ejercicioSeleccionado by remember { mutableStateOf<String?>(null) }
                             var searchQuery by remember { mutableStateOf("") }
@@ -447,12 +446,14 @@ fun PersonalView(
                             }
 
                             val chartData = remember(ejercicioSeleccionado, rutinaViewModel.historialEntrenamientos) {
-                                if (ejercicioSeleccionado == null) emptyList<Pair<String, Double>>()
+                                val currentEjer = ejercicioSeleccionado
+                                if (currentEjer == null) emptyList<Pair<String, Double>>()
                                 else {
+                                    val targetNormalized = com.spc.nutricoach.util.ExerciseNormalizer.normalize(currentEjer)
                                     rutinaViewModel.historialEntrenamientos
-                                        .filter { ent -> ent.ejercicios.any { it.nombre_snapshot == ejercicioSeleccionado } }
+                                        .filter { ent -> ent.ejercicios.any { com.spc.nutricoach.util.ExerciseNormalizer.normalize(it.nombre_snapshot) == targetNormalized } }
                                         .map { ent ->
-                                            val ejer = ent.ejercicios.first { it.nombre_snapshot == ejercicioSeleccionado }
+                                            val ejer = ent.ejercicios.first { com.spc.nutricoach.util.ExerciseNormalizer.normalize(it.nombre_snapshot) == targetNormalized }
                                             val maxPeso = ejer.series.map { it.peso }.maxOrNull() ?: 0.0
                                             val fechaCorta = try {
                                                 val sdfIn = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.getDefault())
@@ -884,6 +885,7 @@ fun PersonalView(
         
         if (showCrearDietaDialog) {
             var nombreDieta by remember { mutableStateOf("") }
+            var kcalDieta by remember { mutableStateOf("") }
             var isSubmitting by remember { mutableStateOf(false) }
             var errorMsg by remember { mutableStateOf<String?>(null) }
             
@@ -925,6 +927,19 @@ fun PersonalView(
                             singleLine = true,
                             enabled = !isSubmitting
                         )
+
+                        OutlinedTextField(
+                            value = kcalDieta,
+                            onValueChange = { kcalDieta = it },
+                            label = { Text("Kcal diarias objetivo") },
+                            modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                            singleLine = true,
+                            enabled = !isSubmitting,
+                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                                keyboardType = androidx.compose.ui.text.input.KeyboardType.Number
+                            )
+                        )
+
                         if (errorMsg != null) {
                             Text(
                                 text = errorMsg!!,
@@ -941,7 +956,8 @@ fun PersonalView(
                             if (nombreDieta.isNotBlank()) {
                                 isSubmitting = true
                                 errorMsg = null
-                                dietaViewModel.crearDieta(nombreDieta) { success, msg ->
+                                val kcalInt = kcalDieta.toIntOrNull() ?: 0
+                                dietaViewModel.crearDieta(nombreDieta, kcalInt) { success, msg ->
                                     isSubmitting = false
                                     if (success) {
                                         showCrearDietaDialog = false
@@ -1265,7 +1281,7 @@ fun HistorialEntrenamientoCard(log: com.spc.nutricoach.data.EntrenamientoLog) {
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = ejer.nombre_snapshot,
+                        text = com.spc.nutricoach.util.ExerciseNormalizer.formatFirstTime(ejer.nombre_snapshot),
                         style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
                         color = MaterialTheme.colorScheme.onSurface
                     )

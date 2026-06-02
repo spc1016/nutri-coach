@@ -241,13 +241,12 @@ class RutinaViewModel @Inject constructor(
     ) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val normalizeRegex = "\\s".toRegex()
-                val normalizedNewName = nombre.lowercase().replace(normalizeRegex, "")
+                val normalizedNewName = com.spc.nutricoach.util.ExerciseNormalizer.normalize(nombre)
                 
                 val rutina = rutinas.find { it.id == rutinaId }
                 val dia = rutina?.dias?.getOrNull(diaIndex)
                 val yaExiste = dia?.ejercicios?.any { 
-                    it.nombreSnapshot.lowercase().replace(normalizeRegex, "") == normalizedNewName 
+                    com.spc.nutricoach.util.ExerciseNormalizer.normalize(it.nombreSnapshot) == normalizedNewName 
                 } ?: false
                 
                 if (yaExiste) {
@@ -261,9 +260,20 @@ class RutinaViewModel @Inject constructor(
                     return@launch
                 }
 
+                val clienteId = rutinaRepository.session.getClienteId()
+                val existingNames = if (!clienteId.isNullOrBlank()) {
+                    when (val historyResponse = rutinaRepository.obtenerHistorialEntrenamientos(clienteId)) {
+                        is ApiResponse.Success -> historyResponse.data.flatMap { it.ejercicios }.map { it.nombre_snapshot }.distinct()
+                        else -> emptyList()
+                    }
+                } else {
+                    emptyList()
+                }
+                val canonicalName = com.spc.nutricoach.util.ExerciseNormalizer.getCanonicalName(nombre, existingNames)
+
                 val request = AgregarEjercicioRequest(
                     ejercicio_id = "000000000000000000000000",
-                    nombre_snapshot = nombre,
+                    nombre_snapshot = canonicalName,
                     series = series,
                     repeticiones = repeticiones,
                     descanso_segundos = descanso

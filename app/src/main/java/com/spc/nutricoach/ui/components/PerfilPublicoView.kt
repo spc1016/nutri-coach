@@ -21,7 +21,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.spc.nutricoach.data.SessionManager
@@ -30,10 +29,6 @@ import com.spc.nutricoach.model.Rutina
 import com.spc.nutricoach.ui.theme.AppBrushes
 import com.spc.nutricoach.ui.viewmodel.RutinaViewModel
 import com.spc.nutricoach.ui.viewmodel.UsuariosViewModel
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PerfilPublicoView(

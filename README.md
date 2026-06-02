@@ -90,6 +90,7 @@ La app protege celosamente la sesión del usuario mediante un sistema de persist
 *   **Visualización de Menús:** Permite visualizar los platos, ingredientes y cantidades necesarias para el día.
 *   **DietTracker (Seguimiento Nutricional):** A través del `DietTrackerManager` local, los usuarios pueden marcar sus comidas completadas en tiempo real mediante casillas de verificación interactivas. Esta información se lee de forma reactiva y persiste localmente sin tiempos de espera.
 *   **Detalles del Alimento:** Información de calorías, macronutrientes y notas sobre la preparación culinaria.
+*   **Creación Manual con Objetivos Nutricionales:** Al crear manualmente una dieta, el usuario puede introducir no sólo el nombre de la misma sino también su objetivo diario de Kilocalorías (`kcal_objetivo`) mediante un campo numérico interactivo, el cual se propaga de forma transparente al backend para calcular y contrastar los consumos nutricionales.
 
 ### 🏋️‍♂️ Módulo de Rutinas y Gimnasio
 *   **Creador de Planes de Entrenamiento:** El usuario puede estructurar rutinas compuestas por múltiples días (ej. Tirón, Empuje, Pierna).
@@ -99,6 +100,7 @@ La app protege celosamente la sesión del usuario mediante un sistema de persist
 Este es uno de los apartados más pulidos visualmente y potentes de la aplicación:
 1.  **Gráfico de Evolución Personalizado (Canvas Engine):** La sección "Seguimiento" cuenta con `EvolutionChart`, un gráfico interactivo dibujado programáticamente píxel a píxel sobre un `Canvas` de Compose. Muestra la progresión del peso máximo levantado a lo largo del tiempo para cada ejercicio individual. Cuenta con un buscador en tiempo real para filtrar entre decenas de ejercicios interactivos de forma fluida.
 2.  **Calendario de Entrenamientos Mensual Interactivo:** Un calendario personalizado que resalta con el gradiente neón (`AppBrushes.MainGradient`) los días exactos en los que el usuario ha completado entrenamientos. Al pulsar sobre cualquier día destacado, el sistema inyecta y visualiza de forma instantánea el listado detallado de series, repeticiones y kilajes levantados ese día específico.
+3.  **Unificación e Normalización Inteligente de Ejercicios (Case & Space Insensitive):** El sistema integra un motor de normalización inteligente (`ExerciseNormalizer`) que consolida y unifica el seguimiento de ejercicios. Esto significa que si el usuario escribe `"press banca"`, `"preSSbanca"`, `"Press banca"` o `"PRESS   BANCA"`, el sistema detecta que son el mismo ejercicio y los agrupa bajo un único gráfico y chip selector canónico (ej. `"Press banca"`), sincronizándose contra su historial de entrenamientos en tiempo real desde la API para asegurar consistencia visual absoluta tanto al crear una rutina como al completar un entrenamiento.
 
 ---
 
@@ -236,6 +238,7 @@ com.spc.nutricoach/
 │
 ├── util/                          # COMPONENTES AUXILIARES DE ALTO RENDIMIENTO
 │   ├── CloudinaryUploader.kt      # Optimizador, rotador de fotos y uploader de imágenes
+│   ├── ExerciseNormalizer.kt      # Motor de normalización y canonización de nombres de ejercicios
 │   └── QrUtils.kt                 # Generador de códigos QR personalizados para clones
 │
 └── workout/                       # INFRAESTRUCTURA DEL SERVICIO DE ENTRENAMIENTO

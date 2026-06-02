@@ -1,6 +1,5 @@
 package com.spc.nutricoach.ui.viewmodel
 
-import android.util.Base64
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -13,7 +12,6 @@ import com.spc.nutricoach.data.repository.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import org.json.JSONObject
 import javax.inject.Inject
 
 @HiltViewModel

@@ -219,7 +219,7 @@ class DietaViewModel @Inject constructor(
         }
     }
 
-    fun crearDieta(nombre: String, onResult: (Boolean, String?) -> Unit) {
+    fun crearDieta(nombre: String, kcalObjetivo: Int, onResult: (Boolean, String?) -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val clienteId = dietaRepository.session.getClienteId()
@@ -236,7 +236,8 @@ class DietaViewModel @Inject constructor(
 
                 val request = CrearDietaRequest(
                     nombre = nombre,
-                    cliente_id = clienteId
+                    cliente_id = clienteId,
+                    kcal_objetivo = kcalObjetivo
                 )
 
                 when (val response = dietaRepository.crearDieta(request)) {

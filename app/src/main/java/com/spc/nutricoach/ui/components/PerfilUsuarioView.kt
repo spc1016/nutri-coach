@@ -77,6 +77,7 @@ import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.offset
 import androidx.compose.material3.TextButton
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -224,77 +225,88 @@ fun PerfilUsuarioView(
                 .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(12.dp))
             
             Box(
                 modifier = Modifier
-                    .size(80.dp)
-                    .clip(CircleShape)
-                    .background(AppBrushes.MainGradient)
-                    .then(
-                        if (perfilViewModel.isEditing) {
-                            Modifier.clickable { showFotoDialog = true }
-                        } else {
-                            Modifier
-                        }
-                    ),
+                    .size(96.dp),
                 contentAlignment = Alignment.Center
             ) {
-                if (!perfilViewModel.fotoPerfil.isNullOrEmpty()) {
-                    AsyncImage(
-                        model = perfilViewModel.fotoPerfil,
-                        contentDescription = "Foto de perfil",
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
-                    Text(
-                        text = letra,
-                        style = TextStyle(
-                            color = Color.White,
-                            fontSize = 32.sp,
-                            fontWeight = FontWeight.Bold
+                // Caja del Avatar (Recortada en Círculo)
+                Box(
+                    modifier = Modifier
+                        .size(80.dp)
+                        .clip(CircleShape)
+                        .background(AppBrushes.MainGradient)
+                        .then(
+                            if (perfilViewModel.isEditing) {
+                                Modifier.clickable { showFotoDialog = true }
+                            } else {
+                                Modifier
+                            }
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (!perfilViewModel.fotoPerfil.isNullOrEmpty()) {
+                        AsyncImage(
+                            model = perfilViewModel.fotoPerfil,
+                            contentDescription = "Foto de perfil",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
                         )
-                    )
-                }
+                    } else {
+                        Text(
+                            text = letra,
+                            style = TextStyle(
+                                color = Color.White,
+                                fontSize = 32.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        )
+                    }
 
-                if (perfilViewModel.isLoading && perfilViewModel.statusMessage.contains("Subiendo")) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(Color.Black.copy(alpha = 0.5f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                    if (perfilViewModel.isLoading && perfilViewModel.statusMessage.contains("Subiendo")) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color.Black.copy(alpha = 0.5f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                        }
                     }
                 }
 
+                // Badge del Icono de la Cámara (Sin Recortar - Sibling)
                 if (perfilViewModel.isEditing) {
                     Box(
                         modifier = Modifier
-                            .fillMaxSize()
-                            .padding(4.dp),
+                            .size(80.dp)
+                            .align(Alignment.Center),
                         contentAlignment = Alignment.BottomEnd
                     ) {
                         Box(
                             modifier = Modifier
+                                .offset(x = 4.dp, y = 4.dp)
                                 .size(24.dp)
-                                .background(MaterialTheme.colorScheme.primary, CircleShape)
-                                .border(1.dp, Color.Black, CircleShape),
+                                .border(1.5.dp, Color.Black, CircleShape)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primary)
+                                .clickable { showFotoDialog = true },
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = Icons.Filled.PhotoCamera,
                                 contentDescription = "Cambiar foto",
                                 tint = Color.Black,
-                                modifier = Modifier.size(16.dp)
+                                modifier = Modifier.size(14.dp)
                             )
                         }
                     }
                 }
             }
             
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
             
             if (perfilViewModel.isLoading && perfilViewModel.nombre.isEmpty()) {
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
