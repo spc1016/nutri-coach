@@ -8,7 +8,9 @@ import androidx.activity.enableEdgeToEdge
 import com.spc.nutricoach.ui.components.AppNavigation
 import com.spc.nutricoach.ui.theme.NutriCoachTheme
 import com.spc.nutricoach.workout.WorkoutManager
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

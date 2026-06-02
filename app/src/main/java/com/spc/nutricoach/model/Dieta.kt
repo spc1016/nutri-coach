@@ -24,10 +24,12 @@ data class Comida(
 data class Dieta(
     @SerialName("_id") val id: String = "",
     @SerialName("cliente_id") val clienteId: String = "",
+    val cliente: String? = null,
     val nombre: String = "",
     @SerialName("kcal_objetivo") val kcalObjetivo: Int = 0,
     @SerialName("fecha_asignacion") val fechaAsignacion: String? = null,
     val activa: Boolean = true,
+    val publica: Boolean = false,
     @SerialName("notas_generales") val notasGenerales: String? = null,
     val comidas: List<Comida> = emptyList()
 )

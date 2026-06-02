@@ -15,5 +15,7 @@ data class Cliente(
     val genero: String? = null,
     val objetivo: String? = null,
     val nutricionista_id: String? = null,
-    val password_hash: String? = null
+    val foto_perfil: String? = null,
+    val seguidores_count: Int = 0,
+    val seguidos_count: Int = 0
 )

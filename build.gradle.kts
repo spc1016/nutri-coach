@@ -4,5 +4,5 @@ plugins {
     alias(libs.plugins.kotlin.compose) apply false
     kotlin("plugin.serialization") version "2.0.21"
     id("com.google.devtools.ksp") version "2.3.4" apply false
-
+    alias(libs.plugins.hilt) apply false
 }

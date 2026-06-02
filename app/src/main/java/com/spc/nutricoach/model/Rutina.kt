@@ -63,9 +63,11 @@ data class Dia(
 data class Rutina(
     @SerialName("_id") val id: String = "",
     @SerialName("cliente_id") val clienteId: String = "",
+    val cliente: String? = null,
     val nombre: String = "",
     @SerialName("fecha_asignacion") val fechaAsignacion: String? = null,
     val activa: Boolean = true,
+    val publica: Boolean = false,
     @SerialName("notas_generales") val notasGenerales: String? = null,
     val dias: List<Dia> = emptyList()
 )

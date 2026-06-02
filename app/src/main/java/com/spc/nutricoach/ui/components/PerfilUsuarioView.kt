@@ -58,6 +58,27 @@ import androidx.compose.material3.MaterialTheme
 import com.spc.nutricoach.ui.theme.AppBrushes
 import com.spc.nutricoach.ui.viewmodel.LoginViewModel
 import com.spc.nutricoach.ui.viewmodel.PerfilUsuarioViewModel
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.layout.ContentScale
+import androidx.core.content.FileProvider
+import coil.compose.AsyncImage
+import java.io.File
+import android.widget.Toast
+import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.offset
+import androidx.compose.material3.TextButton
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -72,6 +93,110 @@ fun PerfilUsuarioView(
     val email by sessionManager.userEmailFlow.collectAsState(initial = "")
     
     val letra = email?.firstOrNull()?.uppercase() ?: "U"
+
+    var showDialog by remember { mutableStateOf<String?>(null) } // "seguidores" or "seguidos"
+    var showFotoDialog by remember { mutableStateOf(false) }
+    var cameraPhotoUri by remember { mutableStateOf<Uri?>(null) }
+
+    val galleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent(),
+        onResult = { uri ->
+            if (uri != null) {
+                perfilViewModel.subirYActualizarFoto(context, uri)
+            }
+        }
+    )
+
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture(),
+        onResult = { success ->
+            if (success && cameraPhotoUri != null) {
+                perfilViewModel.subirYActualizarFoto(context, cameraPhotoUri!!)
+            }
+        }
+    )
+
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+        onResult = { isGranted ->
+            if (isGranted) {
+                try {
+                    val uri = crearUriParaFotoCamara(context)
+                    cameraPhotoUri = uri
+                    cameraLauncher.launch(uri)
+                } catch (e: Exception) {
+                    android.util.Log.e("PerfilUsuarioView", "Error al iniciar cámara", e)
+                    Toast.makeText(context, "Error al crear archivo de imagen: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+            } else {
+                Toast.makeText(context, "Se necesita permiso de cámara para hacer fotos", Toast.LENGTH_LONG).show()
+            }
+        }
+    )
+
+    if (showFotoDialog) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showFotoDialog = false },
+            title = { Text("Actualizar foto de perfil") },
+            text = {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Button(
+                        onClick = {
+                            showFotoDialog = false
+                            val hasPermission = androidx.core.content.ContextCompat.checkSelfPermission(
+                                context,
+                                android.Manifest.permission.CAMERA
+                            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+
+                            if (hasPermission) {
+                                try {
+                                    val uri = crearUriParaFotoCamara(context)
+                                    cameraPhotoUri = uri
+                                    cameraLauncher.launch(uri)
+                                } catch (e: Exception) {
+                                    android.util.Log.e("PerfilUsuarioView", "Error al iniciar cámara", e)
+                                    Toast.makeText(context, "Error al iniciar cámara: ${e.message}", Toast.LENGTH_LONG).show()
+                                }
+                            } else {
+                                cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    ) {
+                        Icon(imageVector = Icons.Default.PhotoCamera, contentDescription = "Cámara", tint = Color.Black)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Usar Cámara", color = Color.Black, fontWeight = FontWeight.Bold)
+                    }
+
+                    Button(
+                        onClick = {
+                            showFotoDialog = false
+                            galleryLauncher.launch("image/*")
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
+                    ) {
+                        Icon(imageVector = Icons.Default.PhotoLibrary, contentDescription = "Galería", tint = Color.Black)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Elegir de Galería", color = Color.Black, fontWeight = FontWeight.Bold)
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(
+                    onClick = { showFotoDialog = false }
+                ) {
+                    Text("Cancelar", fontWeight = FontWeight.SemiBold)
+                }
+            }
+        )
+    }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -100,31 +225,204 @@ fun PerfilUsuarioView(
                 .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(12.dp))
             
             Box(
                 modifier = Modifier
-                    .size(80.dp)
-                    .clip(androidx.compose.foundation.shape.CircleShape)
-                    .background(AppBrushes.MainGradient),
+                    .size(96.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = letra,
-                    style = TextStyle(
-                        color = Color.White,
-                        fontSize = 32.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                )
+                // Caja del Avatar (Recortada en Círculo)
+                Box(
+                    modifier = Modifier
+                        .size(80.dp)
+                        .clip(CircleShape)
+                        .background(AppBrushes.MainGradient)
+                        .then(
+                            if (perfilViewModel.isEditing) {
+                                Modifier.clickable { showFotoDialog = true }
+                            } else {
+                                Modifier
+                            }
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (!perfilViewModel.fotoPerfil.isNullOrEmpty()) {
+                        AsyncImage(
+                            model = perfilViewModel.fotoPerfil,
+                            contentDescription = "Foto de perfil",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Text(
+                            text = letra,
+                            style = TextStyle(
+                                color = Color.White,
+                                fontSize = 32.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        )
+                    }
+
+                    if (perfilViewModel.isLoading && perfilViewModel.statusMessage.contains("Subiendo")) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color.Black.copy(alpha = 0.5f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                        }
+                    }
+                }
+
+                // Badge del Icono de la Cámara (Sin Recortar - Sibling)
+                if (perfilViewModel.isEditing) {
+                    Box(
+                        modifier = Modifier
+                            .size(80.dp)
+                            .align(Alignment.Center),
+                        contentAlignment = Alignment.BottomEnd
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .offset(x = 4.dp, y = 4.dp)
+                                .size(24.dp)
+                                .border(1.5.dp, Color.Black, CircleShape)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primary)
+                                .clickable { showFotoDialog = true },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.PhotoCamera,
+                                contentDescription = "Cambiar foto",
+                                tint = Color.Black,
+                                modifier = Modifier.size(14.dp)
+                            )
+                        }
+                    }
+                }
             }
             
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
             
             if (perfilViewModel.isLoading && perfilViewModel.nombre.isEmpty()) {
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 Spacer(modifier = Modifier.height(24.dp))
+            } else if (!perfilViewModel.isEditing) {
+                // Modo Vista
+                Text(
+                    text = perfilViewModel.nombre.ifEmpty { "Usuario" },
+                    style = TextStyle(fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = perfilViewModel.email,
+                    style = TextStyle(fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.clickable { 
+                            perfilViewModel.cargarListas()
+                            showDialog = "seguidores" 
+                        }.padding(8.dp)
+                    ) {
+                        Text(text = "${perfilViewModel.seguidoresCount}", style = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground))
+                        Text(text = "Seguidores", style = TextStyle(fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant))
+                    }
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.clickable { 
+                            perfilViewModel.cargarListas()
+                            showDialog = "seguidos" 
+                        }.padding(8.dp)
+                    ) {
+                        Text(text = "${perfilViewModel.seguidosCount}", style = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground))
+                        Text(text = "Seguidos", style = TextStyle(fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant))
+                    }
+                }
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Button(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(brush = AppBrushes.MainGradient, shape = RoundedCornerShape(12.dp))
+                        .height(55.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent, contentColor = Color.Black),
+                    onClick = { perfilViewModel.isEditing = true }
+                ) {
+                    Text(
+                        text = "Editar Perfil",
+                        style = TextStyle(color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    )
+                }
+
+                if (showDialog != null) {
+                    androidx.compose.material3.AlertDialog(
+                        onDismissRequest = { showDialog = null },
+                        title = { Text(if (showDialog == "seguidores") "Seguidores" else "Seguidos") },
+                        text = {
+                            if (perfilViewModel.isLoadingListas) {
+                                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                                    CircularProgressIndicator()
+                                }
+                            } else {
+                                val list = if (showDialog == "seguidores") perfilViewModel.seguidoresList else perfilViewModel.seguidosList
+                                if (list.isEmpty()) {
+                                    Text("No hay usuarios.")
+                                } else {
+                                    LazyColumn(modifier = Modifier.fillMaxHeight(0.5f)) {
+                                        items(list) { usuario ->
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(usuario.nombre, fontWeight = FontWeight.Bold)
+                                                if (showDialog == "seguidos") {
+                                                    Button(
+                                                        onClick = {
+                                                            if (usuario.id != null) {
+                                                                perfilViewModel.dejarDeSeguir(usuario.id)
+                                                            }
+                                                        },
+                                                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                                                    ) {
+                                                        Text("Dejar de seguir", fontSize = 12.sp)
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        confirmButton = {
+                            Button(onClick = { showDialog = null }) {
+                                Text("Cerrar")
+                            }
+                        }
+                    )
+                }
             } else {
+                // Modo Edición
+                Button(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant, contentColor = MaterialTheme.colorScheme.onSurfaceVariant),
+                    onClick = { perfilViewModel.isEditing = false }
+                ) {
+                    Text("Cancelar Edición")
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                
                 PerfilTextField(
                     value = perfilViewModel.nombre,
                     onValueChange = { perfilViewModel.nombre = it },
@@ -276,6 +574,19 @@ fun PerfilTextField(
         onValueChange = onValueChange,
         label = { Text(label, style = MaterialTheme.typography.titleSmall.copy(brush = AppBrushes.AccentGradient)) },
         leadingIcon = { Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary) }
+    )
+}
+
+private fun crearUriParaFotoCamara(context: android.content.Context): Uri {
+    val directorioCache = context.cacheDir
+    val archivo = File.createTempFile("foto_camara_", ".jpg", directorioCache).apply {
+        createNewFile()
+        deleteOnExit()
+    }
+    return FileProvider.getUriForFile(
+        context,
+        "${context.packageName}.fileprovider",
+        archivo
     )
 }
 

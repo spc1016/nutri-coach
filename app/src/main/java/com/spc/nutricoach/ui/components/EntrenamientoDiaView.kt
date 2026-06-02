@@ -60,6 +60,12 @@ import com.spc.nutricoach.ui.theme.AppBrushes
 import com.spc.nutricoach.ui.viewmodel.EntrenamientoViewModel
 import com.spc.nutricoach.ui.viewmodel.RutinaViewModel
 import com.spc.nutricoach.workout.WorkoutService
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -84,7 +90,10 @@ fun EntrenamientoDiaView(
         }
     }
 
-    LaunchedEffect(rutinaId, diaNombre) {
+    var isInitialized by remember { mutableStateOf(false) }
+
+    LaunchedEffect(rutinaId, diaNombre, rutinaViewModel.rutinas) {
+        if (isInitialized) return@LaunchedEffect
         val rutina = rutinaViewModel.rutinas.find { it.id == rutinaId }
         if (rutina != null) {
             val dia = rutina.dias.find { it.nombre == diaNombre }
@@ -94,6 +103,7 @@ fun EntrenamientoDiaView(
                     action = WorkoutService.ACTION_START
                 }
                 context.startForegroundService(intent)
+                isInitialized = true
             }
         }
     }
@@ -141,6 +151,11 @@ fun EntrenamientoDiaView(
                 .padding(horizontal = 24.dp),
             contentAlignment = Alignment.Center
         ) {
+            if (!isInitialized) {
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                return@Scaffold
+            }
+
             if (diaActual == null) {
                 if (isFinished) {
                     Text("Error al cargar el entrenamiento.")
@@ -151,7 +166,9 @@ fun EntrenamientoDiaView(
             }
 
             if (isFinished) {
-                WorkoutFinishedScreen(navController, entrenamientoViewModel)
+                val rutina = rutinaViewModel.rutinas.find { it.id == rutinaId }
+                val rutinaNombre = rutina?.nombre ?: "Rutina"
+                WorkoutFinishedScreen(navController, entrenamientoViewModel, rutinaNombre)
             } else {
                 ActiveWorkoutScreen(entrenamientoViewModel, rutinaViewModel, rutinaId, diaActual!!.nombre)
             }
@@ -182,6 +199,18 @@ fun ActiveWorkoutScreen(
         rutinaViewModel.getExerciseWeightFlow(rutinaId, uniqueKey)
     }
     val savedWeight by weightFlow.collectAsState(initial = "")
+
+    // Estados para repeticiones, peso y descanso editables en tiempo real
+    var repsText by remember { mutableStateOf("") }
+    var weightText by remember { mutableStateOf("") }
+    var restText by remember { mutableStateOf("") }
+
+    // Re-inicializar inputs cuando cambie la serie o el ejercicio
+    LaunchedEffect(exerciseIndex, currentSet, savedWeight) {
+        repsText = currentExercise.repeticiones
+        weightText = savedWeight ?: ""
+        restText = currentExercise.descanso ?: ""
+    }
 
     Column(
         modifier = Modifier.fillMaxSize(),
@@ -235,7 +264,7 @@ fun ActiveWorkoutScreen(
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Column(
-                    modifier = Modifier.padding(32.dp),
+                    modifier = Modifier.padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
@@ -246,16 +275,52 @@ fun ActiveWorkoutScreen(
                         )
                     )
                     
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(20.dp))
                     
+                    // Inputs de edición de repeticiones, peso y descanso
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        InfoBox("Reps", currentExercise.repeticiones.ifBlank { "-" })
-                        if (!savedWeight.isNullOrBlank()) {
-                            InfoBox("Peso", "$savedWeight kg")
-                        }
+                        OutlinedTextField(
+                            value = repsText,
+                            onValueChange = { repsText = it },
+                            label = { Text("Reps") },
+                            modifier = Modifier.weight(1f),
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                                focusedLabelColor = MaterialTheme.colorScheme.primary
+                            )
+                        )
+                        OutlinedTextField(
+                            value = weightText,
+                            onValueChange = { weightText = it },
+                            label = { Text("Peso (kg)") },
+                            modifier = Modifier.weight(1.2f),
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                                focusedLabelColor = MaterialTheme.colorScheme.primary
+                            )
+                        )
+                        OutlinedTextField(
+                            value = restText,
+                            onValueChange = { restText = it },
+                            label = { Text("Descanso (s)") },
+                            modifier = Modifier.weight(1.2f),
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                                focusedLabelColor = MaterialTheme.colorScheme.primary
+                            )
+                        )
                     }
                     
                     if (!currentExercise.notas.isNullOrBlank()) {
@@ -318,7 +383,16 @@ fun ActiveWorkoutScreen(
                 }
             } else {
                 Button(
-                    onClick = { viewModel.finishSet() },
+                    onClick = {
+                        // Guardar peso localmente si ha sido editado
+                        if (weightText.isNotBlank()) {
+                            rutinaViewModel.saveExerciseWeight(rutinaId, uniqueKey, weightText)
+                        }
+                        // Registrar finalización de la serie actual con valores editados
+                        val p = weightText.toDoubleOrNull() ?: 0.0
+                        val d = restText.toIntOrNull() ?: 0
+                        viewModel.finishSet(repsText, p, d)
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(64.dp),
@@ -349,7 +423,21 @@ fun InfoBox(label: String, value: String) {
 }
 
 @Composable
-fun WorkoutFinishedScreen(navController: NavController, viewModel: EntrenamientoViewModel) {
+fun WorkoutFinishedScreen(
+    navController: NavController,
+    viewModel: EntrenamientoViewModel,
+    rutinaNombre: String
+) {
+    val diaActual by viewModel.diaActual.collectAsState()
+    
+    // Lanzar el registro del entrenamiento al cargar la pantalla
+    LaunchedEffect(Unit) {
+        val dia = diaActual
+        if (dia != null) {
+            viewModel.registrarEntrenamiento(rutinaNombre, dia.nombre)
+        }
+    }
+
     Column(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -377,6 +465,37 @@ fun WorkoutFinishedScreen(navController: NavController, viewModel: Entrenamiento
                 textAlign = TextAlign.Center
             )
         )
+        
+        Spacer(modifier = Modifier.height(24.dp))
+        
+        // Estado del registro en base de datos
+        val isSavingLog = viewModel.isSavingLog
+        val saveLogError = viewModel.saveLogError
+        
+        if (isSavingLog) {
+            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                "Registrando entrenamiento...",
+                style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary)
+            )
+        } else if (saveLogError != null) {
+            Text(
+                "⚠️ No se pudo guardar en la nube: $saveLogError",
+                color = Color.Red,
+                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.bodyMedium
+            )
+        } else {
+            Text(
+                "⚡ ¡Entrenamiento guardado correctamente!",
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
+        
         Spacer(modifier = Modifier.height(32.dp))
         Button(
             onClick = { navController.popBackStack() },

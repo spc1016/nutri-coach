@@ -41,18 +41,28 @@ object WorkoutManager {
     private var timer: CountDownTimer? = null
     private var onRestFinishAction: (() -> Unit)? = null
 
+    // Registro de progreso en tiempo real
+    private val _completedExercises = mutableListOf<com.spc.nutricoach.data.EjercicioCompletado>()
+    private val _currentExerciseSets = mutableListOf<com.spc.nutricoach.data.SerieCompletada>()
+
     fun triggerNavigationToWorkout() {
         _navigateToWorkoutEvent.tryEmit(Unit)
     }
 
     fun iniciarOReanudar(rutinaId: String, dia: Dia) {
-        if (_rutinaIdActual.value != rutinaId || _diaActual.value?.nombre != dia.nombre) {
+        val esMismoDia = _rutinaIdActual.value == rutinaId && _diaActual.value?.nombre == dia.nombre
+        val exercisesChanged = _diaActual.value?.ejercicios != dia.ejercicios
+        val isFinishedOrStopped = _isFinished.value || _isStopped.value
+
+        if (!esMismoDia || exercisesChanged || isFinishedOrStopped) {
             _rutinaIdActual.value = rutinaId
             _diaActual.value = dia
             _currentExerciseIndex.value = 0
             _currentSet.value = 1
             _isFinished.value = dia.ejercicios.isEmpty()
             _isStopped.value = false
+            _completedExercises.clear()
+            _currentExerciseSets.clear()
             resetTimer()
         }
     }
@@ -63,11 +73,13 @@ object WorkoutManager {
             _currentSet.value = 1
             _isFinished.value = false
             _isStopped.value = false
+            _completedExercises.clear()
+            _currentExerciseSets.clear()
             resetTimer()
         }
     }
 
-    fun finishSet() {
+    fun finishSet(reps: String = "", peso: Double = 0.0, descanso: Int = -1) {
         val dia = _diaActual.value ?: return
         val exerciseIndex = _currentExerciseIndex.value
         if (exerciseIndex >= dia.ejercicios.size) return
@@ -75,16 +87,35 @@ object WorkoutManager {
         val currentEjer = dia.ejercicios[exerciseIndex]
         val currentSet = _currentSet.value
         
+        val finalReps = if (reps.isBlank()) currentEjer.repeticiones else reps
+        val finalPeso = peso
+        val finalDescanso = if (descanso == -1) (currentEjer.descanso?.toIntOrNull() ?: 0) else descanso
+        
+        // Registrar la serie actual completada
+        _currentExerciseSets.add(com.spc.nutricoach.data.SerieCompletada(
+            repeticiones = finalReps,
+            peso = finalPeso,
+            descanso_segundos = finalDescanso
+        ))
+        
         if (currentSet < currentEjer.series) {
-            val desc = currentEjer.descanso?.toIntOrNull() ?: 0
+            val desc = finalDescanso
             if (desc > 0) {
                 startRest(desc)
             } else {
                 _currentSet.value = currentSet + 1
             }
         } else {
+            // Se han terminado todas las series de este ejercicio. Guardar ejercicio completado.
+            _completedExercises.add(com.spc.nutricoach.data.EjercicioCompletado(
+                ejercicio_id = currentEjer.ejercicioId,
+                nombre_snapshot = currentEjer.nombreSnapshot,
+                series = _currentExerciseSets.toList()
+            ))
+            _currentExerciseSets.clear()
+
             if (exerciseIndex + 1 < dia.ejercicios.size) {
-                val desc = currentEjer.descanso?.toIntOrNull() ?: 0
+                val desc = finalDescanso
                 if (desc > 0) {
                     startRest(desc) {
                         _currentExerciseIndex.value = exerciseIndex + 1
@@ -150,6 +181,19 @@ object WorkoutManager {
         _diaActual.value = null
         _isFinished.value = false
         _isStopped.value = true
+        _completedExercises.clear()
+        _currentExerciseSets.clear()
+    }
+
+    fun getEntrenamientoLog(rutinaNombre: String, diaNombre: String): com.spc.nutricoach.data.EntrenamientoLog {
+        val sdf = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.getDefault())
+        val fechaIso = sdf.format(java.util.Date())
+        return com.spc.nutricoach.data.EntrenamientoLog(
+            rutina_nombre = rutinaNombre,
+            dia_nombre = diaNombre,
+            fecha = fechaIso,
+            ejercicios = _completedExercises.toList()
+        )
     }
 }
 

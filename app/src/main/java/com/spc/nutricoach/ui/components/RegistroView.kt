@@ -3,7 +3,6 @@ package com.spc.nutricoach.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -18,14 +17,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material.icons.filled.Cake
-import androidx.compose.material.icons.filled.Scale
-import androidx.compose.material.icons.filled.Height
-import androidx.compose.material.icons.filled.Wc
-import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -36,6 +29,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -53,12 +47,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.compose.material3.MaterialTheme
 import com.spc.nutricoach.ui.theme.AppBrushes
+import com.spc.nutricoach.ui.viewmodel.RegistroStep
 import com.spc.nutricoach.ui.viewmodel.RegistroViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -80,7 +76,13 @@ fun RegistroView(navController: NavController, registroViewModel: RegistroViewMo
             TopAppBar(
                 title = { Text("Registro", style = MaterialTheme.typography.titleLarge.copy(brush = AppBrushes.MainGradient)) },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(onClick = {
+                        if (registroViewModel.currentStep == RegistroStep.VERIFICATION) {
+                            registroViewModel.goBackToForm()
+                        } else {
+                            navController.popBackStack()
+                        }
+                    }) {
                         Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
                     }
                 },
@@ -101,132 +103,193 @@ fun RegistroView(navController: NavController, registroViewModel: RegistroViewMo
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(15.dp)
         ) {
-            
-            Text(
-                text = "Crea tu cuenta de Nutri Coach",
-                style = MaterialTheme.typography.displaySmall.copy(brush = AppBrushes.AccentGradient, textAlign = androidx.compose.ui.text.style.TextAlign.Center),
-                modifier = Modifier.padding(bottom = 10.dp)
-            )
+            when (registroViewModel.currentStep) {
+                RegistroStep.FORM -> {
+                    // Step 1: Registration form
+                    Text(
+                        text = "Crea tu cuenta",
+                        style = MaterialTheme.typography.displaySmall.copy(
+                            brush = AppBrushes.AccentGradient,
+                            textAlign = TextAlign.Center
+                        ),
+                        modifier = Modifier.padding(bottom = 5.dp)
+                    )
 
-            RegistroTextField(
-                value = registroViewModel.nombre,
-                onValueChange = { registroViewModel.nombre = it },
-                label = "Nombre *",
-                icon = Icons.Filled.Person,
-                modifier = Modifier.fillMaxWidth()
-            )
+                    Text(
+                        text = "Solo necesitas tu nombre, email de Gmail y una contraseña. El resto lo podrás configurar después.",
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center
+                        ),
+                        modifier = Modifier.padding(bottom = 10.dp)
+                    )
 
-            RegistroTextField(
-                value = registroViewModel.email,
-                onValueChange = { registroViewModel.email = it },
-                label = "Email *",
-                icon = Icons.Filled.Email,
-                modifier = Modifier.fillMaxWidth(),
-                keyboardType = KeyboardType.Email
-            )
+                    RegistroTextField(
+                        value = registroViewModel.nombre,
+                        onValueChange = { registroViewModel.nombre = it },
+                        label = "Nombre *",
+                        icon = Icons.Filled.Person,
+                        modifier = Modifier.fillMaxWidth()
+                    )
 
-            OutlinedTextField(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.3f),
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                ),
-                textStyle = MaterialTheme.typography.bodyLarge.copy(brush = AppBrushes.MainGradient),
-                value = registroViewModel.password,
-                onValueChange = { registroViewModel.password = it },
-                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                trailingIcon = {
-                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                        Icon(
-                            imageVector = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
-                            contentDescription = null
+                    RegistroTextField(
+                        value = registroViewModel.email,
+                        onValueChange = { registroViewModel.email = it },
+                        label = "Email de Gmail *",
+                        icon = Icons.Filled.Email,
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardType = KeyboardType.Email
+                    )
+
+                    OutlinedTextField(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(20.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.3f),
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                        ),
+                        textStyle = MaterialTheme.typography.bodyLarge.copy(brush = AppBrushes.MainGradient),
+                        value = registroViewModel.password,
+                        onValueChange = { registroViewModel.password = it },
+                        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        trailingIcon = {
+                            IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                                Icon(
+                                    imageVector = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
+                                    contentDescription = null
+                                )
+                            }
+                        },
+                        label = { Text("Contraseña *", style = MaterialTheme.typography.titleSmall.copy(brush = AppBrushes.AccentGradient)) },
+                        leadingIcon = { Icon(Icons.Filled.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                    )
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Button(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(brush = AppBrushes.MainGradient, shape = RoundedCornerShape(12.dp))
+                            .height(55.dp),
+                        onClick = { registroViewModel.sendCode() },
+                        enabled = !registroViewModel.isLoading,
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent, contentColor = Color.Black),
+                    ) {
+                        if (registroViewModel.isLoading) {
+                            CircularProgressIndicator(color = Color.White, strokeWidth = 2.dp, modifier = Modifier.size(22.dp))
+                        } else {
+                            Text(text = "Enviar código de verificación", style = TextStyle(color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 15.sp))
+                        }
+                    }
+                }
+
+                RegistroStep.VERIFICATION -> {
+                    // Step 2: Code verification
+                    Text(
+                        text = "Verifica tu email",
+                        style = MaterialTheme.typography.displaySmall.copy(
+                            brush = AppBrushes.AccentGradient,
+                            textAlign = TextAlign.Center
+                        ),
+                        modifier = Modifier.padding(bottom = 5.dp)
+                    )
+
+                    Text(
+                        text = "Hemos enviado un código de 6 dígitos a:",
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center
+                        )
+                    )
+
+                    Text(
+                        text = registroViewModel.email.trim(),
+                        style = MaterialTheme.typography.bodyLarge.copy(
+                            brush = AppBrushes.MainGradient,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center
+                        ),
+                        modifier = Modifier.padding(bottom = 15.dp)
+                    )
+
+                    OutlinedTextField(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(20.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.3f),
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                        ),
+                        textStyle = MaterialTheme.typography.headlineMedium.copy(
+                            textAlign = TextAlign.Center,
+                            letterSpacing = 8.sp,
+                            brush = AppBrushes.MainGradient
+                        ),
+                        value = registroViewModel.verificationCode,
+                        onValueChange = { if (it.length <= 6 && it.all { c -> c.isDigit() }) registroViewModel.verificationCode = it },
+                        label = { Text("Código de verificación", style = MaterialTheme.typography.titleSmall.copy(brush = AppBrushes.AccentGradient)) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true
+                    )
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Button(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(brush = AppBrushes.MainGradient, shape = RoundedCornerShape(12.dp))
+                            .height(55.dp),
+                        onClick = { registroViewModel.verifyCode() },
+                        enabled = !registroViewModel.isLoading && !registroViewModel.registroSuccess,
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent, contentColor = Color.Black),
+                    ) {
+                        if (registroViewModel.isLoading) {
+                            CircularProgressIndicator(color = Color.White, strokeWidth = 2.dp, modifier = Modifier.size(22.dp))
+                        } else {
+                            Text(text = "Verificar y crear cuenta", style = TextStyle(color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 16.sp))
+                        }
+                    }
+
+                    // Resend code button
+                    TextButton(
+                        onClick = { registroViewModel.resendCode() },
+                        enabled = registroViewModel.canResend && !registroViewModel.isLoading
+                    ) {
+                        Text(
+                            text = if (registroViewModel.canResend) "Reenviar código"
+                                   else "Reenviar código (${registroViewModel.resendCountdown}s)",
+                            style = if (registroViewModel.canResend)
+                                MaterialTheme.typography.bodyMedium.copy(brush = AppBrushes.AccentGradient)
+                            else
+                                MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                         )
                     }
-                },
-                label = { Text("Contraseña *", style = MaterialTheme.typography.titleSmall.copy(brush = AppBrushes.AccentGradient)) },
-                leadingIcon = { Icon(Icons.Filled.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
-            )
-            
-            RegistroTextField(
-                value = registroViewModel.telefono,
-                onValueChange = { registroViewModel.telefono = it },
-                label = "Teléfono",
-                icon = Icons.Filled.Phone,
-                modifier = Modifier.fillMaxWidth(),
-                keyboardType = KeyboardType.Phone
-            )
-            
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                RegistroTextField(
-                    value = registroViewModel.edad,
-                    onValueChange = { registroViewModel.edad = it },
-                    label = "Edad",
-                    icon = Icons.Filled.Cake,
-                    keyboardType = KeyboardType.Number,
-                    modifier = Modifier.weight(1f)
-                )
-                RegistroTextField(
-                    value = registroViewModel.genero,
-                    onValueChange = { registroViewModel.genero = it },
-                    label = "Género (M/F)",
-                    icon = Icons.Filled.Wc,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-            
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                RegistroTextField(
-                    value = registroViewModel.peso,
-                    onValueChange = { registroViewModel.peso = it },
-                    label = "Peso (kg)",
-                    icon = Icons.Filled.Scale,
-                    keyboardType = KeyboardType.Decimal,
-                    modifier = Modifier.weight(1f)
-                )
-                RegistroTextField(
-                    value = registroViewModel.altura,
-                    onValueChange = { registroViewModel.altura = it },
-                    label = "Altura (cm)",
-                    icon = Icons.Filled.Height,
-                    keyboardType = KeyboardType.Decimal,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-            
-            RegistroTextField(
-                value = registroViewModel.objetivo,
-                onValueChange = { registroViewModel.objetivo = it },
-                label = "Objetivo (Opcional)",
-                icon = Icons.Filled.Flag,
-                modifier = Modifier.fillMaxWidth()
-            )
 
-            Spacer(modifier = Modifier.height(10.dp))
-
-            Button(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(brush = AppBrushes.MainGradient, shape = RoundedCornerShape(12.dp))
-                    .height(55.dp),
-                onClick = { registroViewModel.doRegistro() },
-                enabled = !registroViewModel.isLoading && !registroViewModel.registroSuccess,
-                colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent, contentColor = Color.Black),
-            ) {
-                if (registroViewModel.isLoading) {
-                    CircularProgressIndicator(color = Color.White, strokeWidth = 2.dp, modifier = Modifier.size(22.dp))
-                } else {
-                    Text(text = "Registrarme", style = TextStyle(color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 16.sp))
+                    // Go back button
+                    TextButton(
+                        onClick = { registroViewModel.goBackToForm() },
+                        enabled = !registroViewModel.isLoading
+                    ) {
+                        Text(
+                            text = "← Cambiar email",
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        )
+                    }
                 }
             }
 
+            // Status message (shown in both steps)
             if (registroViewModel.statusMessage.isNotEmpty()) {
-                val color = if (registroViewModel.statusMessage.startsWith("Error") || registroViewModel.statusMessage.startsWith("Nombre")) Color.Red else MaterialTheme.colorScheme.primary
+                val color = if (registroViewModel.isError) Color.Red else MaterialTheme.colorScheme.primary
                 Text(
                     text = registroViewModel.statusMessage,
                     style = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Bold, color = color),
+                    textAlign = TextAlign.Center,
                     modifier = Modifier.padding(top = 10.dp)
                 )
             }

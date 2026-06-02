@@ -60,7 +60,7 @@ fun LoginView(navController: NavController, loginViewModel: LoginViewModel = vie
 
     LaunchedEffect(loginViewModel.loginSuccess) {
         if (loginViewModel.loginSuccess) {
-            navController.navigate(PantallaInicio) {
+            navController.navigate(PantallaFeed) {
                 popUpTo(PantallaLogin) { inclusive = true }
             }
         }

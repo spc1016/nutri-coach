@@ -1,17 +1,9 @@
+@file:Suppress("unused", "RedundantQualifierName", "PropertyName")
+
 package com.spc.nutricoach.data
 
-import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
-import com.spc.nutricoach.model.Dieta
-import com.spc.nutricoach.model.LoginApiResponse
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
-import okhttp3.MediaType.Companion.toMediaType
-import retrofit2.Retrofit
-import retrofit2.http.Body
-import retrofit2.http.GET
-import retrofit2.http.Header
-import retrofit2.http.POST
-import retrofit2.http.Path
+import kotlinx.serialization.SerialName
 
 @Serializable
 data class LoginRequest(
@@ -20,10 +12,16 @@ data class LoginRequest(
 )
 
 @Serializable
+data class LoginApiResponse(
+    val token: String,
+    val role: String
+)
+
+@Serializable
 data class RegistroClienteRequest(
     val nombre: String,
     val email: String,
-    val password_hash: String,
+    val password: String,
     val telefono: String? = null,
     val edad: Int? = null,
     val peso: Double? = null,
@@ -38,56 +36,152 @@ data class RegistroApiResponse(
 )
 
 @Serializable
+data class SendCodeRequest(
+    val nombre: String,
+    val email: String,
+    val password: String
+)
+
+@Serializable
+data class VerifyCodeRequest(
+    val email: String,
+    val code: String
+)
+
+@Serializable
+data class ResendCodeRequest(
+    val email: String
+)
+
+@Serializable
+data class MessageResponse(
+    val message: String
+)
+
+@Serializable
 data class ModificarClienteRequest(
     val nombre: String? = null,
     val email: String? = null,
-    val password_hash: String? = null,
+    val password: String? = null,
     val telefono: String? = null,
     val edad: Int? = null,
     val peso: Double? = null,
     val altura: Double? = null,
     val objetivo: String? = null,
-    val genero: String? = null
+    val genero: String? = null,
+    val foto_perfil: String? = null
 )
 
-interface NutricionApiService {
-    @POST("login")
-    suspend fun login(@Body request: LoginRequest): LoginApiResponse
+@Serializable
+data class CrearRutinaRequest(
+    val nombre: String,
+    val cliente_id: String,
+    val dias: List<com.spc.nutricoach.model.Dia> = emptyList(),
+    val activa: Boolean = true,
+    val publica: Boolean = false
+)
 
-    @POST("clientes")
-    suspend fun crearCliente(@Body request: RegistroClienteRequest): RegistroApiResponse
+@Serializable
+data class CrearRutinaResponse(
+    val id: String
+)
 
-    @GET("clientes/{id}")
-    suspend fun obtenerCliente(
-        @Path("id") clienteId: String,
-        @Header("Authorization") token: String
-    ): com.spc.nutricoach.model.Cliente
+@Serializable
+data class AgregarDiaRequest(
+    val nombre: String,
+    val ejercicios: List<com.spc.nutricoach.model.Ejercicio> = emptyList()
+)
 
-    @retrofit2.http.PUT("clientes/{id}")
-    suspend fun modificarCliente(
-        @Path("id") clienteId: String,
-        @Header("Authorization") token: String,
-        @Body request: ModificarClienteRequest
-    )
+@Serializable
+data class AgregarEjercicioRequest(
+    val ejercicio_id: String,
+    val nombre_snapshot: String,
+    val series: Int,
+    val repeticiones: Int,
+    val descanso_segundos: Int
+)
 
-    @GET("clientes/{id}/dietas-activas")
-    suspend fun obtenerDietasCliente(@Path("id") clienteId: String): List<Dieta>
+@Serializable
+data class ModificarRutinaRequest(
+    val nombre: String? = null,
+    val publica: Boolean? = null
+)
 
-    @GET("clientes/{id}/rutinas-activas")
-    suspend fun obtenerRutinasCliente(@Path("id") clienteId: String): List<com.spc.nutricoach.model.Rutina>
-}
+@Serializable
+data class CrearDietaRequest(
+    val nombre: String,
+    val cliente_id: String,
+    val kcal_objetivo: Int = 0,
+    val comidas: List<com.spc.nutricoach.model.Comida> = emptyList(),
+    val activa: Boolean = true,
+    val publica: Boolean = false
+)
 
-object NutriCoachApiClient {
-    private const val BASE_URL = "http://nutricoach.us-east-1.elasticbeanstalk.com/"
+@Serializable
+data class CrearDietaResponse(
+    val id: String
+)
 
-    private val json = Json { ignoreUnknownKeys = true }
+@Serializable
+data class AgregarComidaRequest(
+    val nombre: String,
+    val hora_sugerida: String? = null,
+    val alimentos: List<com.spc.nutricoach.model.Alimento> = emptyList()
+)
 
-    private val retrofit = Retrofit.Builder()
-        .baseUrl(BASE_URL)
-        .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
-        .build()
+@Serializable
+data class AgregarAlimentoRequest(
+    val alimento_id: String,
+    val nombre_snapshot: String,
+    val cantidad: Double,
+    val unidad: String
+)
 
-    val service: NutricionApiService by lazy {
-        retrofit.create(NutricionApiService::class.java)
-    }
-}
+@Serializable
+data class ModificarDietaRequest(
+    val nombre: String? = null,
+    val publica: Boolean? = null
+)
+
+@Serializable
+data class SerieCompletada(
+    val repeticiones: String,
+    val peso: Double,
+    val descanso_segundos: Int
+)
+
+@Serializable
+data class EjercicioCompletado(
+    val ejercicio_id: String? = null,
+    val nombre_snapshot: String,
+    val series: List<SerieCompletada>
+)
+
+@Serializable
+data class EntrenamientoLog(
+    @SerialName("_id") val id: String? = null,
+    val rutina_nombre: String,
+    val dia_nombre: String,
+    val fecha: String,
+    val ejercicios: List<EjercicioCompletado>
+)
+
+@Serializable
+data class CrearPostRequest(
+    val texto: String,
+    @SerialName("rutina_id") val rutinaId: String? = null,
+    @SerialName("dieta_id") val dietaId: String? = null,
+    @SerialName("imagen_url") val imagenUrl: String? = null
+)
+
+@Serializable
+data class ComentarioRequest(
+    val texto: String
+)
+
+@Serializable
+data class ToggleLikeResponse(
+    val liked: Boolean,
+    val mensaje: String? = null,
+    val likes_count: Int? = null
+)

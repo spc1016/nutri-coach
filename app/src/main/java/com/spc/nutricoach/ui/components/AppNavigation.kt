@@ -7,9 +7,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.EditNote
-import androidx.compose.material.icons.filled.FitnessCenter
-import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -19,14 +20,13 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -36,14 +36,16 @@ import androidx.navigation.toRoute
 import androidx.compose.material3.MaterialTheme
 import com.spc.nutricoach.data.SessionManager
 import com.spc.nutricoach.ui.viewmodel.DietaViewModel
-import kotlinx.coroutines.flow.first
 import kotlinx.serialization.Serializable
 
 @Serializable
-object PantallaInicio
+object PantallaFeed
 
 @Serializable
-object PantallaRutinas
+object PantallaPublicar
+
+@Serializable
+object PantallaPersonal
 
 @Serializable
 object PantallaLogin
@@ -55,10 +57,16 @@ object PantallaRegistro
 object PantallaPerfil
 
 @Serializable
-data class PantallaDetalleDieta(val dietaId: String)
+data class PantallaDetallePost(val postId: String)
 
 @Serializable
-data class PantallaDetalleRutina(val rutinaId: String)
+data class PantallaPerfilPublico(val clienteId: String)
+
+@Serializable
+data class PantallaDetalleDieta(val dietaId: String, val isReadOnly: Boolean = false)
+
+@Serializable
+data class PantallaDetalleRutina(val rutinaId: String, val isReadOnly: Boolean = false)
 
 @Serializable
 data class PantallaEntrenamientoDia(val rutinaId: String, val diaNombre: String)
@@ -69,16 +77,15 @@ object PantallaNotas
 @Serializable
 data class PantallaDetalleNota(val notaId: Int)
 
+@Serializable
+object PantallaQrScanner
+
 @Composable
 fun AppNavigation() {
     val context = LocalContext.current
     val sessionManager = remember { SessionManager(context) }
 
-    var isLoggedIn by remember { mutableStateOf<Boolean?>(null) }
-
-    LaunchedEffect(Unit) {
-        isLoggedIn = sessionManager.isLoggedIn.first()
-    }
+    val isLoggedIn by sessionManager.isLoggedIn.collectAsState(initial = null)
 
     if (isLoggedIn == null) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -91,14 +98,19 @@ fun AppNavigation() {
 
     val navBarRoutes = listOf(
         NavRoute(
-            label = "Inicio",
-            icon = Icons.Default.Restaurant,
-            routeObject = PantallaInicio
+            label = "Feed",
+            icon = Icons.Default.Home,
+            routeObject = PantallaFeed
         ),
         NavRoute(
-            label = "Rutinas",
-            icon = Icons.Default.FitnessCenter,
-            routeObject = PantallaRutinas
+            label = "Publicar",
+            icon = Icons.Default.AddCircle,
+            routeObject = PantallaPublicar
+        ),
+        NavRoute(
+            label = "Personal",
+            icon = Icons.Default.Person,
+            routeObject = PantallaPersonal
         ),
         NavRoute(
             label = "Notas",
@@ -123,10 +135,11 @@ fun AppNavigation() {
         }
     }
 
-    val dietaViewModel: DietaViewModel = viewModel()
-    val rutinaViewModel: com.spc.nutricoach.ui.viewmodel.RutinaViewModel = viewModel()
-    val entrenamientoViewModel: com.spc.nutricoach.ui.viewmodel.EntrenamientoViewModel = viewModel()
-    val notasViewModel: com.spc.nutricoach.ui.viewmodel.NotasViewModel = viewModel()
+    val dietaViewModel: DietaViewModel = hiltViewModel()
+    val rutinaViewModel: com.spc.nutricoach.ui.viewmodel.RutinaViewModel = hiltViewModel()
+    val entrenamientoViewModel: com.spc.nutricoach.ui.viewmodel.EntrenamientoViewModel = hiltViewModel()
+    val notasViewModel: com.spc.nutricoach.ui.viewmodel.NotasViewModel = hiltViewModel()
+    val feedViewModel: com.spc.nutricoach.ui.viewmodel.FeedViewModel = hiltViewModel()
 
     val showNavBar = navBarRoutes.any { navRoute ->
         currentDestination?.hasRoute(navRoute.routeObject::class) == true
@@ -167,25 +180,54 @@ fun AppNavigation() {
         NavHost(
             modifier = Modifier.padding(bottom = innerPadding.calculateBottomPadding()),
             navController = navController,
-            startDestination = if (isLoggedIn == true) PantallaInicio else PantallaLogin
+            startDestination = if (isLoggedIn == true) PantallaFeed else PantallaLogin
         ) {
-            composable<PantallaInicio> {
-                MainView(navController = navController, dietaViewModel = dietaViewModel)
+            composable<PantallaFeed> {
+                FeedView(
+                    navController = navController,
+                    feedViewModel = feedViewModel,
+                    rutinaViewModel = rutinaViewModel,
+                    dietaViewModel = dietaViewModel
+                )
             }
-            composable<PantallaRutinas> {
-                RutinasView(navController = navController, rutinaViewModel = rutinaViewModel)
+            composable<PantallaPublicar> {
+                PublicarView(
+                    navController = navController,
+                    feedViewModel = feedViewModel,
+                    rutinaViewModel = rutinaViewModel,
+                    dietaViewModel = dietaViewModel
+                )
+            }
+            composable<PantallaPersonal> {
+                PersonalView(
+                    navController = navController,
+                    dietaViewModel = dietaViewModel,
+                    rutinaViewModel = rutinaViewModel,
+                    feedViewModel = feedViewModel
+                )
             }
             composable<PantallaLogin> {
-                LoginView(navController)
+                LoginView(navController = navController, loginViewModel = hiltViewModel())
             }
             composable<PantallaRegistro> {
-                RegistroView(navController)
+                RegistroView(navController = navController, registroViewModel = hiltViewModel())
             }
             composable<PantallaDetalleDieta> { backStackEntry ->
                 val detalle = backStackEntry.toRoute<PantallaDetalleDieta>()
                 DetalleDietaView(
                     navController = navController,
                     dietaId = detalle.dietaId,
+                    dietaViewModel = dietaViewModel,
+                    forceReadOnly = detalle.isReadOnly
+                )
+            }
+            composable<PantallaDetallePost> { backStackEntry ->
+                val args = backStackEntry.toRoute<PantallaDetallePost>()
+                DetallePostView(
+                    navController = navController,
+                    postId = args.postId,
+                    feedViewModel = feedViewModel,
+                    rutinaViewModel = rutinaViewModel,
                     dietaViewModel = dietaViewModel
                 )
             }
@@ -194,7 +236,8 @@ fun AppNavigation() {
                 DetalleRutinaView(
                     navController = navController,
                     rutinaId = detalle.rutinaId,
-                    rutinaViewModel = rutinaViewModel
+                    rutinaViewModel = rutinaViewModel,
+                    forceReadOnly = detalle.isReadOnly
                 )
             }
             composable<PantallaEntrenamientoDia> { backStackEntry ->
@@ -208,7 +251,19 @@ fun AppNavigation() {
                 )
             }
             composable<PantallaPerfil> {
-                PerfilUsuarioView(navController)
+                PerfilUsuarioView(
+                    navController = navController,
+                    loginViewModel = hiltViewModel(),
+                    perfilViewModel = hiltViewModel()
+                )
+            }
+            composable<PantallaPerfilPublico> { backStackEntry ->
+                val args = backStackEntry.toRoute<PantallaPerfilPublico>()
+                PerfilPublicoView(
+                    navController = navController,
+                    clienteId = args.clienteId,
+                    rutinaViewModel = rutinaViewModel
+                )
             }
             composable<PantallaNotas> {
                 NotasView(navController = navController, notasViewModel = notasViewModel)
@@ -219,6 +274,13 @@ fun AppNavigation() {
                     navController = navController,
                     notaId = args.notaId,
                     notasViewModel = notasViewModel
+                )
+            }
+            composable<PantallaQrScanner> {
+                QrScannerView(
+                    navController = navController,
+                    rutinaViewModel = rutinaViewModel,
+                    dietaViewModel = dietaViewModel
                 )
             }
         }
