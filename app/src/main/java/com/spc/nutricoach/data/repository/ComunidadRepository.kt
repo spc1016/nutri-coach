@@ -35,5 +35,9 @@ class ComunidadRepository @Inject constructor(
         comunidadApiService.eliminarComentario(postId, comentarioIndex)
     }
 
+    suspend fun eliminarPost(postId: String): ApiResponse<Unit> = safeApiCall {
+        comunidadApiService.eliminarPost(postId)
+    }
+
     val session = sessionManager
 }

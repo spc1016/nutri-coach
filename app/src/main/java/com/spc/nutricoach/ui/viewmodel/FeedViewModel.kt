@@ -414,4 +414,38 @@ class FeedViewModel @Inject constructor(
             }
         }
     }
+
+    fun eliminarPost(postId: String, onResult: (Boolean, String?) -> Unit) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val token = authRepository.session.getToken()
+                if (token.isNullOrBlank()) {
+                    onResult(false, "No hay sesión activa")
+                    return@launch
+                }
+                when (val response = comunidadRepository.eliminarPost(postId)) {
+                    is ApiResponse.Success -> {
+                        cargarPosts(force = true)
+                        withContext(Dispatchers.Main) {
+                            onResult(true, null)
+                        }
+                    }
+                    is ApiResponse.Error -> {
+                        withContext(Dispatchers.Main) {
+                            onResult(false, "Error: ${response.message}")
+                        }
+                    }
+                    is ApiResponse.Exception -> {
+                        withContext(Dispatchers.Main) {
+                            onResult(false, "Error de red")
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    onResult(false, "Error: ${e.message}")
+                }
+            }
+        }
+    }
 }

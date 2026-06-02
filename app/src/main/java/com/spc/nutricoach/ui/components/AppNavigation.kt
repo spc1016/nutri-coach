@@ -63,10 +63,10 @@ data class PantallaDetallePost(val postId: String)
 data class PantallaPerfilPublico(val clienteId: String)
 
 @Serializable
-data class PantallaDetalleDieta(val dietaId: String)
+data class PantallaDetalleDieta(val dietaId: String, val isReadOnly: Boolean = false)
 
 @Serializable
-data class PantallaDetalleRutina(val rutinaId: String)
+data class PantallaDetalleRutina(val rutinaId: String, val isReadOnly: Boolean = false)
 
 @Serializable
 data class PantallaEntrenamientoDia(val rutinaId: String, val diaNombre: String)
@@ -202,7 +202,8 @@ fun AppNavigation() {
                 PersonalView(
                     navController = navController,
                     dietaViewModel = dietaViewModel,
-                    rutinaViewModel = rutinaViewModel
+                    rutinaViewModel = rutinaViewModel,
+                    feedViewModel = feedViewModel
                 )
             }
             composable<PantallaLogin> {
@@ -216,7 +217,8 @@ fun AppNavigation() {
                 DetalleDietaView(
                     navController = navController,
                     dietaId = detalle.dietaId,
-                    dietaViewModel = dietaViewModel
+                    dietaViewModel = dietaViewModel,
+                    forceReadOnly = detalle.isReadOnly
                 )
             }
             composable<PantallaDetallePost> { backStackEntry ->
@@ -234,7 +236,8 @@ fun AppNavigation() {
                 DetalleRutinaView(
                     navController = navController,
                     rutinaId = detalle.rutinaId,
-                    rutinaViewModel = rutinaViewModel
+                    rutinaViewModel = rutinaViewModel,
+                    forceReadOnly = detalle.isReadOnly
                 )
             }
             composable<PantallaEntrenamientoDia> { backStackEntry ->

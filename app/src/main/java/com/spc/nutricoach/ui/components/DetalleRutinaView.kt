@@ -73,7 +73,8 @@ import androidx.compose.runtime.Composable
 fun DetalleRutinaView(
     navController: NavController,
     rutinaId: String,
-    rutinaViewModel: RutinaViewModel
+    rutinaViewModel: RutinaViewModel,
+    forceReadOnly: Boolean = false
 ) {
     val rutina = rutinaViewModel.rutinas.find { it.id == rutinaId } ?: rutinaViewModel.rutinasPublicas.find { it.id == rutinaId }
 
@@ -87,7 +88,7 @@ fun DetalleRutinaView(
         }
     }
     
-    val isReadOnly = currentClienteId != null && rutina?.clienteId != currentClienteId
+    val isReadOnly = forceReadOnly || (currentClienteId != null && rutina?.clienteId != currentClienteId)
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,

@@ -73,7 +73,8 @@ import com.spc.nutricoach.ui.viewmodel.DietaViewModel
 fun DetalleDietaView(
     navController: NavController,
     dietaId: String,
-    dietaViewModel: DietaViewModel
+    dietaViewModel: DietaViewModel,
+    forceReadOnly: Boolean = false
 ) {
     val dieta = dietaViewModel.dietas.find { it.id == dietaId } ?: dietaViewModel.dietasPublicas.find { it.id == dietaId }
     val completedMeals by dietaViewModel.completedMealsFlow.collectAsState(initial = emptySet())
@@ -87,7 +88,7 @@ fun DetalleDietaView(
         }
     }
     
-    val isReadOnly = currentClienteId != null && dieta?.clienteId != currentClienteId
+    val isReadOnly = forceReadOnly || (currentClienteId != null && dieta?.clienteId != currentClienteId)
     val clientId = currentClienteId
 
     Scaffold(

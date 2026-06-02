@@ -254,10 +254,10 @@ fun FeedView(
                                         navController.navigate(PantallaDetallePost(post.id))
                                     },
                                     onRoutineClick = { rutinaId ->
-                                        navController.navigate(PantallaDetalleRutina(rutinaId))
+                                        navController.navigate(PantallaDetalleRutina(rutinaId, isReadOnly = true))
                                     },
                                     onDietaClick = { dietaId ->
-                                        navController.navigate(PantallaDetalleDieta(dietaId))
+                                        navController.navigate(PantallaDetalleDieta(dietaId, isReadOnly = true))
                                     },
                                     onReplicateRoutineClick = { rutinaId ->
                                         rutinaViewModel.clonarRutinaPorId(rutinaId) { success, error ->

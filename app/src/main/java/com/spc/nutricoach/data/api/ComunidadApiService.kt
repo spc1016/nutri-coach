@@ -45,4 +45,9 @@ interface ComunidadApiService {
         @Path("id") postId: String,
         @Path("comentario_index") comentarioIndex: Int
     )
+
+    @DELETE("posts/{id}")
+    suspend fun eliminarPost(
+        @Path("id") postId: String
+    )
 }

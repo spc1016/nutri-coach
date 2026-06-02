@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -93,7 +94,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 fun PersonalView(
     navController: NavController,
     dietaViewModel: DietaViewModel = viewModel(),
-    rutinaViewModel: RutinaViewModel = viewModel()
+    rutinaViewModel: RutinaViewModel = viewModel(),
+    feedViewModel: com.spc.nutricoach.ui.viewmodel.FeedViewModel = viewModel()
 ) {
     LaunchedEffect(Unit) {
         dietaViewModel.cargarDietas()
@@ -105,7 +107,7 @@ fun PersonalView(
     val email by sessionManager.userEmailFlow.collectAsState(initial = "")
     val letraInicial = email?.firstOrNull()?.uppercase() ?: "U"
 
-    val tabs = listOf("Dietas", "Rutinas", "Seguimiento")
+    val tabs = listOf("Dietas", "Rutinas", "Seguimiento", "Tus Posts")
 
     val pagerState = rememberPagerState(
         initialPage = 0,
@@ -120,6 +122,8 @@ fun PersonalView(
     LaunchedEffect(selectedTabIndex) {
         if (selectedTabIndex == 2) {
             rutinaViewModel.cargarHistorialEntrenamientos()
+        } else if (selectedTabIndex == 3) {
+            feedViewModel.cargarPosts(force = true)
         }
     }
 
@@ -230,7 +234,10 @@ fun PersonalView(
                                 Text(
                                     text = title,
                                     color = if (selectedTabIndex == index) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                    fontWeight = if (selectedTabIndex == index) FontWeight.Bold else FontWeight.Normal
+                                    fontWeight = if (selectedTabIndex == index) FontWeight.Bold else FontWeight.Normal,
+                                    fontSize = 13.sp,
+                                    maxLines = 1,
+                                    softWrap = false
                                 ) 
                             }
                         )
@@ -767,6 +774,14 @@ fun PersonalView(
                                 }
                             }
                         }
+                        3 -> {
+                            val currentUserId by sessionManager.clienteIdFlow.collectAsState(initial = "")
+                            TusPostsContent(
+                                navController = navController,
+                                feedViewModel = feedViewModel,
+                                currentUserId = currentUserId ?: ""
+                            )
+                        }
                     }
                 }
             }
@@ -1261,6 +1276,132 @@ fun HistorialEntrenamientoCard(log: com.spc.nutricoach.data.EntrenamientoLog) {
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun TusPostsContent(
+    navController: NavController,
+    feedViewModel: com.spc.nutricoach.ui.viewmodel.FeedViewModel,
+    currentUserId: String
+) {
+    val misPosts = remember(feedViewModel.posts, currentUserId) {
+        feedViewModel.posts.filter { it.autorId == currentUserId }
+    }
+
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 20.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        item { Spacer(modifier = Modifier.height(8.dp)) }
+
+        if (feedViewModel.isLoading && misPosts.isEmpty()) {
+            item {
+                Box(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                }
+            }
+        }
+
+        if (!feedViewModel.isLoading && misPosts.isEmpty()) {
+            item {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "No tienes publicaciones en la comunidad",
+                        style = TextStyle(
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 16.sp
+                        ),
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                }
+            }
+        }
+
+        items(misPosts, key = { it.id }) { post ->
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp)
+            ) {
+                PostCard(
+                    post = post,
+                    currentUserId = currentUserId,
+                    onLikeClick = { feedViewModel.toggleLike(post.id, currentUserId) },
+                    onCommentClick = { 
+                        navController.navigate(PantallaDetallePost(post.id))
+                    },
+                    onRoutineClick = { rutinaId ->
+                        navController.navigate(PantallaDetalleRutina(rutinaId, isReadOnly = true))
+                    },
+                    onDietaClick = { dietaId ->
+                        navController.navigate(PantallaDetalleDieta(dietaId, isReadOnly = true))
+                    },
+                    onReplicateRoutineClick = null,
+                    onReplicateDietaClick = null,
+                    onClick = {
+                        navController.navigate(PantallaDetallePost(post.id))
+                    }
+                )
+
+                var showConfirmDelete by remember { mutableStateOf(false) }
+
+                Button(
+                    onClick = { showConfirmDelete = true },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.8f),
+                        contentColor = MaterialTheme.colorScheme.onErrorContainer
+                    ),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Eliminar post",
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Eliminar Publicación", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                }
+
+                if (showConfirmDelete) {
+                    AlertDialog(
+                        onDismissRequest = { showConfirmDelete = false },
+                        title = { Text("Eliminar publicación") },
+                        text = { Text("¿Estás seguro de que deseas eliminar esta publicación de la comunidad? Esta acción no se puede deshacer.") },
+                        confirmButton = {
+                            Button(
+                                onClick = {
+                                    showConfirmDelete = false
+                                    feedViewModel.eliminarPost(post.id) { _, _ -> }
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                            ) {
+                                Text("Eliminar")
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showConfirmDelete = false }) {
+                                Text("Cancelar")
+                            }
+                        }
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+
+        item {
+            Spacer(modifier = Modifier.height(80.dp))
         }
     }
 }
