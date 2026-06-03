@@ -5,16 +5,16 @@ import java.util.Locale
 object ExerciseNormalizer {
 
     /**
-     * Normalizes an exercise name by converting it to lowercase and removing all whitespace.
-     * E.g. "Press banca" -> "pressbanca", "preSSbanca" -> "pressbanca"
+     * Normaliza el nombre de un ejercicio convirtiéndolo a minúsculas y eliminando todos los espacios en blanco.
+     * Ej. "Press banca" -> "pressbanca", "preSSbanca" -> "pressbanca"
      */
     fun normalize(name: String): String {
         return name.lowercase().replace("\\s+".toRegex(), "")
     }
 
     /**
-     * Nicely formats a name for the first time it is saved, ensuring standard capitalization and spacing.
-     * E.g. "press  banca" -> "Press banca"
+     * Da formato correcto al nombre por primera vez antes de ser guardado, asegurando el espaciado y uso de mayúsculas estándar.
+     * Ej. "press  banca" -> "Press banca"
      */
     fun formatFirstTime(name: String): String {
         val clean = name.trim().replace("\\s+".toRegex(), " ")
@@ -25,10 +25,10 @@ object ExerciseNormalizer {
     }
 
     /**
-     * Looks through a history of exercise names (nombre_snapshot) and matches the new name
-     * with any existing name (ignoring case and spaces).
-     * If a match is found, returns the exact existing name from history.
-     * Otherwise, returns the first-time formatted name.
+     * Busca en el historial de nombres de ejercicios (nombre_snapshot) y asocia el nuevo nombre
+     * con cualquier nombre existente (ignorando mayúsculas/minúsculas y espacios).
+     * Si encuentra una coincidencia, devuelve el nombre exacto existente en el historial.
+     * De lo contrario, devuelve el nombre formateado para primera vez.
      */
     fun getCanonicalName(newName: String, existingNames: Collection<String>): String {
         val normalizedNew = normalize(newName)
@@ -40,22 +40,22 @@ object ExerciseNormalizer {
     }
 
     /**
-     * Extracts a list of unique canonical exercise names from a list of raw names in the history.
-     * Groups them by their normalized form and selects the best representation for each group.
+     * Extrae una lista de nombres canónicos de ejercicios únicos a partir de una lista de nombres del historial.
+     * Los agrupa por su forma normalizada y selecciona la mejor representación para cada grupo.
      */
     fun getCanonicalList(allNames: Collection<String>): List<String> {
         val grouped = allNames.groupBy { normalize(it) }
         return grouped.values.map { names ->
-            // Find the best name in the group:
-            // 1. First choice: Has spaces and starts with uppercase letter
+            // Busca el mejor nombre en el grupo:
+            // 1. Primera opción: Tiene espacios y comienza con mayúscula
             val withSpacesAndUpper = names.filter { it.firstOrNull()?.isUpperCase() == true && it.contains(" ") }
             if (withSpacesAndUpper.isNotEmpty()) return@map withSpacesAndUpper.first()
             
-            // 2. Second choice: Starts with uppercase letter
+            // 2. Segunda opción: Comienza con mayúscula
             val withUpper = names.filter { it.firstOrNull()?.isUpperCase() == true }
             if (withUpper.isNotEmpty()) return@map withUpper.first()
             
-            // 3. Otherwise: Format the first name nicely
+            // 3. De lo contrario: Da formato correcto al primer nombre de la lista
             formatFirstTime(names.firstOrNull() ?: "")
         }.filter { it.isNotEmpty() }.distinct().sorted()
     }
