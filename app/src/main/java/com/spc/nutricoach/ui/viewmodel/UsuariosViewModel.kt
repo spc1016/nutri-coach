@@ -16,29 +16,34 @@ import javax.inject.Inject
 
 import com.spc.nutricoach.data.repository.RutinaRepository
 import com.spc.nutricoach.model.Rutina
+import com.spc.nutricoach.data.repository.DietaRepository
+import com.spc.nutricoach.model.Dieta
 
 @HiltViewModel
 class UsuariosViewModel @Inject constructor(
     private val authRepository: AuthRepository,
-    private val rutinaRepository: RutinaRepository
+    private val rutinaRepository: RutinaRepository,
+    private val dietaRepository: DietaRepository
 ) : ViewModel() {
 
     fun cargarDetallesUsuario(
         clienteId: String,
-        onResult: (Cliente?, List<Rutina>?) -> Unit
+        onResult: (Cliente?, List<Rutina>?, List<Dieta>?) -> Unit
     ) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val clientResponse = authRepository.obtenerCliente(clienteId)
                 val routinesResponse = rutinaRepository.obtenerRutinasCliente(clienteId)
+                val dietsResponse = dietaRepository.obtenerDietasCliente(clienteId)
                 
                 val cliente = (clientResponse as? ApiResponse.Success)?.data
                 val rutinas = (routinesResponse as? ApiResponse.Success)?.data
+                val dietas = (dietsResponse as? ApiResponse.Success)?.data
                 
-                onResult(cliente, rutinas)
+                onResult(cliente, rutinas, dietas)
             } catch (e: Exception) {
                 Log.e("USUARIOS_VM", "Error al cargar detalles de usuario", e)
-                onResult(null, null)
+                onResult(null, null, null)
             }
         }
     }

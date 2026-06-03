@@ -26,6 +26,7 @@ import androidx.navigation.NavController
 import com.spc.nutricoach.data.SessionManager
 import com.spc.nutricoach.model.Cliente
 import com.spc.nutricoach.model.Rutina
+import com.spc.nutricoach.model.Dieta
 import com.spc.nutricoach.ui.theme.AppBrushes
 import com.spc.nutricoach.ui.viewmodel.RutinaViewModel
 import com.spc.nutricoach.ui.viewmodel.UsuariosViewModel
@@ -44,13 +45,15 @@ fun PerfilPublicoView(
     
     var cliente by remember { mutableStateOf<Cliente?>(null) }
     var rutinas by remember { mutableStateOf<List<Rutina>>(emptyList()) }
+    var dietas by remember { mutableStateOf<List<Dieta>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
 
     LaunchedEffect(clienteId) {
         isLoading = true
-        usuariosViewModel.cargarDetallesUsuario(clienteId) { c, r ->
+        usuariosViewModel.cargarDetallesUsuario(clienteId) { c, r, d ->
             cliente = c
             rutinas = r ?: emptyList()
+            dietas = d?.filter { it.publica } ?: emptyList()
             isLoading = false
         }
     }
@@ -176,6 +179,33 @@ fun PerfilPublicoView(
                                 rutina = rutina,
                                 onClick = {
                                     navController.navigate(PantallaDetalleRutina(rutinaId = rutina.id))
+                                }
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                        }
+                    }
+
+                    item {
+                        Spacer(modifier = Modifier.height(32.dp))
+                        Text(
+                            text = "Dietas Públicas",
+                            style = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground),
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.Start
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
+
+                    if (dietas.isEmpty()) {
+                        item {
+                            Text("Este usuario no tiene dietas públicas.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    } else {
+                        items(dietas) { dieta ->
+                            DietaCard(
+                                dieta = dieta,
+                                onClick = {
+                                    navController.navigate(PantallaDetalleDieta(dietaId = dieta.id, isReadOnly = true))
                                 }
                             )
                             Spacer(modifier = Modifier.height(16.dp))

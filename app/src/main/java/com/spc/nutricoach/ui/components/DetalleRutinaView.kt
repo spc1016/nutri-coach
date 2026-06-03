@@ -397,24 +397,26 @@ fun DetalleRutinaView(
                     ) {
                         Column(modifier = Modifier.padding(20.dp)) {
                             DiaItemDetail(dia = dia, diaIndex = diaIndexOriginal, rutinaId = rutina.id, rutinaViewModel = rutinaViewModel, isReadOnly = isReadOnly)
-                            Spacer(modifier = Modifier.height(20.dp))
-                            Button(
-                                onClick = {
-                                    navController.navigate(PantallaEntrenamientoDia(rutina.id, dia.nombre))
-                                },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(50.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = Color.Black),
-                                shape = RoundedCornerShape(12.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Filled.FitnessCenter,
-                                    contentDescription = "Empezar",
-                                    tint = Color.Black
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("Comenzar Entrenamiento", fontWeight = FontWeight.Bold)
+                            if (!isReadOnly) {
+                                Spacer(modifier = Modifier.height(20.dp))
+                                Button(
+                                    onClick = {
+                                        navController.navigate(PantallaEntrenamientoDia(rutina.id, dia.nombre))
+                                    },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(50.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = Color.Black),
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Filled.FitnessCenter,
+                                        contentDescription = "Empezar",
+                                        tint = Color.Black
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("Comenzar Entrenamiento", fontWeight = FontWeight.Bold)
+                                }
                             }
                         }
                     }
