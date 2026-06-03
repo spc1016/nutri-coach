@@ -47,8 +47,8 @@ class RegistroViewModel @Inject constructor(
     var resendCountdown by mutableStateOf(0)
         private set
 
-    private fun isValidGmail(email: String): Boolean {
-        return email.matches(Regex("^[a-zA-Z0-9._%+-]+@gmail\\.com$"))
+    private fun isValidEmail(email: String): Boolean {
+        return email.matches(Regex("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"))
     }
 
     fun sendCode() {
@@ -57,8 +57,8 @@ class RegistroViewModel @Inject constructor(
             isError = true
             return
         }
-        if (!isValidGmail(email.trim())) {
-            statusMessage = "Introduce un email de Gmail válido (@gmail.com)"
+        if (!isValidEmail(email.trim())) {
+            statusMessage = "Introduce un email válido"
             isError = true
             return
         }
@@ -91,7 +91,7 @@ class RegistroViewModel @Inject constructor(
                         Log.e("REGISTRO_ERROR", "Error HTTP ${response.code}: ${response.message}")
                         statusMessage = when (response.code) {
                             400 -> if (response.message.contains("registrado")) "Este email ya está registrado"
-                                   else if (response.message.contains("gmail")) "Introduce un email de Gmail válido"
+                                   else if (response.message.contains("email")) "Introduce un email válido"
                                    else "Datos inválidos"
                             500 -> "Error al enviar el correo. Inténtalo de nuevo."
                             else -> "Error del servidor (${response.code})"

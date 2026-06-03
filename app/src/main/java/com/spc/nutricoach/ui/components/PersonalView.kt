@@ -387,6 +387,7 @@ fun PersonalView(
                             }
                             var ejercicioSeleccionado by remember { mutableStateOf<String?>(null) }
                             var searchQuery by remember { mutableStateOf("") }
+                            var rangoSeleccionado by remember { mutableStateOf("Todo") }
 
                             // Parsear el historial de entrenamientos agrupándolo por LocalDate localmente
                             val completedDatesMap = remember(rutinaViewModel.historialEntrenamientos) {
@@ -445,13 +446,34 @@ fun PersonalView(
                                 ejercicioSeleccionado = ejerciciosFiltrados.first()
                             }
 
-                            val chartData = remember(ejercicioSeleccionado, rutinaViewModel.historialEntrenamientos) {
+                            val chartData = remember(ejercicioSeleccionado, rutinaViewModel.historialEntrenamientos, rangoSeleccionado) {
                                 val currentEjer = ejercicioSeleccionado
                                 if (currentEjer == null) emptyList<Pair<String, Double>>()
                                 else {
                                     val targetNormalized = com.spc.nutricoach.util.ExerciseNormalizer.normalize(currentEjer)
+                                    val limitDate = when (rangoSeleccionado) {
+                                        "1M" -> LocalDate.now().minusMonths(1)
+                                        "6M" -> LocalDate.now().minusMonths(6)
+                                        "1A" -> LocalDate.now().minusYears(1)
+                                        else -> null
+                                    }
+
                                     rutinaViewModel.historialEntrenamientos
-                                        .filter { ent -> ent.ejercicios.any { com.spc.nutricoach.util.ExerciseNormalizer.normalize(it.nombre_snapshot) == targetNormalized } }
+                                        .filter { ent ->
+                                            val hasExercise = ent.ejercicios.any { com.spc.nutricoach.util.ExerciseNormalizer.normalize(it.nombre_snapshot) == targetNormalized }
+                                            if (!hasExercise) return@filter false
+
+                                            if (limitDate != null) {
+                                                val logDate = try {
+                                                    LocalDate.parse(ent.fecha.substringBefore("T"))
+                                                } catch (e: Exception) {
+                                                    null
+                                                }
+                                                logDate != null && !logDate.isBefore(limitDate)
+                                            } else {
+                                                true
+                                            }
+                                        }
                                         .map { ent ->
                                             val ejer = ent.ejercicios.first { com.spc.nutricoach.util.ExerciseNormalizer.normalize(it.nombre_snapshot) == targetNormalized }
                                             val maxPeso = ejer.series.map { it.peso }.maxOrNull() ?: 0.0
@@ -595,11 +617,19 @@ fun PersonalView(
                                     }
 
                                     item {
-                                        EvolutionChart(
-                                            points = chartData,
-                                            modifier = Modifier.fillMaxWidth()
-                                        )
-                                    }
+                                         RangeSelector(
+                                             selectedRange = rangoSeleccionado,
+                                             onRangeSelected = { rangoSeleccionado = it },
+                                             modifier = Modifier.padding(bottom = 12.dp)
+                                         )
+                                     }
+
+                                     item {
+                                         EvolutionChart(
+                                             points = chartData,
+                                             modifier = Modifier.fillMaxWidth()
+                                         )
+                                     }
 
                                     // --- SECCIÓN DE CALENDARIO ---
                                     item {
@@ -1020,6 +1050,54 @@ fun CustomExerciseChip(
             fontSize = 14.sp,
             fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
         )
+    }
+}
+
+@Composable
+fun RangeSelector(
+    selectedRange: String,
+    onRangeSelected: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val ranges = listOf(
+        Pair("1M", "1 Mes"),
+        Pair("6M", "6 Meses"),
+        Pair("1A", "1 Año"),
+        Pair("Todo", "Todo")
+    )
+    
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
+            .padding(4.dp),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        ranges.forEach { (key, label) ->
+            val isSelected = selectedRange == key
+            val background = if (isSelected) AppBrushes.MainGradient else Brush.linearGradient(listOf(Color.Transparent, Color.Transparent))
+            val textColor = if (isSelected) Color.Black else MaterialTheme.colorScheme.onSurfaceVariant
+            
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(background)
+                    .clickable { onRangeSelected(key) }
+                    .padding(vertical = 8.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = label,
+                    color = textColor,
+                    fontSize = 12.sp,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                )
+            }
+        }
     }
 }
 

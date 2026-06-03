@@ -116,7 +116,7 @@ fun RegistroView(navController: NavController, registroViewModel: RegistroViewMo
                     )
 
                     Text(
-                        text = "Solo necesitas tu nombre, email de Gmail y una contraseña. El resto lo podrás configurar después.",
+                        text = "Solo necesitas tu nombre, email y una contraseña. El resto lo podrás configurar después.",
                         style = MaterialTheme.typography.bodyMedium.copy(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center
@@ -135,7 +135,7 @@ fun RegistroView(navController: NavController, registroViewModel: RegistroViewMo
                     RegistroTextField(
                         value = registroViewModel.email,
                         onValueChange = { registroViewModel.email = it },
-                        label = "Email de Gmail *",
+                        label = "Email *",
                         icon = Icons.Filled.Email,
                         modifier = Modifier.fillMaxWidth(),
                         keyboardType = KeyboardType.Email
